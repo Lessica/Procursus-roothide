@@ -3,6 +3,7 @@ $(error Use the main Makefile)
 endif
 
 STRAPPROJECTS     += launchctl
+LAUNCHCTL_COMMIT  := c189e840fac306cd88b07a1feaef13bb5e73903d
 LAUNCHCTL_VERSION := 1.2.0
 DEB_LAUNCHCTL_V   ?= 1:$(LAUNCHCTL_VERSION)
 
