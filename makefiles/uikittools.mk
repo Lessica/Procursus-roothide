@@ -7,9 +7,9 @@ SUBPROJECTS        += uikittools
 else
 STRAPPROJECTS      += uikittools
 endif
-UIKITTOOLS_COMMIT  := f2c0e7aa11fadde365abd3d3e312b47bba23f332
-UIKITTOOLS_VERSION := 2.1.6
-DEB_UIKITTOOLS_V   ?= $(UIKITTOOLS_VERSION)-4
+UIKITTOOLS_COMMIT  := 627e1eebea4d49244f8065b09d9ad93a2eef4c1e
+UIKITTOOLS_VERSION := 2.1.8
+DEB_UIKITTOOLS_V   ?= $(UIKITTOOLS_VERSION)
 
 uikittools-setup: setup
 	$(call GITHUB_ARCHIVE,roothide,uikittools-ng,$(UIKITTOOLS_COMMIT),$(UIKITTOOLS_COMMIT))
@@ -28,7 +28,6 @@ uikittools: uikittools-setup gettext
 		PREFIX="$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)" \
 		LOCALEDIR="$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share/locale" \
 		APP_PATH="$(MEMO_PREFIX)/Applications" \
-		CFLAGS="$(CFLAGS) -lroothide " \
 		NLS=1
 	+$(MAKE) -C $(BUILD_WORK)/uikittools install \
 		PREFIX="$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)" \
