@@ -16,6 +16,8 @@ potrace:
 else
 potrace: potrace-setup
 	cd $(BUILD_WORK)/potrace && ./configure -C \
+	CFLAGS="$(patsubst -flto=thin,,$(CFLAGS))" \
+	LDFLAGS="$(patsubst -flto=thin,,$(LDFLAGS))" \
 		$(DEFAULT_CONFIGURE_FLAGS) --with-libpotrace
 	+$(MAKE) -C $(BUILD_WORK)/potrace
 	+$(MAKE) -C $(BUILD_WORK)/potrace install \
