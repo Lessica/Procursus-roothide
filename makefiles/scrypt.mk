@@ -9,6 +9,7 @@ DEB_SCRYPT_V   ?= $(SCRYPT_VERSION)
 scrypt-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://www.tarsnap.com/scrypt/scrypt-$(SCRYPT_VERSION).tgz)
 	$(call EXTRACT_TAR,scrypt-$(SCRYPT_VERSION).tgz,scrypt-$(SCRYPT_VERSION),scrypt)
+	$(call DO_PATCH,scrypt,scrypt,-p1)
 
 ifneq ($(wildcard $(BUILD_WORK)/scrypt/.build_complete),)
 scrypt:
