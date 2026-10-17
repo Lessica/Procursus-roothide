@@ -10,7 +10,7 @@ DEB_GOLANG_V          ?= $(GOLANG_VERSION)
 
 golang-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://go.dev/dl/go$(GOLANG_VERSION).src.tar.gz)
-	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://deb.debian.org/debian/pool/main/g/golang-defaults/golang-defaults_$(DEBIAN_GOLANG_VERSION).tar.xz)
+	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://snapshot.debian.org/archive/debian/20240306T150558Z/pool/main/g/golang-defaults/golang-defaults_$(DEBIAN_GOLANG_VERSION).tar.xz)
 	$(call EXTRACT_TAR,go$(GOLANG_VERSION).src.tar.gz,go,golang)
 	$(call EXTRACT_TAR,golang-defaults_$(DEBIAN_GOLANG_VERSION).tar.xz,golang-defaults-$(DEBIAN_GOLANG_VERSION),golang/debian)
 	if [ ! -f $(BUILD_WORK)/golang/src/syscall/zsyscall_ios_arm64.go ]; then \
@@ -66,7 +66,9 @@ golang: golang-setup
 	$(LN_S) ../lib/go-$(GOLANG_MAJOR_V)/bin/gofmt $(BUILD_STAGE)/golang/go/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/gofmt
 	# Setup golang-X.Y-go
 	mkdir -p $(BUILD_STAGE)/golang/go-v/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/{lib,share}/go-$(GOLANG_MAJOR_V)/pkg
-	cp -a $(BUILD_WORK)/golang/{VERSION,bin,go.env} $(BUILD_STAGE)/golang/go-v/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/go-$(GOLANG_MAJOR_V)/
+	cp -a $(BUILD_WORK)/golang/{VERSION,go.env} $(BUILD_STAGE)/golang/go-v/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/go-$(GOLANG_MAJOR_V)/
+	mkdir -p $(BUILD_STAGE)/golang/go-v/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/go-$(GOLANG_MAJOR_V)/bin
+	cp -a $(BUILD_WORK)/golang/bin/{go,gofmt} $(BUILD_STAGE)/golang/go-v/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/go-$(GOLANG_MAJOR_V)/bin/
 	cp -a $(BUILD_WORK)/golang/pkg/tool $(BUILD_STAGE)/golang/go-v/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/go-$(GOLANG_MAJOR_V)/pkg
 	cp -a $(BUILD_WORK)/golang/pkg/include $(BUILD_STAGE)/golang/go-v/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share/go-$(GOLANG_MAJOR_V)/pkg
 	$(LN_S) ../../../share/go-$(GOLANG_MAJOR_V)/pkg/include $(BUILD_STAGE)/golang/go-v/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/go-$(GOLANG_MAJOR_V)/pkg/include
@@ -82,7 +84,10 @@ golang: golang-setup
 	cp --parent -v $$GENERATED_FILES $(BUILD_STAGE)/golang/go-v/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share/go-$(GOLANG_MAJOR_V); \
 	cd $(BUILD_STAGE)/golang/src/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share/go-$(GOLANG_MAJOR_V); \
 	rm -v -f $$GENERATED_FILES
-	$(call AFTER_BUILD)
+	# Preserve source .syso objects; rewrite only the target programs.
+	$(call AFTER_BUILD,,golang/go-v)
+	$(call AFTER_BUILD,,golang/go)
+	touch $(BUILD_WORK)/golang/.build_complete
 endif
 
 golang-package: golang-stage
