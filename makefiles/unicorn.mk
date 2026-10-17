@@ -29,7 +29,7 @@ unicorn: unicorn-setup
 		build \
 		--executable="$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/python3" \
 		install \
-		--install-layout=deb \
+		--install-lib="$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/python3/dist-packages" \
 		--root="$(BUILD_STAGE)/unicorn" \
 		--prefix="$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)"
 	find $(BUILD_STAGE)/unicorn -name __pycache__ -prune -exec rm -rf {} \;
