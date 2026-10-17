@@ -16,7 +16,7 @@ libjson-c:
 else
 libjson-c: libjson-c-setup
 	cd $(BUILD_WORK)/libjson-c && cmake \
-		$(DEFAULT_CMAKE_FLAGS)
+		$(DEFAULT_CMAKE_FLAGS) \
 		.
 	+$(MAKE) -C $(BUILD_WORK)/libjson-c install \
 		DESTDIR=$(BUILD_STAGE)/libjson-c

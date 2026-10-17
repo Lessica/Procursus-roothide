@@ -1,0 +1,12 @@
+--- a/gnu/obstack.c
++++ b/gnu/obstack.c
+@@ -327,8 +327,8 @@
+ #  endif
+ 
+-static _Noreturn void
+-print_and_abort (void)
++static void
++print_and_abort (void) __attribute_noreturn__
+ {
+   /* Don't change any of these strings.  Yes, it would be possible to add
+      the newline to the string and use fputs or so.  But this must not
