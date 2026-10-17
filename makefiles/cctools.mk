@@ -17,6 +17,9 @@ cctools-setup: setup
 	mkdir -p $(BUILD_WORK)/cctools/subprojects
 	$(call EXTRACT_TAR,ld64-$(LD64_COMMIT).tar.gz,ld64-$(LD64_COMMIT),cctools/subprojects/ld64)
 	mkdir -p $(BUILD_WORK)/cctools/build
+	# The iOS SDK omits the x86 relocation formats that this cross-linker reads.
+	mkdir -p $(BUILD_WORK)/cctools/subprojects/ld64/EXTERNAL_HEADERS/darwin/mach-o/x86_64
+	cp $(BUILD_WORK)/cctools/include/mach-o/x86_64/reloc.h $(BUILD_WORK)/cctools/subprojects/ld64/EXTERNAL_HEADERS/darwin/mach-o/x86_64/
 	echo -e "[host_machine]\n \
 	system = 'darwin'\n \
 	cpu_family = '$(shell echo $(GNU_HOST_TRIPLE) | cut -d- -f1)'\n \
@@ -42,12 +45,13 @@ cctools:
 	@echo "Using previously built cctools."
 else
 cctools: cctools-setup llvm uuid tapi xar
-	cd $(BUILD_WORK)/cctools/build && LIBRARY_PATH="$(TARGET_SYSROOT)/usr/lib:$(BUILD_BASE)$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib" meson setup \
+	cd $(BUILD_WORK)/cctools/build && CMAKE_PREFIX_PATH="$(BUILD_BASE)$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/llvm-$(LLVM_MAJOR_V):$${CMAKE_PREFIX_PATH}" LIBRARY_PATH="$(TARGET_SYSROOT)/usr/lib:$(BUILD_BASE)$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib" meson setup \
 		--cross-file cross.txt \
 		-Dld64:supported-archs="x86_64,x86_64h,i386,armv4t,armv5,armv6,armv7,armv7f,armv7k,armv7s,armv6m,armv7m,armv7em,armv8,arm64,arm64e,arm64v8,arm64_32,riscv" \
 		..
+	meson compile -C $(BUILD_WORK)/cctools/build -j$(CORE_COUNT)
 	cd $(BUILD_WORK)/cctools/build; \
-		DESTDIR="$(BUILD_STAGE)/cctools" meson install
+		DESTDIR="$(BUILD_STAGE)/cctools" meson install --no-rebuild
 	$(call AFTER_BUILD)
 endif
 

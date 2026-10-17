@@ -278,9 +278,11 @@ endif
 	# Let's build wrappers now
 	mkdir -p $(BUILD_STAGE)/llvm/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/
 	for tool in bbc clang clang++ clang-cpp clang-cl flang-new llc swift swiftc; do \
-		$(CC) $(CFLAGS) $(LDFLAGS) $(BUILD_MISC)/llvm/wrapper.c -o $(BUILD_STAGE)/llvm/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/$$tool-$(LLVM_MAJOR_V) \
+		version="$(LLVM_MAJOR_V)"; \
+		case "$$tool" in swift|swiftc) version="$(SWIFT_VERSION)" ;; esac; \
+		$(CC) $(CFLAGS) $(LDFLAGS) $(BUILD_MISC)/llvm/wrapper.c -o $(BUILD_STAGE)/llvm/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/$$tool-$$version \
 			-DTOOL=\"$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/llvm-$(LLVM_MAJOR_V)/bin/$$tool\" -DDEFAULT_SYSROOT=\"$(ON_DEVICE_SDK_PATH)\" \
-			-DEXTRA_CPATH=\"$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include\" -DEXTRA_LIBRARY_PATH=\"$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib\"; \
+			-DEXTRA_CPATH=\"$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include\" -DEXTRA_LIBRARY_PATH=\"$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib\" || exit 1; \
 	done
 
 ifeq ($(MEMO_ARCH), x86_64)
@@ -313,7 +315,7 @@ llvm-package: llvm-stage
 	# llvm.mk Prep llvm-bolt
 	mkdir -p $(BUILD_DIST)/llvm-bolt/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin
 	for bin in llvm-bolt llvm-bolt-heatmap llvm-boltdiff perf2bolt; do \
-		$(LN_S) $$bin-$(LLVM_MAJOR_V) $(BUILD_DIST)/llvm-bolt/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/$$bin; \
+		$(LN_S) $$bin-$(LLVM_MAJOR_V) $(BUILD_DIST)/llvm-bolt/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/$$bin; \
 	done
 
 ifeq ($(MEMO_ARCH),x86_64)
@@ -396,7 +398,7 @@ endif
 	# llvm.mk Prep libflang-$(LLVM_MAJOR_V)-dev
 	mkdir -p $(BUILD_DIST)/libflang-$(LLVM_MAJOR_V)-dev/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/llvm-$(LLVM_MAJOR_V)/{lib,include}
 	cp -a $(BUILD_STAGE)/llvm/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/llvm-$(LLVM_MAJOR_V)/include/flang $(BUILD_DIST)/libflang-$(LLVM_MAJOR_V)-dev/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/llvm-$(LLVM_MAJOR_V)/include
-	cp -a $(BUILD_STAGE)/llvm/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/llvm-$(LLVM_MAJOR_V)/lib/lib{Fortran,FIR,flang}*.a $(BUILD_DIST)/libflang-$(LLVM_MAJOR_V)-dev/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/llvm-$(LLVM_MAJOR_V)/include
+	cp -a $(BUILD_STAGE)/llvm/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/llvm-$(LLVM_MAJOR_V)/lib/lib{Fortran,FIR,flang}*.a $(BUILD_DIST)/libflang-$(LLVM_MAJOR_V)-dev/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/llvm-$(LLVM_MAJOR_V)/lib
 
 	# llvm.mk Prep libc++-$(LLVM_MAJOR_V)-dev
 	mkdir -p $(BUILD_DIST)/libc++-$(LLVM_MAJOR_V)-dev/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/llvm-$(LLVM_MAJOR_V)/{include,lib}
