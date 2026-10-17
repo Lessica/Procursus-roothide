@@ -21,7 +21,8 @@ libssh:
 else
 libssh: libssh-setup openssl
 	cd $(BUILD_WORK)/libssh/argp-standalone/build && cmake .. \
-		$(DEFAULT_CMAKE_FLAGS)
+		$(DEFAULT_CMAKE_FLAGS) \
+		-DHAVE_STRERROR_R=0
 	+$(MAKE) -C $(BUILD_WORK)/libssh/argp-standalone/build
 	cd $(BUILD_WORK)/libssh/build && cmake .. \
 		$(DEFAULT_CMAKE_FLAGS) \

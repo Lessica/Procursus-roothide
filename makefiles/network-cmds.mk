@@ -17,7 +17,9 @@ network-cmds-setup: setup
 	mkdir -p $(BUILD_WORK)/network-cmds/include/{os,sys,firehose,arm,machine}
 	cp -af $(MACOSX_SYSROOT)/usr/include/nlist.h $(BUILD_WORK)/network-cmds/include
 	mkdir -p $(BUILD_WORK)/network-cmds/include/{net/{classq,},corecrypto}
-	cp -a $(BUILD_BASE)$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include/sys/{proc_info,proc_info_private,event_private}.h $(BUILD_WORK)/network-cmds/include/sys
+	rm -f $(BUILD_WORK)/network-cmds/include/sys/{proc_info,proc_info_private,event,event_private}.h
+	@$(call DOWNLOAD_FILES,$(BUILD_WORK)/network-cmds/include/sys, \
+		https://raw.githubusercontent.com/apple-oss-distributions/xnu/xnu-10002.41.9/bsd/sys/{proc_info$(comma)proc_info_private$(comma)event$(comma)event_private}.h)
 	cp -a $(BUILD_BASE)$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include/{libiosexec,stdlib,unistd,libutil}.h $(BUILD_WORK)/network-cmds/include
 	cp -a $(BUILD_BASE)$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include/os/{internal,{base,log}_private.h,log.h} $(BUILD_WORK)/network-cmds/include/os
 	cp -a $(BUILD_BASE)$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include/firehose/{firehose_types,tracepoint}_private.h $(BUILD_WORK)/network-cmds/include/firehose
@@ -26,7 +28,7 @@ network-cmds-setup: setup
 	$(LN_S) $(BUILD_WORK)/network-cmds/include/{,System}
 
 	@$(call DOWNLOAD_FILES,$(BUILD_WORK)/network-cmds/include/net, \
-		https://raw.githubusercontent.com/apple-oss-distributions/xnu/xnu-10002.41.9/bsd/net/{content_filter$(comma)packet_mangler$(comma)pktap$(comma)net_api_stats$(comma)if_ports_used$(comma)if_bridgevar$(comma)ntstat$(comma)if_llreach$(comma)route$(comma)route_private$(comma)if$(comma)if_private$(comma)if_var$(comma)if_var_private$(comma)if_mib$(comma)if_arp$(comma)if_media$(comma)radix$(comma)net_perf$(comma)if_6lowpan_var$(comma)if_bond_var$(comma)network_agent$(comma)if_fake_var$(comma)if_vlan_var$(comma)if_fake_var$(comma)bpf$(comma)lacp$(comma)if_bond_internal}.h)
+		https://raw.githubusercontent.com/apple-oss-distributions/xnu/xnu-10002.41.9/bsd/net/{content_filter$(comma)packet_mangler$(comma)pktap$(comma)net_api_stats$(comma)if_ports_used$(comma)if_bridgevar$(comma)ntstat$(comma)if_llreach$(comma)route$(comma)route_private$(comma)if$(comma)if_private$(comma)if_var$(comma)if_var_private$(comma)if_mib$(comma)if_arp$(comma)if_media$(comma)radix$(comma)net_perf$(comma)if_bond_var$(comma)network_agent$(comma)if_fake_var$(comma)if_vlan_var$(comma)if_fake_var$(comma)bpf$(comma)lacp$(comma)if_bond_internal}.h)
 	@$(call DOWNLOAD_FILES,$(BUILD_WORK)/network-cmds/include/net/pktsched, \
 		https://raw.githubusercontent.com/apple-oss-distributions/xnu/xnu-10002.41.9/bsd/net/pktsched/pktsched{$(comma)_{cbq$(comma)fairq$(comma)fq_codel$(comma)hfsc$(comma)netem$(comma)priq$(comma)rmclass$(comma)fq_codel}}.h)
 	@$(call DOWNLOAD_FILES,$(BUILD_WORK)/network-cmds/include/net/classq, \
@@ -44,6 +46,7 @@ network-cmds-setup: setup
 
 	sed -i 's/#if INET6/#ifdef INET6/g' $(BUILD_WORK)/network-cmds/include/sys/sockio.h
 	sed -i '1s|^|#include <TargetConditionals.h>\n|' $(BUILD_WORK)/network-cmds/{dnctl,frame_delay,ecnprobe,pktapctl,pktmnglr,mptcp_client}/*.c
+	perl -0pi -e 's/(sysctlbyname\("net\.inet6\.send\.cga_parameters", oldb, \&oldn,\n\s*NULL, )NULL\);/$${1}0);/' $(BUILD_WORK)/network-cmds/ndp.tproj/ndp.c
 	sed -i '/__CCT_DECLARE_CONSTRAINED_PTR_TYPES/d' $(BUILD_WORK)/network-cmds/include/sys/socket.h
 	sed -i 's/	IF_NETEM_MODEL_NLC = 1/	IF_NETEM_MODEL_IOD = 2,IF_NETEM_MODEL_FPD = 3,IF_NETEM_MODEL_NLC = 1/g' $(BUILD_WORK)/network-cmds/include/net/if_var_private.h
 
