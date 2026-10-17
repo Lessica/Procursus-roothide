@@ -12,6 +12,11 @@ LLVM_REPOSITORY      := https://github.com/apple/llvm-project.git
 SWIFT_VERSION        := 5.9.2
 SWIFT_SUFFIX         := RELEASE
 SWIFT_SYNTAX_VERSION := 509.0.2
+LLVM_RT_PLATFORM     := $(if $(findstring iphoneos,$(MEMO_TARGET)),ios,$(if $(findstring appletvos,$(MEMO_TARGET)),tvos,$(if $(findstring watchos,$(MEMO_TARGET)),watchos,osx)))
+ifneq (,$(findstring roothide,$(MEMO_TARGET)))
+# Bundle sealing follows PACK's final per-file entitlement merge.
+LLVM_SEAL_SOURCEKITD = $(LDID) -M -S$(BUILD_MISC)/entitlements/roothide.xml $(BUILD_DIST)/swift-$(SWIFT_VERSION)/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/llvm-$(LLVM_MAJOR_V)/lib/sourcekitd.framework
+endif
 DEB_SWIFT_V          ?= $(SWIFT_VERSION)~$(SWIFT_SUFFIX)
 DEB_LLVM_V           ?= $(LLVM_VERSION)~$(DEB_SWIFT_V)-1
 
@@ -292,7 +297,23 @@ endif
 
 	# Note the mkdir above. These are just blank folders.
 	rm -rf $(BUILD_STAGE)/llvm/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/llvm-16/lib/swift{,_static}/$(PLATFORM)/Cxx{,Stdlib}.swiftmodule
-	$(call AFTER_BUILD,,,$(MEMO_LINK_PREFIX)$(MEMO_SUB_PREFIX)/lib/llvm-$(LLVM_MAJOR_V)/lib)
+ifneq (,$(findstring roothide,$(MEMO_TARGET)))
+	# Foreign compiler-rt runtimes are cross-link inputs, not libraries loaded
+	# by this device. Preserve their platform imports and original signatures.
+	mkdir -p $(BUILD_WORK)/llvm/foreign-compiler-rt
+	for runtime in $(BUILD_STAGE)/llvm/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/llvm-$(LLVM_MAJOR_V)/lib/clang/$(LLVM_VERSION)/lib/darwin/*_dynamic.dylib; do \
+		[ -f "$$runtime" ] || continue; \
+		case "$$runtime" in \
+			*_$(LLVM_RT_PLATFORM)_dynamic.dylib) ;; \
+			*) mv "$$runtime" $(BUILD_WORK)/llvm/foreign-compiler-rt/ || exit 1 ;; \
+		esac; \
+	done
+endif
+	# Mark complete only after all platform runtime resources are restored.
+	$(call AFTER_BUILD,,,$(MEMO_LINK_PREFIX)$(MEMO_SUB_PREFIX)/lib/llvm-$(LLVM_MAJOR_V)/lib,,defer)
+ifneq (,$(findstring roothide,$(MEMO_TARGET)))
+	cp -a $(BUILD_WORK)/llvm/foreign-compiler-rt/. $(BUILD_STAGE)/llvm/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/llvm-$(LLVM_MAJOR_V)/lib/clang/$(LLVM_VERSION)/lib/darwin/ || { rm -f $(BUILD_WORK)/llvm/.build_complete; exit 1; }
+endif
 ifneq ($(MEMO_PREFIX),)
 	-for bin in bin/flang-new bin/lldb-server lib/liblldb.16.0.0.dylib; do \
 		$(I_N_T) -change @rpath/libc++.1.dylib /usr/lib/libc++.1.dylib $(BUILD_STAGE)/llvm/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/llvm-$(LLVM_MAJOR_V)/$$bin; \
@@ -300,6 +321,7 @@ ifneq ($(MEMO_PREFIX),)
 	-$(I_N_T) -add_rpath $(MEMO_LINK_PREFIX)$(MEMO_SUB_PREFIX)/lib/llvm-$(LLVM_MAJOR_V)/lib/sourcekitd.framework $(BUILD_STAGE)/llvm/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/llvm-$(LLVM_MAJOR_V)/bin/sourcekitd-test
 	-$(I_N_T) -add_rpath $(MEMO_LINK_PREFIX)$(MEMO_SUB_PREFIX)/lib/llvm-$(LLVM_MAJOR_V)/lib/sourcekitd.framework $(BUILD_STAGE)/llvm/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/llvm-$(LLVM_MAJOR_V)/bin/sourcekitd-repl
 endif
+	touch $(BUILD_WORK)/llvm/.build_complete
 endif
 
 llvm-package: llvm-stage
@@ -594,6 +616,10 @@ endif
 
 
 	# llvm.mk Sign
+ifneq (,$(findstring roothide,$(MEMO_TARGET)))
+	# Device sanitizer runtimes were rewritten above and must be re-signed.
+	$(call SIGN,libclang-common-$(LLVM_MAJOR_V)-dev/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/llvm-$(LLVM_MAJOR_V)/lib/clang/$(LLVM_VERSION)/lib/darwin/*_$(LLVM_RT_PLATFORM)_dynamic.dylib,general.xml)
+endif
 	$(call SIGN,clang-$(LLVM_MAJOR_V),general.xml)
 	$(call SIGN,clangd-$(LLVM_MAJOR_V),general.xml)
 	$(call SIGN,clang-format-$(LLVM_MAJOR_V),general.xml)
@@ -602,6 +628,8 @@ ifeq (,$(findstring darwin,$(MEMO_TARGET)))
 	$(call SIGN,debugserver-$(LLVM_MAJOR_V),debugserver.xml)
 endif
 	$(call SIGN,libclang-cpp$(LLVM_MAJOR_V),general.xml)
+	$(call SIGN,libclang1-$(LLVM_MAJOR_V),general.xml)
+	$(call SIGN,llvm-$(LLVM_MAJOR_V)-dev/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/llvm-$(LLVM_MAJOR_V)/lib/libRemarks.dylib,general.xml)
 	$(call SIGN,liblldb-$(LLVM_MAJOR_V),general.xml)
 	$(call SIGN,libllvm$(LLVM_MAJOR_V),general.xml)
 	$(call SIGN,lldb-$(LLVM_MAJOR_V),general.xml)
@@ -643,7 +671,7 @@ endif
 	$(call PACK,libllvm$(LLVM_MAJOR_V),DEB_LLVM_V)			# Provides libllvm-polly
 	$(call PACK,lldb-$(LLVM_MAJOR_V),DEB_LLVM_V)
 	$(call PACK,lldb,DEB_LLVM_V)
-	$(call PACK,swift-$(SWIFT_VERSION),DEB_SWIFT_V)
+	$(call PACK,swift-$(SWIFT_VERSION),DEB_SWIFT_V,,,$(LLVM_SEAL_SOURCEKITD))
 	$(call PACK,swift,DEB_SWIFT_V)
 	$(call PACK,llvm-$(LLVM_MAJOR_V),DEB_LLVM_V)			# Provides dsymutil
 	$(call PACK,llvm,DEB_LLVM_V)

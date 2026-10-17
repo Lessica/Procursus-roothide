@@ -17,6 +17,7 @@ ldid:
 	@echo "Using previously built ldid."
 else
 ldid: ldid-setup openssl libplist
+	rm -rf $(BUILD_STAGE)/ldid
 	+$(MAKE) -C $(BUILD_WORK)/ldid install \
 		PREFIX="$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)" \
 		VERSION="$(LDID_VERSION)" \

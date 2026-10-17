@@ -887,6 +887,7 @@ endif
 #
 ###
 
+# Argument 5 lets a recipe defer completion until its remaining stage work ends.
 AFTER_BUILD = \
 	if [ ! -z "$(2)" ]; then \
 		pkg="$(2)"; \
@@ -939,15 +940,17 @@ AFTER_BUILD = \
 		cp -af $(BUILD_STAGE)/$$pkg/* $(BUILD_BASE); \
 	fi; \
 	[ -d $(BUILD_WORK)/$$pkg/ ] || mkdir $(BUILD_WORK)/$$pkg/; \
-	touch $(BUILD_WORK)/$$pkg/.build_complete; \
+	if [ -z "$(5)" ]; then touch $(BUILD_WORK)/$$pkg/.build_complete; fi; \
 	find $(BUILD_BASE) -name '*.la' \( -type f -o -type l \) -delete
 
+# Argument 5 finalizes signed content before metadata and payload hashes are written.
 PACK = \
 	if [ ! -z "$(findstring roothide,$(MEMO_TARGET))" ];then \
 		for file in $$(find $(BUILD_DIST)/$(1) -type f -exec sh -c "file -b '{}' | grep 'Mach-O' | grep -q 'executable'" \; -print); do \
 			$(LDID) -M -S$(BUILD_MISC)/entitlements/roothide.xml $$file || exit 1; \
 		done; \
 	fi; \
+	$(if $(5),$(5) || exit 1;) \
 	if [ -z "$(4)" ]; then \
 		find $(BUILD_DIST)/$(1) -name '*.la' \( -type f -o -type l \) -delete; \
 	fi; \
