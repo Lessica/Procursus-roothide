@@ -3,6 +3,7 @@ Maintainer: @DEB_MAINTAINER@
 Architecture: @DEB_ARCH@
 Version: @DEB_POPT_V@
 Section: Libraries
+Depends: libintl8 (>= 0.22)
 Description: lib for parsing cmdline parameters
  Popt was heavily influenced by the getopt() and getopt_long() functions,
  but it allows more powerful argument expansion. It can parse arbitrary

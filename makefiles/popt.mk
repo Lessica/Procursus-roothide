@@ -14,9 +14,9 @@ ifneq ($(wildcard $(BUILD_WORK)/popt/.build_complete),)
 popt:
 	@echo "Using previously built popt."
 else
-popt: popt-setup
-	cd $(BUILD_WORK)/popt; \
-	./autogen.sh; \
+popt: popt-setup gettext
+	cd $(BUILD_WORK)/popt && \
+	./autogen.sh && \
 	./configure -C \
 		$(DEFAULT_CONFIGURE_FLAGS)
 

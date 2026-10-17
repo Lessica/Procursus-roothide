@@ -1,0 +1,55 @@
+--- a/main.c
++++ b/main.c
+@@ -247 +247 @@
+-static void become_copy_as_user()
++static void become_copy_as_user(void)
+--- a/log.c
++++ b/log.c
+@@ -134 +134 @@
+-static void syslog_init()
++static void syslog_init(void)
+--- a/hlink.c
++++ b/hlink.c
+@@ -100,2 +100,3 @@
+-static int hlink_compare_gnum(int *int1, int *int2)
+-{
++static int hlink_compare_gnum(const void *p1, const void *p2)
++{
++	const int *int1 = p1, *int2 = p2;
+@@ -120 +121 @@
+-	qsort(ndx_list, ndx_count, sizeof ndx_list[0], (int (*)()) hlink_compare_gnum);
++	qsort(ndx_list, ndx_count, sizeof ndx_list[0], hlink_compare_gnum);
+--- a/lib/pool_alloc.c
++++ b/lib/pool_alloc.c
+@@ -12 +12 @@
+-	void			(*bomb)();	/* called if malloc fails */
++	void			(*bomb)(const char*, const char*, int);	/* called if malloc fails */
+--- a/zlib/trees.c
++++ b/zlib/trees.c
+@@ -234 +234 @@
+-local void tr_static_init()
++local void tr_static_init(void)
+@@ -328 +328 @@
+-void gen_trees_header()
++void gen_trees_header(void)
+--- a/zlib/inflate.c
++++ b/zlib/inflate.c
+@@ -325 +325 @@
+-void makefixed()
++void makefixed(void)
+--- a/zlib/crc32.c
++++ b/zlib/crc32.c
+@@ -90 +90 @@
+-local void make_crc_table()
++local void make_crc_table(void)
+@@ -190 +190 @@
+-const z_crc_t FAR * ZEXPORT get_crc_table()
++const z_crc_t FAR * ZEXPORT get_crc_table(void)
+--- a/zlib/zutil.c
++++ b/zlib/zutil.c
+@@ -30 +30 @@
+-const char * ZEXPORT zlibVersion()
++const char * ZEXPORT zlibVersion(void)
+@@ -35 +35 @@
+-uLong ZEXPORT zlibCompileFlags()
++uLong ZEXPORT zlibCompileFlags(void)
