@@ -4,11 +4,21 @@ endif
 
 ifeq (,$(findstring darwin,$(MEMO_TARGET)))
 STRAPPROJECTS += base
-BASE_VERSION  := 1-6
+BASE_VERSION  := 2
 DEB_BASE_V    ?= $(BASE_VERSION)
 
+APPLE_FILES_VERSION := 926.0.2
+
+base-setup: setup
+	$(call GITHUB_ARCHIVE,apple-oss-distributions,files,$(APPLE_FILES_VERSION),files-$(APPLE_FILES_VERSION))
+	$(call EXTRACT_TAR,files-$(APPLE_FILES_VERSION).tar.gz,files-files-$(APPLE_FILES_VERSION),base)
+	find $(BUILD_WORK)/base -name Makefile -delete
+
+ifneq ($(wildcard $(BUILD_WORK)/base/.build_complete),)
 base:
-	rm -rf $(BUILD_STAGE)/base
+	@echo "Using previously built base."
+else
+base: base-setup
 ifeq (,$(MEMO_ROOTLESS))
 	mkdir -p \
 		$(BUILD_STAGE)/base/$(MEMO_PREFIX)/{Applications,bin,boot,dev,lib,mnt,sbin,tmp,\
@@ -31,6 +41,9 @@ var/{backups,cache,db,empty,lib/misc,local,lock,log,logs,mobile,msgs,preferences
 	sed -e 's|@MEMO_PREFIX@|$(MEMO_PREFIX)|g' -e 's|@MEMO_SUB_PREFIX@|$(MEMO_SUB_PREFIX)|g' < $(BUILD_MISC)/passwd/master.passwd > $(BUILD_STAGE)/base/$(MEMO_PREFIX)/etc/master.passwd
 	sed -e 's|@MEMO_PREFIX@|$(MEMO_PREFIX)|g' -e 's|@MEMO_SUB_PREFIX@|$(MEMO_SUB_PREFIX)|g' < $(BUILD_MISC)/passwd/group > $(BUILD_STAGE)/base/$(MEMO_PREFIX)/etc/group
 endif
+	install -m644 $(BUILD_WORK)/base/usr/share/dict/web2 $(BUILD_STAGE)/base/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share/dict
+	cp -a $(BUILD_WORK)/base/usr/share/man $(BUILD_STAGE)/base/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share
+	$(LN_S) web2 $(BUILD_STAGE)/base/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share/dict/words
 	$(LN_S) $(MEMO_ROOTFS)/var/db/timezone/localtime $(BUILD_STAGE)/base/$(MEMO_PREFIX)/etc/localtime
 	touch $(BUILD_STAGE)/base/$(MEMO_PREFIX)/var/run/utmp
 
@@ -38,6 +51,8 @@ ifneq (,$(findstring roothide,$(MEMO_TARGET)))
 	rm -r $(BUILD_STAGE)/base/$(MEMO_PREFIX)/dev
 	$(LN_S) $(MEMO_ROOTFS)/dev $(BUILD_STAGE)/base/$(MEMO_PREFIX)/dev
 	$(LN_S) $(MEMO_ROOTFS)/ $(BUILD_STAGE)/base/$(MEMO_PREFIX)$(MEMO_ROOTFS)
+endif
+	$(call AFTER_BUILD)
 endif
 
 base-package: base-stage
@@ -48,8 +63,6 @@ base-package: base-stage
 	cp -a $(BUILD_STAGE)/base $(BUILD_DIST)
 
 	$(FAKEROOT) chmod 0644 $(BUILD_DIST)/base/$(MEMO_PREFIX)/var/run/utmp
-	$(FAKEROOT) chown 0:1 $(BUILD_DIST)/base/$(MEMO_PREFIX)/var/run
-	$(FAKEROOT) chown 0:3 $(BUILD_DIST)/base/$(MEMO_PREFIX)/var/empty
 ifeq (,$(MEMO_ROOTLESS))
 	$(FAKEROOT) chown 0:80 $(BUILD_DIST)/base/{,Applications,Library/{,Frameworks,Preferences,Ringtones,Wallpaper},etc,tmp,var/{,db}}
 	$(FAKEROOT) chown 0:20 $(BUILD_DIST)/base/var/local
@@ -61,10 +74,13 @@ ifeq (,$(MEMO_ROOTLESS))
 else
 	$(FAKEROOT) chown -R 0:0 $(BUILD_DIST)/base
 	$(FAKEROOT) chown -R 501:501 $(BUILD_DIST)/base/$(MEMO_PREFIX)/var/mobile
-	$(FAKEROOT) chmod 0644 $(BUILD_STAGE)/base/$(MEMO_PREFIX)/etc/{passwd,group}
-	$(FAKEROOT) chmod 0600 $(BUILD_STAGE)/base/$(MEMO_PREFIX)/etc/master.passwd
+	$(FAKEROOT) chmod 0644 $(BUILD_DIST)/base/$(MEMO_PREFIX)/etc/{passwd,group}
+	$(FAKEROOT) chmod 0600 $(BUILD_DIST)/base/$(MEMO_PREFIX)/etc/master.passwd
 	$(FAKEROOT) chmod 1775 $(BUILD_DIST)/base/$(MEMO_PREFIX)/tmp
 endif
+
+	$(FAKEROOT) chown 0:1 $(BUILD_DIST)/base/$(MEMO_PREFIX)/var/run
+	$(FAKEROOT) chown 0:3 $(BUILD_DIST)/base/$(MEMO_PREFIX)/var/empty
 
 	# base.mk Make .debs
 	$(call PACK,base,DEB_BASE_V,2)
