@@ -5,7 +5,7 @@ endif
 
 SUBPROJECTS           += libjpeg-turbo
 LIBJPEG_TURBO_VERSION := 2.0.6
-DEB_LIBJPEG_TURBO_V   ?= $(LIBJPEG_TURBO_VERSION)
+DEB_LIBJPEG_TURBO_V   ?= $(LIBJPEG_TURBO_VERSION)-1
 
 libjpeg-turbo-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE), \

@@ -18,7 +18,9 @@ libplist:
 	@echo "Using previously built libplist."
 else
 libplist: libplist-setup
-	cd $(BUILD_WORK)/libplist && ./autogen.sh \
+	cd $(BUILD_WORK)/libplist && NOCONFIGURE=1 ./autogen.sh && \
+		sed -i 's/-keep_private_externs -nostdlib/-keep_private_externs $(PLATFORM_VERSION_MIN) -arch $(MEMO_ARCH) -nostdlib/g' $(BUILD_WORK)/libplist/configure && \
+		./configure \
 		$(DEFAULT_CONFIGURE_FLAGS) \
 		PACKAGE_VERSION="$(LIBPLIST_VERSION)" \
 		--without-cython

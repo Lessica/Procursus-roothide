@@ -81,7 +81,7 @@ libcdio-package: libcdio-stage
 	$(call SIGN,libiso9660-11,general.xml)
 	$(call SIGN,libiso9660++0,general.xml)
 	$(call SIGN,libudf0,general.xml)
-	$(call SIGN,libcdio-utils,dd.xml)
+	$(call SIGN,libcdio-utils,general.xml)
 	
 	# libcdio.mk Make .debs
 	$(call PACK,libcdio19,DEB_LIBCDIO_V)

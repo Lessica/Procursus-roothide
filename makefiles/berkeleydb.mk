@@ -11,6 +11,7 @@ berkeleydb-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://fossies.org/linux/misc/db-$(BDB_VERSION).tar.gz)
 	$(call EXTRACT_TAR,db-$(BDB_VERSION).tar.gz,db-$(BDB_VERSION),berkeleydb)
 	$(call DO_PATCH,berkeleydb,berkeleydb,-p1)
+	sed -i 's/-keep_private_externs -nostdlib/-keep_private_externs $(PLATFORM_VERSION_MIN) -arch $(MEMO_ARCH) -nostdlib/g' $(BUILD_WORK)/berkeleydb/dist/aclocal/libtool.m4
 
 ifneq ($(wildcard $(BUILD_WORK)/berkeleydb/.build_complete),)
 berkeleydb:
@@ -18,7 +19,6 @@ berkeleydb:
 else
 berkeleydb: berkeleydb-setup gettext openssl
 	cd $(BUILD_WORK)/berkeleydb/dist && ./s_config
-	sed -i ':a;N;$$!ba;s|\n\t10\.\*)\n\(\s*_lt_dar_allow_undefined\)|\n\t*)\n\1|g' $(BUILD_WORK)/berkeleydb/dist/configure
 	cd $(BUILD_WORK)/berkeleydb/build_unix && ../dist/configure \
 		$(DEFAULT_CONFIGURE_FLAGS) \
 		--includedir=$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include/db181 \
