@@ -699,7 +699,8 @@ DEFAULT_CONFIGURE_FLAGS := \
 	--enable-silent-rules \
 	--disable-dependency-tracking \
 	--enable-shared \
-	--enable-static
+	--enable-static \
+	PKG_CONFIG="$(BUILD_TOOLS)/cross-pkg-config"
 
 DEFAULT_PERL_MAKE_FLAGS := \
 	INSTALLSITEARCH=$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/perl5/$${PERL_MAJOR} \

@@ -21,8 +21,9 @@ coreutils-setup: setup
 	$(call EXTRACT_TAR,coreutils-$(COREUTILS_VERSION).tar.xz,coreutils-$(COREUTILS_VERSION),coreutils)
 	$(call DO_PATCH,coreutils,coreutils,-p1)
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE), \
-		https://git.cameronkatri.com/getent-darwin/snapshot/getent-darwin-$(GETENTDARWIN_COMMIT).tar.zst)
-	$(call EXTRACT_TAR,getent-darwin-$(GETENTDARWIN_COMMIT).tar.zst,getent-darwin-$(GETENTDARWIN_COMMIT),coreutils/getent-darwin)
+		https://github.com/CRKatri/getent-darwin/archive/$(GETENTDARWIN_COMMIT).tar.gz)
+	$(call CHECKSUM_VERIFY,sha256,$(GETENTDARWIN_COMMIT).tar.gz,520ccac74ef4f8a6acbce9cb67ba7fa45614eba3a8b1fedeb0b1e8e4cae5a03f)
+	$(call EXTRACT_TAR,$(GETENTDARWIN_COMMIT).tar.gz,getent-darwin-$(GETENTDARWIN_COMMIT),coreutils/getent-darwin)
 
 ifneq ($(wildcard $(BUILD_WORK)/coreutils/.build_complete),)
 coreutils:

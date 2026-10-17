@@ -1,0 +1,12 @@
+--- a/add-shell
++++ b/add-shell
+@@ -28,8 +28,7 @@
+ 
+ for i
+ do
+-        REALDIR="$(dirname "$(realpath -m "$i")")/$(basename "$i")"
+-        for j in "$i" "$REALDIR"
++        for j in "$i"
+         do
+                 if ! grep -q "^${j}$" "$tmpfile"
+                 then

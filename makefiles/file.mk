@@ -38,7 +38,7 @@ file-package: file-stage
 	rm -rf $(BUILD_DIST)/file $(BUILD_DIST)/libmagic{1,-dev}
 	mkdir -p $(BUILD_DIST)/file/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share/man \
 		$(BUILD_DIST)/libmagic1/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/{lib,share} \
-		$(BUILD_DIST)/libmagic-dev/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/{lib,share/man}
+		$(BUILD_DIST)/libmagic-dev/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/{include,lib,share/man}
 
 	# file.mk Prep file
 	cp -a $(BUILD_STAGE)/file/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin $(BUILD_DIST)/file/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)
@@ -50,6 +50,7 @@ file-package: file-stage
 	cp -a $(BUILD_STAGE)/file/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share/misc $(BUILD_DIST)/libmagic1/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share
 
 	# file.mk Prep libmagic-dev
+	cp -a $(BUILD_STAGE)/file/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include/. $(BUILD_DIST)/libmagic-dev/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include
 	cp -a $(BUILD_STAGE)/file/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/!(libmagic.1.dylib) $(BUILD_DIST)/libmagic-dev/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib
 	cp -a $(BUILD_STAGE)/file/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share/man/man3 $(BUILD_DIST)/libmagic-dev/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share/man
 
