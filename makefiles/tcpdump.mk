@@ -9,7 +9,7 @@ DEB_TCPDUMP_V   ?= $(TCPDUMP_VERSION)-1
 tcpdump-setup: setup
 	$(call GITHUB_ARCHIVE,the-tcpdump-group,tcpdump,$(TCPDUMP_VERSION),tcpdump-$(TCPDUMP_VERSION))
 	$(call EXTRACT_TAR,tcpdump-$(TCPDUMP_VERSION).tar.gz,tcpdump-tcpdump-$(TCPDUMP_VERSION),tcpdump)
-	sed -i '1s/^/\#include \<sys\/_endian\.h\>/' $(BUILD_WORK)/tcpdump/*.c
+	sed -i '1s/^/\#include \<machine\/endian\.h\>\n\#include \<sys\/_endian\.h\>/' $(BUILD_WORK)/tcpdump/*.c
 	mkdir -p $(BUILD_WORK)/tcpdump/build
 
 ifneq ($(wildcard $(BUILD_WORK)/tcpdump/.build_complete),)
