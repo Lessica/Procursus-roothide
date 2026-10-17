@@ -24,10 +24,11 @@ lua-luv: lua-luv-setup libuv1 lua5.1 lua5.2 lua5.3 luajit
 		$(DEFAULT_CMAKE_FLAGS) \
 			-DLUA_BUILD_TYPE=System \
 			-DWITH_SHARED_LIBUV=ON \
-			-DBUILD_MODULE=ON \
+			-DBUILD_MODULE=OFF \
 			-DBUILD_SHARED_LIBS=ON \
 			-DWITH_LUA_ENGINE=Lua \
 			-DLUA_INCLUDE_DIR="$(BUILD_BASE)/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include/lua5.$$ver" \
+			-DLUA_LIBRARY="$(BUILD_BASE)/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/liblua5.$$ver.dylib" \
 			-DSHAREDLIBS_INSTALL_INC_DIR="$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include/lua5.$$ver/luv" \
 			../bundle; \
 		$(MAKE) -C $(BUILD_WORK)/lua-luv/build5$$ver; \
@@ -40,6 +41,19 @@ lua-luv: lua-luv-setup libuv1 lua5.1 lua5.2 lua5.3 luajit
 		$(I_N_T) -id $(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/liblua5.$$ver-luv.1.dylib $(BUILD_STAGE)/lua-luv/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/liblua5.$$ver-luv.$(LUA-LUV_VERSION).dylib; \
 		mv $(BUILD_STAGE)/lua-luv/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/pkgconfig/libluv.pc $(BUILD_STAGE)/lua-luv/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/pkgconfig/lua5.$$ver-luv.pc; \
 		sed -i "s/-lluv/-llua5.$$ver-luv/" $(BUILD_STAGE)/lua-luv/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/pkgconfig/lua5.$$ver-luv.pc; \
+		cd $(BUILD_WORK)/lua-luv/bundle/build5$$ver && LDFLAGS="$(LDFLAGS) -undefined dynamic_lookup" cmake \
+			$(DEFAULT_CMAKE_FLAGS) \
+			-DLUA_BUILD_TYPE=System \
+			-DWITH_SHARED_LIBUV=ON \
+			-DBUILD_MODULE=ON \
+			-DBUILD_SHARED_LIBS=ON \
+			-DWITH_LUA_ENGINE=Lua \
+			-DLUA_INCLUDE_DIR="$(BUILD_BASE)/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include/lua5.$$ver" \
+			-DSHAREDLIBS_INSTALL_INC_DIR="$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include/lua5.$$ver/luv" \
+			..; \
+		$(MAKE) -C $(BUILD_WORK)/lua-luv/bundle/build5$$ver; \
+		$(MAKE) -C $(BUILD_WORK)/lua-luv/bundle/build5$$ver install \
+			DESTDIR="$(BUILD_STAGE)/lua-luv"; \
 	done
 	cd $(BUILD_WORK)/lua-luv/buildjit && cmake \
 		$(DEFAULT_CMAKE_FLAGS) \

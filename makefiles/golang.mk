@@ -5,12 +5,12 @@ endif
 SUBPROJECTS           += golang
 GOLANG_MAJOR_V        := 1.22
 GOLANG_VERSION        := $(GOLANG_MAJOR_V).4
-DEBIAN_GOLANG_VERSION := 1.22~3~bpo12+1
+DEBIAN_GOLANG_VERSION := 1.22~3
 DEB_GOLANG_V          ?= $(GOLANG_VERSION)
 
 golang-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://go.dev/dl/go$(GOLANG_VERSION).src.tar.gz)
-	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),http://ftp.debian.org/debian/pool/main/g/golang-defaults/golang-defaults_$(DEBIAN_GOLANG_VERSION).tar.xz)
+	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://deb.debian.org/debian/pool/main/g/golang-defaults/golang-defaults_$(DEBIAN_GOLANG_VERSION).tar.xz)
 	$(call EXTRACT_TAR,go$(GOLANG_VERSION).src.tar.gz,go,golang)
 	$(call EXTRACT_TAR,golang-defaults_$(DEBIAN_GOLANG_VERSION).tar.xz,golang-defaults-$(DEBIAN_GOLANG_VERSION),golang/debian)
 	if [ ! -f $(BUILD_WORK)/golang/src/syscall/zsyscall_ios_arm64.go ]; then \
@@ -45,7 +45,6 @@ golang: golang-setup
 		CGO_LDFLAGS="-Os -L$(BUILD_BASE)/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib" \
 		./make.bash
 	GOTARGET="$(GOLANG_OS)_$(shell echo $(MEMO_TARGET) | cut -f2 -d-)"; \
-	rm -f "$(BUILD_WORK)/golang/bin/go_$${GOTARGET}_exec"; \
 	cd $(BUILD_WORK)/golang/pkg/tool/; \
 	for i in *; do \
 		if [ "$$i" != "$$GOTARGET" ]; then \

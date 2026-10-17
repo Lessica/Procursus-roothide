@@ -11,9 +11,11 @@ PCRE_VERSION  := 8.45
 DEB_PCRE_V    ?= $(PCRE_VERSION)-1
 
 pcre-setup: setup
-	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://downloads.sourceforge.net/pcre/pcre-$(PCRE_VERSION).tar.bz2)
+	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://downloads.sourceforge.net/pcre/pcre-$(PCRE_VERSION).tar.bz2{$(comma).sig})
+	$(call PGP_VERIFY,pcre-$(PCRE_VERSION).tar.bz2)
 	$(call EXTRACT_TAR,pcre-$(PCRE_VERSION).tar.bz2,pcre-$(PCRE_VERSION),pcre)
 	$(call DO_PATCH,pcre,pcre,-p1)
+	sed -i 's/-keep_private_externs -nostdlib/-keep_private_externs $(PLATFORM_VERSION_MIN) -arch $(MEMO_ARCH) -nostdlib/g' $(BUILD_WORK)/pcre/configure
 
 ifneq ($(wildcard $(BUILD_WORK)/pcre/.build_complete),)
 pcre:

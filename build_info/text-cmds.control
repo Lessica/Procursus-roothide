@@ -5,4 +5,4 @@ Architecture: @DEB_ARCH@
 Maintainer: @DEB_MAINTAINER@
 Depends: libncursesw6
 Priority: standard
-Description: md5, ee, ul, banner
+Description: banner, bintrans (uuencode, uudecode), col, colrm, column, ee, lam, look, md5, rev, rs, ul, unvis, vis

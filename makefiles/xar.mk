@@ -18,7 +18,7 @@ xar:
 	@echo "Using previously built xar."
 else
 xar: xar-setup openssl
-	cd $(BUILD_WORK)/xar && ./autogen.sh \
+	cd $(BUILD_WORK)/xar && SDKROOT="$(TARGET_SYSROOT)" ./autogen.sh \
 		$(DEFAULT_CONFIGURE_FLAGS) \
 		ac_cv_header_openssl_evp_h=yes \
 		ac_cv_lib_crypto_OPENSSL_init_crypto=yes \

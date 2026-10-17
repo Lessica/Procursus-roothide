@@ -3,11 +3,11 @@ $(error Use the main Makefile)
 endif
 
 STRAPPROJECTS  += dpkg
-DPKG_VERSION   := 1.21.21
+DPKG_VERSION   := 1.22.6
 DEB_DPKG_V     ?= $(DPKG_VERSION)
 
 dpkg-setup: setup
-	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://snapshot.debian.org/archive/debian-debug/20230225T204519Z/pool/main/d/dpkg/dpkg_$(DPKG_VERSION).tar.xz )
+	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://deb.debian.org/debian/pool/main/d/dpkg/dpkg_$(DPKG_VERSION).tar.xz)
 	$(call EXTRACT_TAR,dpkg_$(DPKG_VERSION).tar.xz,dpkg-$(DPKG_VERSION),dpkg)
 
 	$(call DO_PATCH,dpkg,dpkg,-p1)
@@ -16,6 +16,7 @@ ifeq (,$(findstring darwin,$(MEMO_TARGET)))
 else
 	$(call DO_PATCH,dpkg-macos,dpkg,-p1)
 endif
+	sed -i 's|along with this program|*/\n#define LIBDPKG_VOLATILE_API 1\n#include "$(TARGET_SYSROOT)/usr/include/string.h"\n/*|g' $(BUILD_WORK)/dpkg/lib/dpkg/*.c
 
 ifneq ($(wildcard $(BUILD_WORK)/dpkg/.build_complete),)
 dpkg:
@@ -40,6 +41,7 @@ endif
 		PERL="$(shell command -v perl)" \
 		TAR=$(GNU_PREFIX)tar \
 		LZMA_LIBS="$(BUILD_BASE)$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)$(MEMO_ALT_PREFIX)/lib/liblzma.dylib"
+	sed -i 's|dpkg_deb_LDADD) \$$(|dpkg_deb_LDADD) $$(LZMA_LIBS) $$(|' $(BUILD_WORK)/dpkg/src/Makefile
 	+$(MAKE) -C $(BUILD_WORK)/dpkg \
 		PERL="$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/perl"
 	+$(MAKE) -C $(BUILD_WORK)/dpkg install \
