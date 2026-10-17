@@ -22,6 +22,7 @@ libgc: libgc-setup
 	+$(MAKE) -C $(BUILD_WORK)/libgc/libatomic_ops
 	cd $(BUILD_WORK)/libgc && ./configure -C \
 		$(DEFAULT_CONFIGURE_FLAGS) \
+		CXX="$(CXX) $(CXXFLAGS)" \
 		--enable-cplusplus \
 		--enable-large-config
 	+$(MAKE) -C $(BUILD_WORK)/libgc

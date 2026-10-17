@@ -11,7 +11,7 @@ libmpfi-setup: setup
 	@echo "libmpfi already converted to LF. "
 else
 libmpfi-setup: setup
-	$(call GIT_CLONE,https://gitlab.inria.fr/mpfi/mpfi.git,master,libmpfi)
+	$(call GIT_CLONE,https://gitlab.inria.fr/mpfi/mpfi.git,1.5.3,libmpfi)
 	find $(BUILD_WORK)/libmpfi \( ! -regex '.*/\..*' \) -type f -exec dos2unix -f {} \;
 	touch $(BUILD_WORK)/libmpfi/.CRLFtoLF_done
 endif
@@ -21,10 +21,10 @@ libmpfi:
 	@echo "Using previously built libmpfi."
 else
 libmpfi: libmpfi-setup libgmp10 mpfr4
-	cd $(BUILD_WORK)/libmpfi && ./autogen.sh && ./configure -C \
+	cd $(BUILD_WORK)/libmpfi/mpfi && ./autogen.sh && ./configure -C \
 		$(DEFAULT_CONFIGURE_FLAGS)
-	+$(MAKE) -C $(BUILD_WORK)/libmpfi
-	+$(MAKE) -C $(BUILD_WORK)/libmpfi install \
+	+$(MAKE) -C $(BUILD_WORK)/libmpfi/mpfi
+	+$(MAKE) -C $(BUILD_WORK)/libmpfi/mpfi install \
 		DESTDIR=$(BUILD_STAGE)/libmpfi
 	$(call AFTER_BUILD,copy)
 endif

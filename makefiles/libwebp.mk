@@ -32,11 +32,11 @@ libwebp-package: libwebp-stage
 	# libwebp.mk Package Structure
 	rm -rf \
 		$(BUILD_DIST)/libwebp{7,-dev} \
-		$(BUILD_DIST)/libwebp{demux2,mux3} \
+		$(BUILD_DIST)/libwebp{decoder3,demux2,mux3} \
 		$(BUILD_DIST)/webp
 	mkdir -p \
 		$(BUILD_DIST)/libwebp-dev/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/{include,lib/pkgconfig} \
-		$(BUILD_DIST)/libwebp{7,demux2,mux3}/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib \
+		$(BUILD_DIST)/libwebp{7,decoder3,demux2,mux3}/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib \
 		$(BUILD_DIST)/webp/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin
 
 	# libwebp.mk Prep libwebp-dev
@@ -47,6 +47,9 @@ libwebp-package: libwebp-stage
 
 	# libwebp.mk Prep libwebp7
 	cp -a $(BUILD_STAGE)/libwebp/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/libwebp.7*.dylib $(BUILD_DIST)/libwebp7/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib
+
+	# libwebp.mk Prep libwebpdecoder3
+	cp -a $(BUILD_STAGE)/libwebp/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/libwebpdecoder.3*.dylib $(BUILD_DIST)/libwebpdecoder3/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib
 
 	# libwebp.mk Prep libwebpdemux2
 	cp -a $(BUILD_STAGE)/libwebp/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/libwebpdemux.2*.dylib $(BUILD_DIST)/libwebpdemux2/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib
@@ -60,6 +63,7 @@ libwebp-package: libwebp-stage
 	# libwebp.mk Sign
 	$(call SIGN,libwebp-dev,general.xml)
 	$(call SIGN,libwebp7,general.xml)
+	$(call SIGN,libwebpdecoder3,general.xml)
 	$(call SIGN,libwebpdemux2,general.xml)
 	$(call SIGN,libwebpmux3,general.xml)
 	$(call SIGN,webp,general.xml)
@@ -67,11 +71,12 @@ libwebp-package: libwebp-stage
 	# libwebp.mk Make .debs
 	$(call PACK,libwebp-dev,DEB_LIBWEBP_V)
 	$(call PACK,libwebp7,DEB_LIBWEBP_V)
+	$(call PACK,libwebpdecoder3,DEB_LIBWEBP_V)
 	$(call PACK,libwebpdemux2,DEB_LIBWEBP_V)
 	$(call PACK,libwebpmux3,DEB_LIBWEBP_V)
 	$(call PACK,webp,DEB_LIBWEBP_V)
 
 	# libwebp.mk Build cleanup
-	rm -rf $(BUILD_DIST)/libwebp{7,-dev,demux2,mux3} $(BUILD_DIST)/webp
+	rm -rf $(BUILD_DIST)/libwebp{7,-dev,decoder3,demux2,mux3} $(BUILD_DIST)/webp
 
 .PHONY: libwebp libwebp-package

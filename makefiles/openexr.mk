@@ -9,6 +9,7 @@ DEB_OPENEXR_V   ?= $(OPENEXR_VERSION)-1
 openexr-setup: setup
 	$(call GITHUB_ARCHIVE,openexr,openexr,$(OPENEXR_VERSION),v$(OPENEXR_VERSION))
 	$(call EXTRACT_TAR,openexr-$(OPENEXR_VERSION).tar.gz,openexr-$(OPENEXR_VERSION),openexr)
+	sed -i 's/std::abs/std::fabs/g' $(BUILD_WORK)/openexr/IlmBase/Imath/ImathMatrixAlgo.cpp
 ifneq ($(wildcard $(BUILD_WORK)/openexr/.build_complete),)
 openexr:
 	@echo "Using previously built openexr."
@@ -20,8 +21,7 @@ openexr: openexr-setup
 		.
 	+$(MAKE) -C $(BUILD_WORK)/openexr/IlmBase install \
 		DESTDIR="$(BUILD_STAGE)/ilmbase"
-	+$(MAKE) -C $(BUILD_WORK)/openexr/IlmBase install \
-		DESTDIR="$(BUILD_BASE)"
+	$(call AFTER_BUILD,copy,ilmbase)
 
 	cd $(BUILD_WORK)/openexr/OpenEXR && cmake . \
 		$(DEFAULT_CMAKE_FLAGS) \

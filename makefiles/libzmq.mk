@@ -17,6 +17,7 @@ else
 libzmq: libzmq-setup libsodium
 	cd $(BUILD_WORK)/libzmq && ./configure -C \
 		$(DEFAULT_CONFIGURE_FLAGS) \
+		CXX="$(CXX) $(CXXFLAGS)" \
 		--with-libsodium
 	+$(MAKE) -C $(BUILD_WORK)/libzmq
 	+$(MAKE) -C $(BUILD_WORK)/libzmq install \

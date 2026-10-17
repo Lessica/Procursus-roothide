@@ -9,6 +9,7 @@ DEB_HIDAPI_V   ?= $(HIDAPI_VERSION)
 hidapi-setup: setup
 	$(call GITHUB_ARCHIVE,libusb,hidapi,$(HIDAPI_VERSION),hidapi-$(HIDAPI_VERSION))
 	$(call EXTRACT_TAR,hidapi-$(HIDAPI_VERSION).tar.gz,hidapi-hidapi-$(HIDAPI_VERSION),hidapi)
+	$(call DO_PATCH,hidapi,hidapi,-p1)
 
 ifneq ($(wildcard $(BUILD_WORK)/hidapi/.build_complete),)
 hidapi:

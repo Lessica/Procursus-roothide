@@ -10,6 +10,9 @@ slang2-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://www.jedsoft.org/releases/slang/slang-$(SLANG2_VERSION).tar.bz2{$(comma).asc})
 	$(call PGP_VERIFY,slang-$(SLANG2_VERSION).tar.bz2,asc)
 	$(call EXTRACT_TAR,slang-$(SLANG2_VERSION).tar.bz2,slang-$(SLANG2_VERSION),slang2)
+ifneq (,$(findstring roothide,$(MEMO_TARGET)))
+	$(call DO_PATCH,slang2,slang2,-p1)
+endif
 
 ifneq ($(wildcard $(BUILD_WORK)/slang2/.build_complete),)
 slang2:
