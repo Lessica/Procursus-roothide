@@ -18,7 +18,6 @@ else
 libevent: libevent-setup openssl
 	cd $(BUILD_WORK)/libevent && cmake . \
 		$(DEFAULT_CMAKE_FLAGS) \
-		-DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
 		-DEVENT__LIBRARY_TYPE:STRING=BOTH \
 		.
 	+$(MAKE) -C $(BUILD_WORK)/libevent install \

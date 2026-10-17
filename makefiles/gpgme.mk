@@ -17,7 +17,7 @@ gpgme:
 	@echo "Using previously built gpgme."
 else
 gpgme: gpgme-setup gnupg libassuan libgpg-error
-	cd $(BUILD_WORK)/gpgme && ./configure -C \
+	cd $(BUILD_WORK)/gpgme && ac_cv_path_GPGRT_CONFIG="$(BUILD_BASE)$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/gpgrt-config" ./configure -C \
 		$(DEFAULT_CONFIGURE_FLAGS) \
 		--with-libassuan-prefix=$(BUILD_BASE)$(MEMO_PREFIX)$(MEMO_SUB_PREFIX) \
 		--with-libgpg-error-prefix=$(BUILD_BASE)$(MEMO_PREFIX)$(MEMO_SUB_PREFIX) \

@@ -20,7 +20,6 @@ else
 libpcap: libpcap-setup openssl
 	cd $(BUILD_WORK)/libpcap/build && cmake \
 		$(DEFAULT_CMAKE_FLAGS) \
-		-DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
 		-DINET6=ON \
 		-DPCAP_TYPE=bpf \
 		..
