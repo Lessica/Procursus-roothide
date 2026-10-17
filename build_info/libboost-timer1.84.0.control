@@ -2,7 +2,7 @@ Package: libboost-timer1.84.0
 Version: @DEB_LIBBOOST_V@
 Architecture: @DEB_ARCH@
 Maintainer: @DEB_MAINTAINER@
-Depends: libboost-chrono1.84.0 (= @DEB_LIBBOOST_V@)
+Depends: libboost-chrono1.84.0 (= @DEB_LIBBOOST_V@), liblzma5 (>= 5.2.5)
 Section: Libraries
 Priority: optional
 Description: C++ wall clock and CPU process timers

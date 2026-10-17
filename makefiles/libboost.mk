@@ -28,7 +28,9 @@ ifneq (,$(findstring amd64,$(MEMO_TARGET)))
 else
 	echo "using clang-darwin : arm : $(CXX) : <compileflags>\"$(CPPFLAGS) -I$(BUILD_STAGE)/python3/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include/$$(ls $(BUILD_STAGE)/python3/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include)\" <cflags>\"$(CFLAGS) -I$(BUILD_STAGE)/python3/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include/$$(ls $(BUILD_STAGE)/python3/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include)\" <cxxflags>\"$(CXXFLAGS) -I$(BUILD_STAGE)/python3/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include/$$(ls $(BUILD_STAGE)/python3/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include)\" <linkflags>\"$(LDFLAGS) $(BUILD_BASE)$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)$(MEMO_ALT_PREFIX)/lib/liblzma.dylib\" ;" > $(BUILD_WORK)/libboost/tools/build/src/user-config.jam
 endif
+	echo "using python : $(PYTHON3_MAJOR_V) : /usr/bin/python3 : $(BUILD_STAGE)/python3/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include/python$(PYTHON3_MAJOR_V) : $(BUILD_STAGE)/python3/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib ;" >> $(BUILD_WORK)/libboost/tools/build/src/user-config.jam
 	cd $(BUILD_WORK)/libboost && $(BUILD_WORK)/libboost/tools/build/src/engine/b2 \
+		-j$(CORE_COUNT) \
 		--prefix=$(BUILD_STAGE)/libboost/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX) \
 		--without-mpi \
 		--without-graph_parallel \

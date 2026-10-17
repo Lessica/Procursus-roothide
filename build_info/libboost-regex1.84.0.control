@@ -2,7 +2,7 @@ Package: libboost-regex1.84.0
 Version: @DEB_LIBBOOST_V@
 Architecture: @DEB_ARCH@
 Maintainer: @DEB_MAINTAINER@
-Depends: libicu69
+Depends: libicu69, liblzma5 (>= 5.2.5)
 Section: Libraries
 Priority: optional
 Description: regular expression library for C++

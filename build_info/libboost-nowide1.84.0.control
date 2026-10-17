@@ -2,6 +2,7 @@ Package: libboost-nowide1.84.0
 Version: @DEB_LIBBOOST_V@
 Architecture: @DEB_ARCH@
 Maintainer: @DEB_MAINTAINER@
+Depends: liblzma5 (>= 5.2.5)
 Section: Libraries
 Priority: optional
 Description: Standard library functions with UTF-8 API on Windows

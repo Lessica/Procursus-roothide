@@ -27,11 +27,11 @@ python3:
 else
 python3: .SHELLFLAGS=-O extglob -c
 ifneq (,$(findstring darwin,$(MEMO_TARGET)))
-python3: python3-setup gettext libffi ncurses readline xz openssl libgdbm expat
+python3: python3-setup gettext libffi ncurses readline xz openssl libgdbm expat autoconf-archive
 else
-python3: python3-setup gettext libffi ncurses readline xz openssl libgdbm expat libxcrypt
+python3: python3-setup gettext libffi ncurses readline xz openssl libgdbm expat libxcrypt autoconf-archive
 endif
-	cd $(BUILD_WORK)/python3 && autoreconf -fi
+	cd $(BUILD_WORK)/python3 && ACLOCAL_PATH=$(BUILD_STAGE)/autoconf-archive/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share/aclocal:$(ACLOCAL_PATH) autoreconf -fi
 	sed -i 's/as_fn_error $$? "Unexpected output of /# /g' $(BUILD_WORK)/python3/configure
 	[ "$(UNAME)" != "Darwin" ] && export MACOSX_DEFAULT_ARCH=$(shell uname -m); \
 	cd $(BUILD_WORK)/python3 && ./configure -C \
