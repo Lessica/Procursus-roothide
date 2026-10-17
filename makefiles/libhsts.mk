@@ -9,6 +9,10 @@ DEB_LIBHSTS_V   ?= $(LIBHSTS_VERSION)
 libhsts-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://gitlab.com/rockdaboot/libhsts/-/archive/libhsts-$(LIBHSTS_VERSION)/libhsts-libhsts-$(LIBHSTS_VERSION).tar.gz)
 	$(call EXTRACT_TAR,libhsts-libhsts-$(LIBHSTS_VERSION).tar.gz,libhsts-libhsts-$(LIBHSTS_VERSION),libhsts)
+	$(call DO_PATCH,libhsts,libhsts,-p1)
+	$(call DOWNLOAD_FILE,$(BUILD_SOURCE)/libhsts-hsts-2c1118f2.json,https://raw.githubusercontent.com/chromium/chromium/2c1118f2b055a94ad6a14abcc0e8ebb42c9ef202/net/http/transport_security_state_static.json)
+	$(call CHECKSUM_VERIFY,sha256,libhsts-hsts-2c1118f2.json,7405979fe3080d733da2e3c86fe6cb42a000bd6fa9ca0f9661721bff50fddd62)
+	sed 's/^[[:space:]]*\/\/.*$$//g' $(BUILD_SOURCE)/libhsts-hsts-2c1118f2.json > $(BUILD_WORK)/libhsts/tests/hsts.json
 
 ifneq ($(wildcard $(BUILD_WORK)/libhsts/.build_complete),)
 libhsts:
@@ -40,6 +44,7 @@ libhsts-package: libhsts-stage
 
 	# libhsts.mk Sign
 	$(call SIGN,libhsts0,general.xml)
+	$(call SIGN,libhsts-dev,general.xml)
 
 	# libhsts.mk Make .debs
 	$(call PACK,libhsts0,DEB_LIBHSTS_V)

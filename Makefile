@@ -856,9 +856,9 @@ ifeq (,$(findstring darwin,$(MEMO_TARGET)))
 SIGN = 	for file in $$(find $(BUILD_DIST)/$(1) -type f -exec sh -c "file -ib '{}' | grep -q 'x-mach-binary; charset=binary'" \; -print); do \
 			if [ $${file\#\#*.} != "a" ]; then \
 				if [ $${file\#\#*.} = "dylib" ] || [ $${file\#\#*.} = "bundle" ] || [ $${file\#\#*.} = "so" ]; then \
-					$(LDID) -S $$file; \
+					$(LDID) -S $$file || exit 1; \
 				else \
-					$(LDID) -S$(BUILD_MISC)/entitlements/$(2) $$file; \
+					$(LDID) -S$(BUILD_MISC)/entitlements/$(2) $$file || exit 1; \
 				fi; \
 			fi; \
 		done
@@ -898,7 +898,7 @@ AFTER_BUILD = \
 				INSTALL_NAME=$$($(OTOOL) -D $$file | grep -v -e ":$$" -e "^Archive :" | head -n1); \
 				if [ ! -z "$$INSTALL_NAME" ] && ( ( echo "$$INSTALL_NAME" | grep -q ^$(MEMO_PREFIX)/ ) || ! ( echo "$$INSTALL_NAME" | grep -q / ) ); then \
 					chmod +w $$file; echo "some packages may be installed into the BUILD_STAGE with 0555 permission, for example: berkeleydb" > /dev/null; \
-					$(I_N_T) -id @rpath/$$(basename $$INSTALL_NAME) $$file; \
+					$(I_N_T) -id @rpath/$$(basename $$INSTALL_NAME) $$file || exit 1; \
 					echo "$$INSTALL_NAME" >> $(BUILD_STAGE)/$$pkg/._lib_cache; \
 				fi; \
 			fi; \
@@ -907,17 +907,17 @@ AFTER_BUILD = \
 	for file in $$(find $(BUILD_STAGE)/$$pkg -type f -exec sh -c "file -ib '{}' | grep -q 'x-mach-binary; charset=binary'" \; -print); do \
 		if [ $${file\#\#*.} != "a" ] && [ $${file\#\#*.} != "dSYM" ]; then \
 			chmod +w $$file; echo "some packages may be installed into the BUILD_STAGE with 0555 permission, for example: berkeleydb" > /dev/null; \
-			$(I_N_T) -add_rpath "$(MEMO_LINK_PREFIX)$(MEMO_SUB_PREFIX)$(MEMO_ALT_PREFIX)/lib" $$file; \
-			$(I_N_T) -add_rpath "$(MEMO_LINK_PREFIX)$(MEMO_SUB_PREFIX)/lib" $$file; \
+			$(I_N_T) -add_rpath "$(MEMO_LINK_PREFIX)$(MEMO_SUB_PREFIX)$(MEMO_ALT_PREFIX)/lib" $$file || exit 1; \
+			$(I_N_T) -add_rpath "$(MEMO_LINK_PREFIX)$(MEMO_SUB_PREFIX)/lib" $$file || exit 1; \
 			if [ ! -z "$(3)" ]; then \
-				$(I_N_T) -add_rpath "$(3)" $$file; \
+				$(I_N_T) -add_rpath "$(3)" $$file || exit 1; \
 			fi; \
 			if [ -f $(BUILD_STAGE)/$$pkg/._lib_cache ]; then \
-				cat $(BUILD_STAGE)/$$pkg/._lib_cache | while read line; do \
-					$(I_N_T) -change $$line @rpath/$$(basename $$line) $$file; \
-				done; \
+				while read -r line; do \
+					$(I_N_T) -change $$line @rpath/$$(basename $$line) $$file || exit 1; \
+				done < $(BUILD_STAGE)/$$pkg/._lib_cache; \
 			fi; \
-			if [ "$(DEBUG)" != "1" ]; then $(STRIP) -x $$file; fi; \
+			if [ "$(DEBUG)" != "1" ]; then $(STRIP) -x $$file || exit 1; fi; \
 			if [ ! -z "$(findstring roothide,$(MEMO_TARGET))" ];then \
 				if [ -z "$(4)" ]; then symredirect $$file || exit 1; fi; \
 			fi; \
@@ -943,8 +943,7 @@ AFTER_BUILD = \
 PACK = \
 	if [ ! -z "$(findstring roothide,$(MEMO_TARGET))" ];then \
 		for file in $$(find $(BUILD_DIST)/$(1) -type f -exec sh -c "file -b '{}' | grep 'Mach-O' | grep -q 'executable'" \; -print); do \
-			$(LDID) -M -S$(BUILD_MISC)/entitlements/roothide.xml $$file; \
-			$(LDID) -M -S$(BUILD_MISC)/entitlements/nickchan.xml $$file; \
+			$(LDID) -M -S$(BUILD_MISC)/entitlements/roothide.xml $$file || exit 1; \
 		done; \
 	fi; \
 	if [ -z "$(4)" ]; then \
@@ -1028,7 +1027,7 @@ PACK = \
 	if [ -e $(BUILD_DIST)/$(1)/$(MEMO_PREFIX)/etc ]; then \
 		find $(BUILD_DIST)/$(1)/$(MEMO_PREFIX)/etc -type f -printf '$(MEMO_PREFIX)/etc/%P\n' | LC_ALL=C sort >> $(BUILD_DIST)/$(1)/DEBIAN/conffiles; \
 	fi; \
-	[ -s $(BUILD_DIST)/$(1)/DEBIAN/conffiles ] && rm -f $(BUILD_DIST)/$(1)/DEBIAN/conffiles; \
+	[ -s $(BUILD_DIST)/$(1)/DEBIAN/conffiles ] || rm -f $(BUILD_DIST)/$(1)/DEBIAN/conffiles; \
 	sed -i '$$a\' $(BUILD_DIST)/$(1)/DEBIAN/control; \
 	cd $(BUILD_DIST)/$(1) && find . -type f ! -regex '.*.hg.*' ! -regex '.*?debian-binary.*' ! -regex '.*?DEBIAN.*' -printf '"%P" ' | xargs md5sum > $(BUILD_DIST)/$(1)/DEBIAN/md5sums; \
 	$(FAKEROOT) chmod 0755 $(BUILD_DIST)/$(1)/DEBIAN/*; \
@@ -1184,7 +1183,9 @@ ifneq ($(shell tic -V | grep -q 'ncurses 6' && echo 1),1)
 $(error Install ncurses 6)
 endif
 
-ifneq (,$(wildcard /opt/procursus/share/xml/docbook/stylesheet/docbook-xsl))
+ifneq (,$(wildcard $(DOCBOOK_XSL)))
+# Allow an explicit stylesheet directory on hosts without /opt/procursus.
+else ifneq (,$(wildcard /opt/procursus/share/xml/docbook/stylesheet/docbook-xsl))
 DOCBOOK_XSL := /opt/procursus/share/xml/docbook/stylesheet/docbook-xsl
 export XML_CATALOG_FILES=/opt/procursus/etc/xml/catalog
 else ifneq (,$(wildcard /usr/share/xml/docbook/stylesheet/docbook-xsl))
@@ -1466,7 +1467,7 @@ rebuild-%:
 setup:
 	@mkdir -p \
 		$(BUILD_BASE) $(BUILD_BASE)$(MEMO_PREFIX)/{{,System}/Library/Frameworks,$(MEMO_SUB_PREFIX)/{include/{bsm,objc,os/internal,sys,firehose,CoreFoundation,FSEvents,IOKit/kext,libkern,kern,arm,{mach/,}machine,CommonCrypto,Security,CoreSymbolication,Kernel/{kern,IOKit,libkern},rpc,rpcsvc,xpc/private,ktrace,mach-o,dispatch},lib/pkgconfig,$(MEMO_ALT_PREFIX)/lib}} \
-		$(BUILD_SOURCE) $(BUILD_WORK) $(BUILD_STAGE) $(BUILD_STRAP)
+		$(BUILD_SOURCE) $(BUILD_WORK) $(BUILD_STAGE) $(BUILD_STRAP) $(BUILD_ROOT)/source-temp
 
 	@rm -rf $(BUILD_BASE)/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include/System
 	@$(LN_SR) $(BUILD_BASE)/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include{,/System}
