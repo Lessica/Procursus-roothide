@@ -74,7 +74,6 @@ nginx:
 	@echo "Using previously built nginx."
 else
 nginx: nginx-setup
-	$(error "please set cc to /usr/bin/cc")
 	# do an config for the build machine and then sed out the cflags
 	# because nginxs build system doesnt support cross compiling
 
