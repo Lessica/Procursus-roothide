@@ -5,11 +5,12 @@ endif
 #SUBPROJECTS  += ldid
 STRAPPROJECTS  += ldid
 LDID_VERSION := 2.1.5-procursus7
-DEB_LDID_V   ?= $(LDID_VERSION)
+DEB_LDID_V   ?= $(LDID_VERSION)-1
 
 ldid-setup: setup
 	$(call GITHUB_ARCHIVE,ProcursusTeam,ldid,$(LDID_VERSION),v$(LDID_VERSION))
 	$(call EXTRACT_TAR,ldid-$(LDID_VERSION).tar.gz,ldid-$(LDID_VERSION),ldid)
+	$(call DO_PATCH,ldid,ldid,-p1)
 
 ifneq ($(wildcard $(BUILD_WORK)/ldid/.build_complete),)
 ldid:
