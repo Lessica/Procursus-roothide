@@ -32,6 +32,7 @@ lua-luv: lua-luv-setup libuv1 lua5.1 lua5.2 lua5.3 luajit
 			-DSHAREDLIBS_INSTALL_INC_DIR="$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include/lua5.$$ver/luv" \
 			../bundle; \
 		$(MAKE) -C $(BUILD_WORK)/lua-luv/build5$$ver; \
+		rm -f $(BUILD_STAGE)/lua-luv/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/libluv*.dylib; \
 		$(MAKE) -C $(BUILD_WORK)/lua-luv/build5$$ver install \
 			DESTDIR="$(BUILD_STAGE)/lua-luv"; \
 		mv $(BUILD_STAGE)/lua-luv/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/libluv.$(LUA-LUV_VERSION).dylib $(BUILD_STAGE)/lua-luv/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/liblua5.$$ver-luv.$(LUA-LUV_VERSION).dylib; \
@@ -52,6 +53,7 @@ lua-luv: lua-luv-setup libuv1 lua5.1 lua5.2 lua5.3 luajit
 			-DSHAREDLIBS_INSTALL_INC_DIR="$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include/lua5.$$ver/luv" \
 			..; \
 		$(MAKE) -C $(BUILD_WORK)/lua-luv/bundle/build5$$ver; \
+		rm -f $(BUILD_STAGE)/lua-luv/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/libluv*.dylib; \
 		$(MAKE) -C $(BUILD_WORK)/lua-luv/bundle/build5$$ver install \
 			DESTDIR="$(BUILD_STAGE)/lua-luv"; \
 	done
@@ -67,6 +69,7 @@ lua-luv: lua-luv-setup libuv1 lua5.1 lua5.2 lua5.3 luajit
 		-DSHAREDLIBS_INSTALL_INC_DIR="$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include/luajit-2.1/luv" \
 		../bundle
 	$(MAKE) -C $(BUILD_WORK)/lua-luv/buildjit
+	rm -f $(BUILD_STAGE)/lua-luv/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/libluv*.dylib
 	$(MAKE) -C $(BUILD_WORK)/lua-luv/buildjit install \
 		DESTDIR="$(BUILD_STAGE)/lua-luv"
 	mv $(BUILD_STAGE)/lua-luv/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/libluv.$(LUA-LUV_VERSION).dylib $(BUILD_STAGE)/lua-luv/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/libluajit-5.1-luv.$(LUA-LUV_VERSION).dylib

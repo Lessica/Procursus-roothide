@@ -1,0 +1,50 @@
+From: Procursus maintainers
+Subject: [PATCH] ionice: report unsupported I/O scheduling on Darwin
+
+Darwin has no Linux ioprio_get/ioprio_set syscalls. Keep the applets available
+and report ENOSYS instead of passing Linux syscall numbers to syscall(2).
+The query path also propagates syscall failure instead of printing a bogus priority.
+
+--- a/toys/other/ionice.c
++++ b/toys/other/ionice.c
+@@ -37,6 +37,7 @@
+ 
+ #define FOR_ionice
+ #include "toys.h"
++#include <errno.h>
+ #include <sys/syscall.h>
+ 
+ GLOBALS(
+@@ -45,14 +46,24 @@
+ 
+ static int ioprio_get(void)
+ {
++#ifdef __APPLE__
++  errno = ENOSYS;
++  return -1;
++#else
+   return syscall(__NR_ioprio_get, 1, (int)TT.p);
++#endif
+ }
+ 
+ static int ioprio_set(void)
+ {
+   int prio = ((int)TT.c << 13) | (int)TT.n;
+ 
++#ifdef __APPLE__
++  errno = ENOSYS;
++  return -1;
++#else
+   return syscall(__NR_ioprio_set, 1, (int)TT.p, prio);
++#endif
+ }
+ 
+ void ionice_main(void)
+@@ -60,6 +71,7 @@
+   if (!TT.p && !toys.optc) error_exit("Need -p or COMMAND");
+   if (toys.optflags == FLAG_p) {
+     int p = ioprio_get();
++    if (p == -1) perror_exit("get");
+     xprintf("%s: prio %d\n",
+       (char *[]){"unknown", "Realtime", "Best-effort", "Idle"}[(p>>13)&3],
+       p&7);
