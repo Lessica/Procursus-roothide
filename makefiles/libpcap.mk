@@ -10,6 +10,7 @@ libpcap-setup: setup
 	$(call GITHUB_ARCHIVE,the-tcpdump-group,libpcap,$(LIBPCAP_VERSION),libpcap-$(LIBPCAP_VERSION))
 	$(call EXTRACT_TAR,libpcap-$(LIBPCAP_VERSION).tar.gz,libpcap-libpcap-$(LIBPCAP_VERSION),libpcap)
 	mkdir -p $(BUILD_WORK)/libpcap/build
+	sed -i 's/cmake_policy(SET CMP0042 OLD)/cmake_policy(SET CMP0042 NEW)/' $(BUILD_WORK)/libpcap/CMakeLists.txt
 	sed -i '1s/^/\#include \<sys\/_endian\.h\>/' $(BUILD_WORK)/libpcap/*.c
 
 ifneq ($(wildcard $(BUILD_WORK)/libpcap/.build_complete),)
@@ -19,6 +20,7 @@ else
 libpcap: libpcap-setup openssl
 	cd $(BUILD_WORK)/libpcap/build && cmake \
 		$(DEFAULT_CMAKE_FLAGS) \
+		-DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
 		-DINET6=ON \
 		-DPCAP_TYPE=bpf \
 		..
