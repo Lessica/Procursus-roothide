@@ -234,6 +234,7 @@ ifeq ($(wildcard $(BUILD_WORK)/llvm/build-compiler-rt/.build_complete),)
 	sed -E s/'__IOS_PROHIBITED|__TVOS_PROHIBITED|__WATCHOS_PROHIBITED'//g < $(TARGET_SYSROOT)/usr/include/signal.h > $(BUILD_WORK)/llvm/build-compiler-rt/memo-include/signal.h
 	sed -i 's/__API_UNAVAILABLE(.*)//g' $(BUILD_WORK)/llvm/build-compiler-rt/memo-include/*.h
 	mkdir -p $(BUILD_WORK)/llvm/build-compiler-rt && cd $(BUILD_WORK)/llvm/build-compiler-rt && unset CC CXX LD CFLAGS CPPFLAGS CXXFLAGS LDFLAGS && cmake . \
+		-DCMAKE_OSX_SYSROOT="$(MACOSX_SYSROOT)" \
 		-G 'Unix Makefiles' \
 		-DCMAKE_BUILD_TYPE=Release \
 		-DCMAKE_C_COMPILER="cc" \
