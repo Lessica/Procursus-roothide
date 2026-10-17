@@ -3,7 +3,7 @@ $(error Use the main Makefile)
 endif
 
 STRAPPROJECTS    += zlib-ng
-ZLIB-NG_VERSION  := 2.0.6
+ZLIB-NG_VERSION  := 2.1.6
 DEB_ZLIB-NG_V    ?= $(ZLIB-NG_VERSION)
 
 zlib-ng-setup: setup
@@ -17,6 +17,7 @@ else
 zlib-ng: zlib-ng-setup
 	cd $(BUILD_WORK)/zlib-ng && cmake . \
 		$(DEFAULT_CMAKE_FLAGS) \
+		-DCMAKE_INSTALL_RPATH= \
 		-DZLIB_ENABLE_TESTS=Off \
 		-DZLIB_INSTALL_UTILS=On \
 		.

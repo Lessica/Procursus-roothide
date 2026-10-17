@@ -4,4 +4,4 @@ Version: @DEB_DOC-CMDS_V@
 Architecture: @DEB_ARCH@
 Maintainer: @DEB_MAINTAINER@
 Priority: optional
-Description: checknr, colcrt
+Description: introduction to general commands manual page

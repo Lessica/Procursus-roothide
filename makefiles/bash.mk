@@ -7,7 +7,7 @@ STRAPPROJECTS   += bash
 else # ($(MEMO_TARGET),darwin-\*)
 SUBPROJECTS     += bash
 endif # ($(MEMO_TARGET),darwin-\*)
-BASH_VERSION    := 5.2.15
+BASH_VERSION    := 5.2.21
 BASH_PATCHLEVEL := 0
 DEB_BASH_V      ?= $(BASH_VERSION)
 
@@ -44,7 +44,7 @@ ifneq ($(wildcard $(BUILD_WORK)/bash/.build_complete),)
 bash:
 	@echo "Using previously built bash."
 else
-bash: bash-setup ncurses readline
+bash: bash-setup ncurses readline gettext
 	cd $(BUILD_WORK)/bash && ./configure -C \
 		$(DEFAULT_CONFIGURE_FLAGS) \
 		--disable-nls \

@@ -6,5 +6,5 @@ Section: Archiving
 Priority: important
 Multi-Arch: foreign
 Depends: liblz4-1 (= @DEB_LZ4_V@)
-Homepage: http://tukaani.org/lzma/
+Homepage: https://lz4.org/
 Description: Fast LZ compression algorithm library - tool
