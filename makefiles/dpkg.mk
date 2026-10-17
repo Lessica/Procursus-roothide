@@ -7,7 +7,7 @@ DPKG_VERSION   := 1.22.6
 DEB_DPKG_V     ?= $(DPKG_VERSION)
 
 dpkg-setup: setup
-	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://deb.debian.org/debian/pool/main/d/dpkg/dpkg_$(DPKG_VERSION).tar.xz)
+	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://snapshot.debian.org/archive/debian/20240311T214105Z/pool/main/d/dpkg/dpkg_$(DPKG_VERSION).tar.xz)
 	$(call EXTRACT_TAR,dpkg_$(DPKG_VERSION).tar.xz,dpkg-$(DPKG_VERSION),dpkg)
 
 	$(call DO_PATCH,dpkg,dpkg,-p1)
@@ -27,7 +27,7 @@ ifeq (,$(findstring darwin,$(MEMO_TARGET)))
 	sed -e '\|base-bsd-darwin|a base-bsd-darwin-arm64\t\t$(DEB_ARCH)' -i $(BUILD_WORK)/dpkg/data/tupletable
 endif
 	cd $(BUILD_WORK)/dpkg && ./autogen
-	cd $(BUILD_WORK)/dpkg && ./configure -C \
+	cd $(BUILD_WORK)/dpkg && PKG_CONFIG="$(BUILD_TOOLS)/cross-pkg-config" ./configure -C \
 		$(DEFAULT_CONFIGURE_FLAGS) \
 		--with-libz-ng \
 		--with-admindir="$(MEMO_PREFIX)/Library/dpkg" \
@@ -74,7 +74,7 @@ dpkg-package: dpkg-stage
 	cp -a $(BUILD_STAGE)/dpkg/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/dpkg-{architecture,buildflags,buildpackage,checkbuilddeps,distaddfile,genbuildinfo,genchanges,gencontrol,gensymbols,mergechangelogs,name,parsechangelog,scanpackages,scansources,shlibdeps,source,vendor} $(BUILD_DIST)/dpkg-dev/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin
 	cp -a $(BUILD_STAGE)/dpkg/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share/dpkg/*.mk $(BUILD_DIST)/dpkg-dev/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share/dpkg
 	cp -a $(BUILD_STAGE)/dpkg/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share/man $(BUILD_DIST)/dpkg-dev/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share
-	rm -f $(BUILD_DIST)/dpkg-dev/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share/man/{,??}/man1/!(dpkg-architecture|dpkg-buildflags|dpkg-buildpacke|dpkg-checkbuilddeps|dpkg-distaddfile|dpkg-genbuildinfo|dpkg-genchanges|dpkg-gencontrol|dpkg-gensymbols|dpkg-mergechangelogs|dpkg-name|dpkg-parsechangelog|dpkg-scanpackages|dpkg-scansources|dpkg-shlibdeps|dpkg-source|dpkg-vendor).1$(MEMO_MANPAGE_SUFFIX)
+	rm -f $(BUILD_DIST)/dpkg-dev/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share/man/{,??}/man1/!(dpkg-architecture|dpkg-buildflags|dpkg-buildpackage|dpkg-checkbuilddeps|dpkg-distaddfile|dpkg-genbuildinfo|dpkg-genchanges|dpkg-gencontrol|dpkg-gensymbols|dpkg-mergechangelogs|dpkg-name|dpkg-parsechangelog|dpkg-scanpackages|dpkg-scansources|dpkg-shlibdeps|dpkg-source|dpkg-vendor).1$(MEMO_MANPAGE_SUFFIX)
 	rm -rf $(BUILD_DIST)/dpkg-dev/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share/man/{,??}/man{3,8}
 
 	# dpkg.mk Prep libdpkg-perl

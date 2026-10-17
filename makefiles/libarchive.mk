@@ -16,7 +16,7 @@ libarchive:
 	@echo "Using previously built libarchive."
 else
 libarchive: libarchive-setup lz4 liblzo2 zstd xz nettle
-	cd $(BUILD_WORK)/libarchive && ./configure \
+	cd $(BUILD_WORK)/libarchive && PKG_CONFIG="$(BUILD_TOOLS)/cross-pkg-config" ./configure \
 		$(DEFAULT_CONFIGURE_FLAGS) \
 		--disable-dependency-tracking \
 		--without-openssl \
