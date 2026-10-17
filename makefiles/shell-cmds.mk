@@ -29,6 +29,7 @@ ifeq ($(shell [ "$(CFVER_WHOLE)" -lt 2000 ] && echo 1),1)
 	sed 's/sbuf/usbuf/g' < $(BUILD_WORK)/shell-cmds/sbuf.c > $(BUILD_WORK)/shell-cmds/__usbuf.c
 	sed 's/sbuf/usbuf/g' < $(BUILD_WORK)/shell-cmds/sbuf.h > $(BUILD_WORK)/shell-cmds/__usbuf.h
 	sed -i 's/"usbuf\.h"/"__usbuf\.h"/g' $(BUILD_WORK)/shell-cmds/__usbuf.c
+	sed -i -e 's|<usbuf\.h>|"../__usbuf.h"|g' -e 's/\bsbuf_/usbuf_/g' -e 's/struct sbuf/struct usbuf/g' $(BUILD_WORK)/shell-cmds/{apply/apply.c,w/w.c}
 endif
 
 ifneq ($(wildcard $(BUILD_WORK)/shell-cmds/.build_complete),)
@@ -40,20 +41,20 @@ shell-cmds: shell-cmds-setup openpam libxo
 ifeq ($(shell [ "$(CFVER_WHOLE)" -lt 2000 ] && echo 1),1)
 	$(CC) $(CFLAGS) -c $(BUILD_WORK)/shell-cmds/__usbuf.c -o $(BUILD_WORK)/shell-cmds/usbuf.o
 endif
-	-cd $(BUILD_WORK)/shell-cmds; \
+	set -e; cd $(BUILD_WORK)/shell-cmds; \
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $(BUILD_STAGE)/shell-cmds/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/hexdump hexdump/{conv,display,hexdump,hexsyntax,odsyntax,parse}.c -D'__FBSDID(x)=' -D__DARWIN_C_LEVEL=200112L; \
 	cp -a hexdump/hexdump.1 $(BUILD_STAGE)/shell-cmds/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share/man/man1; \
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $(BUILD_STAGE)/shell-cmds/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/su su/su.c -D'__FBSDID(x)=' -D'SOFT_LINK_DYLIB(x)=' -D'SOFT_LINK_FUNCTION(...)=' -D'rootless_restricted_environment()=0' -D'soft_ess_notify_su(...)=0' -D'islibEndpointSecuritySystemess_notify_suAvailable()=0' $(LDFLAGS) -lpam; \
 	cp -a su/su.1 $(BUILD_STAGE)/shell-cmds/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share/man/man1; \
 	cp -a $(BUILD_MISC)/pam/su $(BUILD_STAGE)/shell-cmds/$(MEMO_PREFIX)/etc/pam.d; \
-	for bin in killall renice script time which getopt what jot apply lastcomm systime shlock systime w whereis; do \
+	for bin in killall renice script time which getopt what jot apply lastcomm systime shlock w whereis; do \
 		echo $$bin; \
 		if [ "$$bin" = "w" ]; then LDFLAGS="$(LDFLAGS) $(SHELL-CMDS_SBUF_LIBS) -lxo -lutil"; \
 		elif [ "$$bin" = "apply" ]; then LDFLAGS="$(LDFLAGS) $(SHELL-CMDS_SBUF_LIBS)"; \
 		else LDFLAGS="$(LDFLAGS)"; fi; \
 		$(CC) $(CFLAGS) $$LDFLAGS -o $(BUILD_STAGE)/shell-cmds/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/$$bin $$bin/*.c -D'__FBSDID(x)=' -DHAVE_UTMPX=1 -save-temps; \
-		cp -a $$bin/$$bin.1 $(BUILD_STAGE)/shell-cmds/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share/man/man1 2>/dev/null; \
-		cp -a $$bin/$$bin.8 $(BUILD_STAGE)/shell-cmds/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share/man/man8 2>/dev/null; \
+		cp -a $$bin/$$bin.1 $(BUILD_STAGE)/shell-cmds/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share/man/man1 2>/dev/null || true; \
+		cp -a $$bin/$$bin.8 $(BUILD_STAGE)/shell-cmds/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share/man/man8 2>/dev/null || true; \
 	done; \
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $(BUILD_STAGE)/shell-cmds/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/libexec/path_helper path_helper/path_helper.c -save-temps; \
 	cp -a path_helper/path_helper.8 $(BUILD_STAGE)/shell-cmds/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share/man/man8;
