@@ -1,0 +1,8 @@
+--- !tapi-tbd
+tbd-version: 4
+targets: [ arm64-ios, arm64e-ios ]
+install-name: '@rpath/libjailbreak.dylib'
+exports:
+  - targets: [ arm64-ios, arm64e-ios ]
+    symbols: [ _gPrimitives, _gSystemInfo, _jbclient_initialize_kernel_access, _libjailbreak_IOSurface_kalloc_init, _kalloc, _kcall, _kfree, _kreadbuf, _kwritebuf, _physreadbuf, _physwritebuf ]
+...

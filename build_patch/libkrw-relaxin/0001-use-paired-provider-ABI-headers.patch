@@ -1,0 +1,15 @@
+--- a/src/main.c
++++ b/src/main.c
+@@ -1,8 +1,11 @@
+-#include <libjailbreak/libjailbreak.h>
++#include <libjailbreak/primitives.h>
++#include <libjailbreak/info.h>
+ #include <libjailbreak/primitives_IOSurface.h>
+ #include <libkrw/libkrw_plugin.h>
+ #include <dispatch/dispatch.h>
+ #include <errno.h>
++
++int jbclient_initialize_kernel_access(void);
+ 
+ static int load_kernel_access_once(void) {
+     static dispatch_once_t onceToken;

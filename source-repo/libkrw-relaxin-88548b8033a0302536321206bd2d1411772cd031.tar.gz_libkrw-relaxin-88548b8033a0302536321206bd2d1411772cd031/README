@@ -1,0 +1,14 @@
+RootHide libkrw provider source snapshot
+
+Source: Relaxin commit 88548b8033a0302536321206bd2d1411772cd031 (Lessica/Relaxin).
+The provider and libjailbreak ABI headers are from the same committed snapshot.
+Original paths: Vendor/Dopamine/Packages/libkrw-provider/src/main.c,
+Vendor/Dopamine/BaseBin/libjailbreak/src/{primitives.h,primitives_external.h,info.h,primitives_IOSurface.h},
+and Vendor/Dopamine/BaseBin/_external/include/libkrw/libkrw_plugin.h.
+
+Keep these headers paired with the runtime; ordinary Dopamine 2 headers have a
+different kernel_primitives layout and system_info layout. This source subset
+is embedded so building does not require a local Relaxin checkout or an
+unpublished remote revision. The build patch only narrows umbrella includes.
+The libjailbreak.tbd is a link interface for the runtime supplied by Relaxin,
+not a replacement runtime.
