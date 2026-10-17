@@ -1034,7 +1034,7 @@ PACK = \
 	fi; \
 	[ -s $(BUILD_DIST)/$(1)/DEBIAN/conffiles ] || rm -f $(BUILD_DIST)/$(1)/DEBIAN/conffiles; \
 	sed -i '$$a\' $(BUILD_DIST)/$(1)/DEBIAN/control; \
-	cd $(BUILD_DIST)/$(1) && find . -type f ! -regex '.*.hg.*' ! -regex '.*?debian-binary.*' ! -regex '.*?DEBIAN.*' -printf '"%P" ' | xargs md5sum > $(BUILD_DIST)/$(1)/DEBIAN/md5sums; \
+	cd $(BUILD_DIST)/$(1) && find . -type f ! -regex '.*/\.hg/.*' ! -regex '.*?debian-binary.*' ! -regex '.*?DEBIAN.*' -printf '"%P" ' | xargs md5sum > $(BUILD_DIST)/$(1)/DEBIAN/md5sums; \
 	$(FAKEROOT) chmod 0755 $(BUILD_DIST)/$(1)/DEBIAN/*; \
 	if [ ! "$(MEMO_QUIET)" == "1" ]; then \
 	echo "Installed-Size: $$SIZE"; \

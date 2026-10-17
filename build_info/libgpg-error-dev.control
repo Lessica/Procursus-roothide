@@ -1,6 +1,7 @@
 Package: libgpg-error-dev
 Version: @DEB_LIBGPG-ERROR_V@
 Architecture: @DEB_ARCH@
+Depends: libgpg-error0 (= @DEB_LIBGPG-ERROR_V@)
 Maintainer: @DEB_MAINTAINER@
 Section: Development
 Priority: optional
