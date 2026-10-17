@@ -15,7 +15,9 @@ gnupg:
 	@echo "Using previously built gnupg."
 else
 gnupg: gnupg-setup readline libgpg-error libgcrypt libassuan libksba npth gettext gnutls libusb sqlite3
-	cd $(BUILD_WORK)/gnupg && ./configure -C \
+	cd $(BUILD_WORK)/gnupg && \
+		GPGRT_CONFIG="$(BUILD_BASE)$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/gpgrt-config" \
+		PKG_CONFIG="$(BUILD_TOOLS)/cross-pkg-config" ./configure -C \
 		$(DEFAULT_CONFIGURE_FLAGS) \
 		$(foreach x, libgpg-error libgcrypt libassuan ksba npth, --with-$x-prefix=$(BUILD_BASE)$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)) \
 		--with-bzip2 \

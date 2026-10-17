@@ -17,7 +17,10 @@ gnutls:
 else
 gnutls: gnutls-setup readline gettext libgcrypt libgmp10 libidn2 libunistring nettle p11-kit brotli zstd
 	find $(BUILD_BASE) -name "*.la" -type f -delete
-	cd $(BUILD_WORK)/gnutls && ./configure -C \
+	cd $(BUILD_WORK)/gnutls && PKG_CONFIG_PATH= \
+		PKG_CONFIG_LIBDIR="$(BUILD_BASE)$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/pkgconfig:$(BUILD_BASE)$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)$(MEMO_ALT_PREFIX)/lib/pkgconfig:$(BUILD_BASE)$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share/pkgconfig" \
+		PKG_CONFIG_SYSROOT_DIR="$(BUILD_BASE)" \
+		./configure -C \
 		$(DEFAULT_CONFIGURE_FLAGS) \
 		--disable-guile \
 		--enable-local-libopts \
