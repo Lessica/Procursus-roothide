@@ -19,14 +19,14 @@ jbigkit: jbigkit-setup
 	+$(MAKE) -C $(BUILD_WORK)/jbigkit CC="$(CC)" CFLAGS="$(CFLAGS) -I../libjbig" PREFIX=$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)
 
 	$(INSTALL) -D -m644 $(BUILD_WORK)/jbigkit/libjbig/libjbig.0.dylib $(BUILD_STAGE)/jbigkit/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/libjbig.0.dylib
-	$(INSTALL) -D -m644 $(BUILD_WORK)/jbigkit/libjbig/libjbig.dylib $(BUILD_STAGE)/jbigkit/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/libjbig.dylib
+	cp -a $(BUILD_WORK)/jbigkit/libjbig/libjbig.dylib $(BUILD_STAGE)/jbigkit/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/libjbig.dylib
 
 	$(INSTALL) -D -m644 $(BUILD_WORK)/jbigkit/libjbig/jbig.h $(BUILD_STAGE)/jbigkit/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include/jbig.h
 	$(INSTALL) -D -m644 $(BUILD_WORK)/jbigkit/libjbig/jbig_ar.h $(BUILD_STAGE)/jbigkit/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include/jbig_ar.h
 	$(INSTALL) -D -m644 $(BUILD_WORK)/jbigkit/libjbig/jbig85.h $(BUILD_STAGE)/jbigkit/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include/jbig85.h
 
 	$(INSTALL) -D -m644 $(BUILD_WORK)/jbigkit/libjbig/libjbig.0.dylib $(BUILD_BASE)$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/libjbig.0.dylib
-	$(INSTALL) -D -m644 $(BUILD_WORK)/jbigkit/libjbig/libjbig.dylib $(BUILD_BASE)$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/libjbig.dylib
+	cp -a $(BUILD_WORK)/jbigkit/libjbig/libjbig.dylib $(BUILD_BASE)$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/libjbig.dylib
 
 	$(INSTALL) -D -m644 $(BUILD_WORK)/jbigkit/libjbig/jbig.h $(BUILD_BASE)$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include/jbig.h
 	$(INSTALL) -D -m644 $(BUILD_WORK)/jbigkit/libjbig/jbig_ar.h $(BUILD_BASE)$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include/jbig_ar.h

@@ -1,6 +1,7 @@
 Package: hello
 Version: @DEB_HELLO_V@
 Architecture: @DEB_ARCH@
+Depends: libintl8
 Maintainer: @DEB_MAINTAINER@
 Section: Development
 Priority: optional

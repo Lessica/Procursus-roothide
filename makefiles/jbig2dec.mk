@@ -33,7 +33,7 @@ jbig2dec-package: jbig2dec-stage
 
 	# jbig2dec.mk Prep jbig2dec
 	cp -a $(BUILD_STAGE)/jbig2dec/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/jbig2dec $(BUILD_DIST)/jbig2dec/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin
-	cp -a $(BUILD_STAGE)/jbig2dec/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share/man/man1/jbig2dec.1 $(BUILD_DIST)/jbig2dec/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share/man/man1
+	cp -a $(BUILD_STAGE)/jbig2dec/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share/man/man1/jbig2dec.1$(MEMO_MANPAGE_SUFFIX) $(BUILD_DIST)/jbig2dec/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share/man/man1
 
 	# jbig2dec.mk Prep libjbig2dec0
 	cp -a $(BUILD_STAGE)/jbig2dec/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/libjbig2dec.0.dylib $(BUILD_DIST)/libjbig2dec0/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib
