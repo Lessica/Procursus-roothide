@@ -11,6 +11,7 @@ uuid-setup: setup file-setup
 	$(call EXTRACT_TAR,ossp-uuid_$(UUID_VERSION).orig.tar.gz,uuid-$(UUID_VERSION),uuid)
 	cp -a $(BUILD_WORK)/file/config.sub $(BUILD_WORK)/uuid
 	sed -i 's/-c -s -m/-c -m/g' $(BUILD_WORK)/uuid/Makefile.in
+	sed -i 's|--mode=link $$(CC) -o $$(LIB_NAME)|--mode=link $$(CC) $$(LDFLAGS) -o $$(LIB_NAME)|' $(BUILD_WORK)/uuid/Makefile.in
 
 ifneq ($(wildcard $(BUILD_WORK)/uuid/.build_complete),)
 uuid:
