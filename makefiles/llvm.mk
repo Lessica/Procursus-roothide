@@ -101,6 +101,7 @@ ifeq ($(wildcard $(BUILD_WORK)/llvm/build/.build_complete),)
 	esac; \
 	cd $(BUILD_WORK)/llvm/build && cmake . \
 		$(DEFAULT_CMAKE_FLAGS) \
+		-DCMAKE_ASM_FLAGS="$(ASFLAGS)" \
 		$(LLVM_CMAKE_FLAGS) \
 		-G Ninja \
 		"-DCMAKE_JOB_POOLS=compile_job_pool=4;link_job_pool=1" \
