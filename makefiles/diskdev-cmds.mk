@@ -30,6 +30,12 @@ endif
 	sed -i -e 's|/private/var/dirs_cleaner/|$(MEMO_PREFIX)/var/dirs_cleaner/|' \
 		-e 's|/tmp|$(MEMO_PREFIX)/tmp|g' \
 		$(BUILD_WORK)/diskdev-cmds/dirs_cleaner/dirs_cleaner.c
+	# MNT_EXT_FSKIT is a macOS-only extended mount flag; retain it where the SDK exposes it.
+	sed -i -e '/{ MNT_EXT_FSKIT,/i\
+#ifdef MNT_EXT_FSKIT' \
+		-e '/{ MNT_EXT_FSKIT,/a\
+#endif' \
+		$(BUILD_WORK)/diskdev-cmds/mount_flags_dir/mount_flags.c
 	mkdir -p $(BUILD_STAGE)/diskdev-cmds/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/{{s,}bin,libexec,share/man/man{1,5,8}}
 
 ifneq ($(wildcard $(BUILD_WORK)/diskdev-cmds/.build_complete),)
