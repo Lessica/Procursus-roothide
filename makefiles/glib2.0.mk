@@ -35,14 +35,15 @@ glib2.0:
 	@echo "Using previously built glib2.0."
 else
 glib2.0: glib2.0-setup gettext pcre2 libffi
-	cd $(BUILD_WORK)/glib2.0/build && meson \
+	cd $(BUILD_WORK)/glib2.0/build && PATH="$(DEVELOPER_DIR)/usr/bin:$$PATH" meson \
 		--cross-file cross.txt \
 		-Ddtrace=false \
 		-Dbsymbolic_functions=false \
 		..
 	sed -i '/HAVE_LIBELF/d' $(BUILD_WORK)/glib2.0/build/config.h
+	meson compile -C $(BUILD_WORK)/glib2.0/build -j $(CORE_COUNT)
 	cd $(BUILD_WORK)/glib2.0/build; \
-		DESTDIR="$(BUILD_STAGE)/glib2.0" meson install
+		DESTDIR="$(BUILD_STAGE)/glib2.0" meson install --no-rebuild
 	sed -i 's/, zlib//;s/\(Libs\.private:.*\)/\1 -lz/' \
 		$(BUILD_STAGE)/glib2.0/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/pkgconfig/gio-2.0.pc
 ifeq ($(shell [ "$(CFVER_WHOLE)" -ge 1700 ] && echo 1),1)
@@ -56,7 +57,7 @@ glib2.0-package: glib2.0-stage
 	rm -rf $(BUILD_DIST)/libglib2.0-{0,bin,dev{,-bin}}
 	mkdir -p $(BUILD_DIST)/libglib2.0-0/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/{lib,share} \
 		$(BUILD_DIST)/libglib2.0-dev/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/{lib,share/glib-2.0} \
-		$(BUILD_DIST)/libglib2.0-bin/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/{bin,share} \
+		$(BUILD_DIST)/libglib2.0-bin/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/{bin,libexec,share} \
 		$(BUILD_DIST)/libglib2.0-dev-bin/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/{bin,share/glib-2.0}
 
 	# glib2.0.mk Prep libglib2.0-0
@@ -71,6 +72,7 @@ glib2.0-package: glib2.0-stage
 
 	# glib2.0.mk Prep libglib2.0-bin
 	cp -a $(BUILD_STAGE)/glib2.0/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/{gdbus,gio,gresource,gsettings,glib-compile-schemas} $(BUILD_DIST)/libglib2.0-bin/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin
+	cp -a $(BUILD_STAGE)/glib2.0/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/libexec/gio-launch-desktop $(BUILD_DIST)/libglib2.0-bin/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/libexec/
 	cp -a $(BUILD_STAGE)/glib2.0/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share/bash-completion $(BUILD_DIST)/libglib2.0-bin/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share
 
 	# glib2.0.mk Prep libglib2.0-dev-bin
