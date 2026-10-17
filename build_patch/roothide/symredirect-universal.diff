@@ -1,0 +1,287 @@
+--- a/symredirect.cpp
++++ b/symredirect.cpp
+@@ -29,12 +29,12 @@
+ #include <vector>
+ #include <algorithm>
+ 
+-#define VROOT_SYMBOLE(NAME) "_"#NAME,
+-
+-#define VROOT_API_DEF(RET,NAME,ARGTYPES) VROOT_SYMBOLE(NAME)
+-#define VROOTAT_API_DEF(RET,NAME,ARGTYPES) VROOT_SYMBOLE(NAME)
+-#define VROOT_API_WRAP(RET,NAME,ARGTYPES,ARGS,PATHARG) VROOT_SYMBOLE(NAME)
+-#define VROOTAT_API_WRAP(RET,NAME,ARGTYPES,ARGS,FD,PATHARG,ATFLAG) VROOT_SYMBOLE(NAME)
++// Stringify directly so forced-include API macros (such as libiosexec's
++// execve -> ie_execve) cannot change the names being matched in input files.
++#define VROOT_API_DEF(RET,NAME,ARGTYPES) "_"#NAME,
++#define VROOTAT_API_DEF(RET,NAME,ARGTYPES) "_"#NAME,
++#define VROOT_API_WRAP(RET,NAME,ARGTYPES,ARGS,PATHARG) "_"#NAME,
++#define VROOTAT_API_WRAP(RET,NAME,ARGTYPES,ARGS,FD,PATHARG,ATFLAG) "_"#NAME,
+ 
+ std::vector<std::string> g_shim_apis = {
+ #define VROOT_API_ALL
+@@ -719,7 +719,7 @@
+             LOG("new bind=%p size=%x\n", newbind, size);
+             if(newbind)
+             {
+-                assert(g_slice_index==0);
++                assert(slice_offset==0);
+ 
+                 assert(lseek(fd, 0, SEEK_END)==newfsize);
+                 assert(write(fd, newbind, size)==size);
+@@ -750,7 +750,7 @@
+             LOG("new lazy bind=%p size=%x\n", newbind, size);
+             if(newbind)
+             {
+-                assert(g_slice_index==0);
++                assert(slice_offset==0);
+ 
+                 assert(lseek(fd, 0, SEEK_END)==newfsize);
+                 assert(write(fd, newbind, size)==size);
+@@ -769,7 +769,7 @@
+             // some machos have padding data in the end
+             // assert(slice_size == (code_sign->dataoff+code_sign->datasize));
+             
+-            assert(g_slice_index==0);
++            assert(slice_offset==0);
+             
+             void* data = (void*)((uint64_t)header + code_sign->dataoff);
+             size_t size = code_sign->datasize;
+@@ -793,77 +793,177 @@
+     return 0;
+ }
+ 
++// Rebinding may append linkedit data. Work on an independent thin file so
++// every offset remains slice-relative, then rebuild the universal container.
++static bool transferBytes(int fd, void* data, size_t size, off_t offset, bool writing)
++{
++    char* bytes = static_cast<char*>(data);
++    while (size) {
++        ssize_t count = writing ? pwrite(fd, bytes, size, offset)
++                                : pread(fd, bytes, size, offset);
++        if (count < 0 && errno == EINTR) continue;
++        if (count <= 0) return false;
++        bytes += count;
++        size -= count;
++        offset += count;
++    }
++    return true;
++}
++
++static int processSlice(std::vector<unsigned char>& bytes,
++                        int (*process)(int,uint64_t,size_t,void*))
++{
++    if (bytes.size() < sizeof(uint32_t)) return -1;
++    uint32_t magic;
++    memcpy(&magic, bytes.data(), sizeof(magic));
++    size_t headerSize = magic == MH_MAGIC_64 ? sizeof(mach_header_64) : sizeof(mach_header);
++    if ((magic != MH_MAGIC && magic != MH_MAGIC_64) || bytes.size() < headerSize) return -1;
++    const mach_header* header = reinterpret_cast<const mach_header*>(bytes.data());
++    if (header->sizeofcmds > bytes.size() - headerSize) return -1;
++    size_t cursor = headerSize;
++    for (uint32_t i = 0; i < header->ncmds; ++i) {
++        if (headerSize + header->sizeofcmds - cursor < sizeof(load_command)) return -1;
++        const load_command* command = reinterpret_cast<const load_command*>(bytes.data() + cursor);
++        if (command->cmdsize < sizeof(load_command) ||
++            command->cmdsize > headerSize + header->sizeofcmds - cursor) return -1;
++        cursor += command->cmdsize;
++    }
++    if (cursor != headerSize + header->sizeofcmds) return -1;
++    FILE* scratch = tmpfile();
++    if (!scratch) return -1;
++    int fd = fileno(scratch);
++    int result = -1;
++    struct stat st;
++    if (transferBytes(fd, bytes.data(), bytes.size(), 0, true) &&
++        process(fd, 0, bytes.size(), bytes.data()) == 0 &&
++        transferBytes(fd, bytes.data(), bytes.size(), 0, true) &&
++        fstat(fd, &st) == 0 && st.st_size >= 0 &&
++        static_cast<uint64_t>(st.st_size) <= bytes.max_size()) {
++        // Include appended bind/signature data, not just the original mapping.
++        bytes.resize(st.st_size);
++        if (transferBytes(fd, bytes.data(), bytes.size(), 0, false)) result = 0;
++    }
++    fclose(scratch);
++    return result;
++}
++
+ int processMachO(const char* file, int (*process)(int,uint64_t,size_t,void*))
+ {
+-    int fd = open(file, O_RDWR);
+-    if(fd < 0) {
+-        fprintf(stderr, "open %s error:%d,%s\n", file, errno, strerror(errno));
++    // Resolve symlinks before atomic replacement, preserving the caller's link.
++    char* resolved = realpath(file, NULL);
++    if (!resolved) return -1;
++    std::string target(resolved);
++    free(resolved);
++    int fd = open(target.c_str(), O_RDONLY);
++    if (fd < 0) return -1;
++    struct stat st;
++    if (fstat(fd, &st) != 0 || st.st_size < sizeof(uint32_t) ||
++        static_cast<uint64_t>(st.st_size) > std::vector<unsigned char>().max_size()) {
++        close(fd);
+         return -1;
+     }
+-    
+-    struct stat st;
+-    if(stat(file, &st) < 0) {
+-        fprintf(stderr, "stat %s error:%d,%s\n", file, errno, strerror(errno));
+-        return -1;
+-    }
+-    
+-    LOG("file size = %lld\n", st.st_size);
+-
+-    int mapflag = MAP_PRIVATE;
+-#ifdef MAP_RESILIENT_CODESIGN
+-    /* MAP_RESILIENT_CODESIGN only works with MAP_PRIVATE+(PROT_READ[|PROT_WRITE]) or MAP_SHARED+PROT_READ */
+-    mapflag |= MAP_RESILIENT_CODESIGN;
+-#endif
+-    void* macho = mmap(NULL, st.st_size, PROT_READ|PROT_WRITE, mapflag, fd, 0);
+-    if(macho == MAP_FAILED) {
+-        fprintf(stderr, "map %s error:%d,%s\n", file, errno, strerror(errno));
+-        return -1;
+-    }
+-    
+-    uint32_t magic = *(uint32_t*)macho;
+-    LOG("macho magic=%08x\n", magic);
+-    if(magic==FAT_MAGIC || magic==FAT_CIGAM) {
+-        struct fat_header* fathdr = (struct fat_header*)macho;
+-        struct fat_arch* archdr = (struct fat_arch*)((uint64_t)fathdr + sizeof(*fathdr));
+-        int count = magic==FAT_MAGIC ? fathdr->nfat_arch : __builtin_bswap32(fathdr->nfat_arch);
+-        for(int i=0; i<count; i++) {
+-            uint32_t offset = magic==FAT_MAGIC ? archdr[i].offset : __builtin_bswap32(archdr[i].offset);
+-            uint64_t size = magic==FAT_MAGIC ? archdr[i].size : __builtin_bswap64(archdr[i].size);
+-            if(process(fd, offset, size, (void*)((uint64_t)macho + offset)) < 0)
+-               return -1;
+-            g_slice_index++;
+-        }
+-    } else if(magic==FAT_MAGIC_64 || magic==FAT_CIGAM_64) {
+-        struct fat_header* fathdr = (struct fat_header*)macho;
+-        struct fat_arch_64* archdr = (struct fat_arch_64*)((uint64_t)fathdr + sizeof(*fathdr));
+-        int count = magic==FAT_MAGIC_64 ? fathdr->nfat_arch : __builtin_bswap32(fathdr->nfat_arch);
+-        for(int i=0; i<count; i++) {
+-            uint64_t offset = magic==FAT_MAGIC_64 ? archdr[i].offset : __builtin_bswap64(archdr[i].offset);
+-            uint64_t size = magic==FAT_MAGIC_64 ? archdr[i].size : __builtin_bswap64(archdr[i].size);
+-            if(process(fd, offset, size, (void*)((uint64_t)macho + offset)) < 0)
+-                return -1;
+-            g_slice_index++;
+-        }
+-    } else if(magic == MH_MAGIC_64) {
+-        if(process(fd, 0, st.st_size, (void*)macho) < 0)
+-            return -1;
+-        g_slice_index++;
++    std::vector<unsigned char> input(st.st_size);
++    bool readOK = transferBytes(fd, input.data(), input.size(), 0, false);
++    close(fd);
++    if (!readOK) return -1;
++
++    uint32_t magic;
++    memcpy(&magic, input.data(), sizeof(magic));
++    std::vector<unsigned char> output;
++    unsigned int sliceCount = 1;
++    if (magic == FAT_MAGIC || magic == FAT_CIGAM ||
++        magic == FAT_MAGIC_64 || magic == FAT_CIGAM_64) {
++        bool wide = magic == FAT_MAGIC_64 || magic == FAT_CIGAM_64;
++        bool swapped = magic == FAT_CIGAM || magic == FAT_CIGAM_64;
++        auto cv32 = [swapped](uint32_t value) { return swapped ? __builtin_bswap32(value) : value; };
++        auto cv64 = [swapped](uint64_t value) { return swapped ? __builtin_bswap64(value) : value; };
++        if (input.size() < sizeof(fat_header)) return -1;
++        fat_header header;
++        memcpy(&header, input.data(), sizeof(header));
++        sliceCount = cv32(header.nfat_arch);
++        size_t entrySize = wide ? sizeof(fat_arch_64) : sizeof(fat_arch);
++        if (!sliceCount || sliceCount > (input.size() - sizeof(header)) / entrySize) return -1;
++        size_t tableSize = sizeof(header) + sliceCount * entrySize;
++        struct Slice { uint64_t offset, size; uint32_t align; };
++        std::vector<Slice> slices;
++        for (unsigned int i = 0; i < sliceCount; ++i) {
++            const unsigned char* entry = input.data() + sizeof(header) + i * entrySize;
++            Slice slice;
++            if (wide) {
++                fat_arch_64 arch;
++                memcpy(&arch, entry, sizeof(arch));
++                slice = {cv64(arch.offset), cv64(arch.size), cv32(arch.align)};
++            } else {
++                fat_arch arch;
++                memcpy(&arch, entry, sizeof(arch));
++                slice = {cv32(arch.offset), cv32(arch.size), cv32(arch.align)};
++            }
++            if (slice.align >= 63 || slice.size < sizeof(uint32_t) ||
++                slice.offset < tableSize || slice.offset > input.size() ||
++                slice.size > input.size() - slice.offset ||
++                slice.offset % (uint64_t(1) << slice.align)) return -1;
++            for (const Slice& other : slices) {
++                if (slice.offset < other.offset + other.size &&
++                    other.offset < slice.offset + slice.size) return -1;
++            }
++            slices.push_back(slice);
++        }
++        // Retain CPU/subtype/align/reserved fields and the input byte order.
++        output.assign(input.begin(), input.begin() + tableSize);
++        for (unsigned int i = 0; i < sliceCount; ++i) {
++            const Slice& slice = slices[i];
++            std::vector<unsigned char> bytes(input.begin() + slice.offset,
++                                             input.begin() + slice.offset + slice.size);
++            if (processSlice(bytes, process) != 0) return -1;
++            uint64_t mask = (uint64_t(1) << slice.align) - 1;
++            if (output.size() > UINT64_MAX - mask) return -1;
++            uint64_t offset = (output.size() + mask) & ~mask;
++            if (offset > output.max_size() || bytes.size() > output.max_size() - offset ||
++                (!wide && (offset > UINT32_MAX || bytes.size() > UINT32_MAX))) return -1;
++            output.resize(offset, 0);
++            output.insert(output.end(), bytes.begin(), bytes.end());
++            unsigned char* entry = output.data() + sizeof(header) + i * entrySize;
++            if (wide) {
++                fat_arch_64 arch;
++                memcpy(&arch, entry, sizeof(arch));
++                arch.offset = cv64(offset);
++                arch.size = cv64(bytes.size());
++                memcpy(entry, &arch, sizeof(arch));
++            } else {
++                fat_arch arch;
++                memcpy(&arch, entry, sizeof(arch));
++                arch.offset = cv32(offset);
++                arch.size = cv32(bytes.size());
++                memcpy(entry, &arch, sizeof(arch));
++            }
++        }
++    } else if (magic == MH_MAGIC_64 || magic == MH_MAGIC) {
++        output.swap(input);
++        if (processSlice(output, process) != 0) return -1;
+     } else {
+         fprintf(stderr, "unknown magic: %08x\n", magic);
+         return -1;
+     }
+-    
+-    assert(lseek(fd, 0, SEEK_SET) == 0);
+-    if(write(fd, macho, st.st_size) != st.st_size) {
+-        fprintf(stderr, "write %lld error:%d,%s\n", st.st_size, errno, strerror(errno));
++
++    // Commit only a fully rewritten image; preserve ownership and permissions.
++    std::string temporary = target + ".symredirect.XXXXXX";
++    std::vector<char> path(temporary.begin(), temporary.end());
++    path.push_back(0);
++    int out = mkstemp(path.data());
++    if (out < 0) return -1;
++    struct stat created;
++    bool ok = fstat(out, &created) == 0;
++    if (ok && (created.st_uid != st.st_uid || created.st_gid != st.st_gid))
++        ok = fchown(out, st.st_uid, st.st_gid) == 0;
++    ok = ok && transferBytes(out, output.data(), output.size(), 0, true) &&
++         fchmod(out, st.st_mode & 07777) == 0;
++    if (close(out) != 0) ok = false;
++    if (ok) ok = rename(path.data(), target.c_str()) == 0;
++    if (!ok) {
++        unlink(path.data());
+         return -1;
+     }
+-    
+-    //msync(macho, st.st_size, MS_SYNC);
+-    munmap(macho, st.st_size);
+-
+-    close(fd);
+-
++    g_slice_index = sliceCount;
+     return 0;
+ }
+ 

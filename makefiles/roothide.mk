@@ -16,6 +16,7 @@ export DEB_ROOTHIDE_V
 roothide-setup: setup
 	$(call GITHUB_ARCHIVE,roothide,libroothide,$(ROOTHIDE_COMMIT),$(ROOTHIDE_COMMIT))
 	$(call EXTRACT_TAR,libroothide-$(ROOTHIDE_COMMIT).tar.gz,libroothide-$(ROOTHIDE_COMMIT),libroothide)
+	$(call DO_PATCH,roothide,libroothide,-p1)
 
 ifneq ($(wildcard $(BUILD_WORK)/roothide/.build_complete),)
 roothide:
