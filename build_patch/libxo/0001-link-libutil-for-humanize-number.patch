@@ -1,0 +1,19 @@
+--- a/libxo/Makefile.am
++++ b/libxo/Makefile.am
+@@ -45,0 +46,4 @@
++
++if HAVE_HUMANIZE_NUMBER
++libxo_la_LIBADD = -lutil
++endif
+--- a/libxo/Makefile.in
++++ b/libxo/Makefile.in
+@@ -142,7 +142,8 @@ am__installdirs = "$(DESTDIR)$(libdir)" "$(DESTDIR)$(man3dir)" \
+ 	"$(DESTDIR)$(man5dir)" "$(DESTDIR)$(man7dir)" \
+ 	"$(DESTDIR)$(libxoincdir)"
+ LTLIBRARIES = $(lib_LTLIBRARIES)
+-libxo_la_LIBADD =
++@HAVE_HUMANIZE_NUMBER_FALSE@libxo_la_LIBADD =
++@HAVE_HUMANIZE_NUMBER_TRUE@libxo_la_LIBADD = -lutil
+ am_libxo_la_OBJECTS = libxo.lo xo_encoder.lo xo_syslog.lo
+ libxo_la_OBJECTS = $(am_libxo_la_OBJECTS)
+ AM_V_lt = $(am__v_lt_@AM_V@)

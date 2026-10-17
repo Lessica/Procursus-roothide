@@ -9,7 +9,10 @@ DEB_PORTAUDIO_V      ?= $(PORTAUDIO_VERSION)
 
 portaudio-setup: setup
 	$(call DOWNLOAD_FILE,$(BUILD_SOURCE)/portaudio-$(PORTAUDIO_VERSION).tgz,http://files.portaudio.com/archives/pa_stable_v$(PORTAUDIO_DOWNLOAD_V).tgz)
-	$(call EXTRACT_TAR,portaudio-$(PORTAUDIO_VERSION).tgz,portaudio-$(PORTAUDIO_VERSION),portaudio)
+	if [ ! -d $(BUILD_WORK)/portaudio ]; then \
+		mkdir -p $(BUILD_WORK)/portaudio; \
+		tar -xf $(BUILD_SOURCE)/portaudio-$(PORTAUDIO_VERSION).tgz -C $(BUILD_WORK)/portaudio --strip-components=1; \
+	fi
 	$(call DO_PATCH,portaudio,portaudio,-p1)
 ifeq (,$(findstring darwin,$(MEMO_TARGET)))
 	$(call DO_PATCH,portaudio-ios,portaudio,-p1)
@@ -23,6 +26,7 @@ else
 portaudio: portaudio-setup
 	cd $(BUILD_WORK)/portaudio && autoreconf -fi
 	cd $(BUILD_WORK)/portaudio/bindings/cpp && autoreconf -fi
+	sed -i 's/-keep_private_externs -nostdlib/-keep_private_externs $(PLATFORM_VERSION_MIN) -arch $(MEMO_ARCH) -nostdlib/g' $(BUILD_WORK)/portaudio/{,bindings/cpp}/configure
 	cd $(BUILD_WORK)/portaudio && ./configure -C \
 		$(DEFAULT_CONFIGURE_FLAGS) \
 		--enable-cxx \

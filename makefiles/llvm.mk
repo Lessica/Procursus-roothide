@@ -103,9 +103,12 @@ ifeq ($(wildcard $(BUILD_WORK)/llvm/build/.build_complete),)
 		$(DEFAULT_CMAKE_FLAGS) \
 		$(LLVM_CMAKE_FLAGS) \
 		-G Ninja \
-		"-DCMAKE_JOB_POOLS=compile=4;link=1" \
-		-DCMAKE_JOB_POOL_COMPILE=compile \
-		-DCMAKE_JOB_POOL_LINK=link \
+		"-DCMAKE_JOB_POOLS=compile_job_pool=4;link_job_pool=1" \
+		-DCMAKE_JOB_POOL_COMPILE=compile_job_pool \
+		-DCMAKE_JOB_POOL_LINK=link_job_pool \
+		-DLLVM_PARALLEL_COMPILE_JOBS=4 \
+		-DLLVM_PARALLEL_LINK_JOBS=1 \
+		-DSWIFT_PARALLEL_LINK_JOBS=1 \
 		-DLLVM_REVISION=$(LLVM_REVISION) \
 		-DLLVM_REPOSITORY=$(LLVM_REPOSITORY) \
 		-DCMAKE_INSTALL_PREFIX=$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/llvm-$(LLVM_MAJOR_V) \

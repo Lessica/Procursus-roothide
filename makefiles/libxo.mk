@@ -18,6 +18,7 @@ libxo-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE), \
 		https://github.com/Juniper/libxo/releases/download/$(LIBXO_VERSION)/libxo-$(LIBXO_VERSION).tar.gz)
 	$(call EXTRACT_TAR,libxo-$(LIBXO_VERSION).tar.gz,libxo-$(LIBXO_VERSION),libxo)
+	$(call DO_PATCH,libxo,libxo,-p1)
 
 ifneq ($(wildcard $(BUILD_WORK)/libxo/.build_complete),)
 libxo:
