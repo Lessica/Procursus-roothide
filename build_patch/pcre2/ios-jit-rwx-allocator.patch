@@ -1,0 +1,9 @@
+--- a/src/sljit/allocator_src/sljitExecAllocatorApple.c
++++ b/src/sljit/allocator_src/sljitExecAllocatorApple.c
+@@ -102 +102,5 @@
+-#ifdef MAP_JIT
++#if TARGET_OS_IPHONE
++/* Use ordinary executable mappings on jailbroken iOS. */
++#define SLJIT_MAP_JIT	(0)
++#define SLJIT_UPDATE_WX_FLAGS(from, to, enable_exec)
++#elif defined(MAP_JIT)
