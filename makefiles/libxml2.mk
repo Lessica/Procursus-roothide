@@ -9,8 +9,8 @@ DEB_LIBXML2_V   ?= $(LIBXML2_VERSION)
 ### Provided by macOS/iOS and only used for tools. Try not to link anything to this.
 
 libxml2-setup: setup
-	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),http://xmlsoft.org/sources/libxml2-$(LIBXML2_VERSION).tar.gz)
-	$(call EXTRACT_TAR,libxml2-$(LIBXML2_VERSION).tar.gz,libxml2-$(LIBXML2_VERSION),libxml2)
+	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://download.gnome.org/sources/libxml2/2.9/libxml2-$(LIBXML2_VERSION).tar.xz)
+	$(call EXTRACT_TAR,libxml2-$(LIBXML2_VERSION).tar.xz,libxml2-$(LIBXML2_VERSION),libxml2)
 	$(call DO_PATCH,libxml2,libxml2,-p1)
 
 ifneq ($(wildcard $(BUILD_WORK)/libxml2/.build_complete),)
@@ -26,14 +26,14 @@ libxml2: libxml2-setup xz ncurses readline python3
 	+$(MAKE) -C $(BUILD_WORK)/libxml2 install \
 		DESTDIR=$(BUILD_STAGE)/libxml2 \
 		RDL_LIBS="-lreadline -lhistory -lncursesw"
-	sed -i "s|includes_dir = \[|includes_dir = ['$(BUILD_STAGE)/libxml2/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)', '$(TARGET_SYSROOT)/usr/include',|" $(BUILD_WORK)/libxml2/python/setup.py
-	cd $(BUILD_WORK)/libxml2/python && $(DEFAULT_SETUP_PY_ENV) LDFLAGS="$(LDFLAGS) -L$(BUILD_STAGE)/libxml2/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)$(MEMO_ALT_PREFIX)/lib" python3 ./setup.py \
+	sed -i "s|includes_dir = \[|includes_dir = ['$(BUILD_STAGE)/libxml2/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include', '$(TARGET_SYSROOT)/usr/include',|" $(BUILD_WORK)/libxml2/python/setup.py
+	cd $(BUILD_WORK)/libxml2/python && $(DEFAULT_SETUP_PY_ENV) ARCHFLAGS="-arch $(MEMO_ARCH)" LDFLAGS="$(LDFLAGS) -L$(BUILD_STAGE)/libxml2/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)$(MEMO_ALT_PREFIX)/lib" python$(PYTHON3_MAJOR_V) ./setup.py \
 		build \
 		--executable="$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/python3" \
 		install \
 		--prefix="$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)" \
 		--root="$(BUILD_STAGE)/libxml2" \
-		--install-layout=deb
+		--install-lib="$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/python3/dist-packages"
 	find $(BUILD_STAGE)/libxml2 -name __pycache__ -prune -exec rm -rf {} \;
 	$(call AFTER_BUILD)
 endif
