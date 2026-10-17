@@ -1,0 +1,63 @@
+--- a/compress/compress.c
++++ b/compress/compress.c
+@@ -226,5 +226,6 @@
+-	if ((ifp = fopen(in, "r")) == NULL) {
+-		cwarn("%s", in);
+-		return;
+-	}
+-	if (stat(in, &isb)) {		/* DON'T FSTAT! */
++	if ((ifp = zopen_file(in, "r")) == NULL) {
++		cwarn("%s", in);
++		return;
++	}
++	if ((zopen_stdio_fd(in, "r") != -1 ?
++	    fstat(zopen_stdio_fd(in, "r"), &isb) : stat(in, &isb))) {
+@@ -322 +323,2 @@
+-	if (stat(in, &sb)) {
++	if ((zopen_stdio_fd(in, "r") != -1 ?
++	    fstat(zopen_stdio_fd(in, "r"), &sb) : stat(in, &sb))) {
+@@ -338 +340 @@
+-	if ((ofp = fopen(out, "w")) == NULL ||
++	if ((ofp = zopen_file(out, "w")) == NULL ||
+--- a/compress/zopen.c
++++ b/compress/zopen.c
+@@ -75,0 +76,31 @@
++
++int
++zopen_stdio_fd(const char *fname, const char *mode)
++{
++	if (mode[0] == 'r' && mode[1] == '\0' &&
++	    (!strcmp(fname, "/dev/stdin") || !strcmp(fname, "/dev/fd/0")))
++		return (STDIN_FILENO);
++	if (mode[0] == 'w' && mode[1] == '\0' &&
++	    (!strcmp(fname, "/dev/stdout") || !strcmp(fname, "/dev/fd/1")))
++		return (STDOUT_FILENO);
++	return (-1);
++}
++
++FILE *
++zopen_file(const char *fname, const char *mode)
++{
++	int fd, stdio_fd, saved_errno;
++	FILE *stream;
++
++	stdio_fd = zopen_stdio_fd(fname, mode);
++	if (stdio_fd == -1)
++		return (fopen(fname, mode));
++	if ((fd = dup(stdio_fd)) == -1)
++		return (NULL);
++	if ((stream = fdopen(fd, mode)) == NULL) {
++		saved_errno = errno;
++		(void)close(fd);
++		errno = saved_errno;
++	}
++	return (stream);
++}
+@@ -726 +757 @@
+-	if ((fp = fopen(fname, mode)) == NULL) {
++	if ((fp = zopen_file(fname, mode)) == NULL) {
+--- a/compress/zopen.h
++++ b/compress/zopen.h
+@@ -34,0 +35,2 @@
++FILE  *zopen_file(const char *, const char *);
++int    zopen_stdio_fd(const char *, const char *);

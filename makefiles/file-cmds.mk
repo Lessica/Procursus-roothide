@@ -11,6 +11,7 @@ DEB_FILE-CMDS_V   ?= $(FILE-CMDS_VERSION)
 file-cmds-setup: setup
 	$(call GITHUB_ARCHIVE,apple-oss-distributions,file_cmds,$(FILE-CMDS_VERSION),file_cmds-$(FILE-CMDS_VERSION))
 	$(call EXTRACT_TAR,file_cmds-$(FILE-CMDS_VERSION).tar.gz,file_cmds-file_cmds-$(FILE-CMDS_VERSION),file-cmds)
+	$(call DO_PATCH,file-cmds,file-cmds,-p1)
 	mkdir -p $(BUILD_STAGE)/file-cmds/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/{bin,share/man/man{1,8}}
 	mkdir -p $(BUILD_WORK)/file-cmds/ipcs/sys
 	@$(call DOWNLOAD_FILES,$(BUILD_WORK)/file-cmds/ipcs/sys, \
