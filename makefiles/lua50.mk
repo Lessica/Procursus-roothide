@@ -80,7 +80,8 @@ lua50-package: lua50-stage
 	# lua50.mk Prep liblua50-dev
 	cp -a $(BUILD_STAGE)/lua50/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include $(BUILD_DIST)/liblua50-dev/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)
 	rm -f $(BUILD_DIST)/liblua50-dev/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include/lua50/lualib.h
-	cp -a $(BUILD_STAGE)/lua50/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/liblua50.dylib $(BUILD_DIST)/liblua50-dev/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib
+	rm -f $(BUILD_DIST)/liblua50-dev/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/liblua50.dylib
+	ln -s liblua50.5.dylib $(BUILD_DIST)/liblua50-dev/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/liblua50.dylib
 
 	# lua50.mk Prep liblualib50
 	$(INSTALL) -Dm755 $(BUILD_STAGE)/lua50/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/liblualib50.5.0.dylib \

@@ -7,8 +7,8 @@ DMG2IMG_VERSION := 1.6.7
 DEB_DMG2IMG_V   ?= $(DMG2IMG_VERSION)-2
 
 dmg2img-setup: setup
-	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),http://vu1tur.eu.org/tools/dmg2img-$(DMG2IMG_VERSION).tar.gz)
-	$(call EXTRACT_TAR,dmg2img-$(DMG2IMG_VERSION).tar.gz,dmg2img-$(DMG2IMG_VERSION),dmg2img)
+	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://deb.debian.org/debian/pool/main/d/dmg2img/dmg2img_$(DMG2IMG_VERSION).orig.tar.gz)
+	$(call EXTRACT_TAR,dmg2img_$(DMG2IMG_VERSION).orig.tar.gz,dmg2img-$(DMG2IMG_VERSION),dmg2img)
 	$(call DO_PATCH,dmg2img,dmg2img,-p1)
 
 ifneq ($(wildcard $(BUILD_WORK)/dmg2img/.build_complete),)

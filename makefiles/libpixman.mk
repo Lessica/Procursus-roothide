@@ -9,6 +9,7 @@ DEB_LIBPIXMAN_V   ?= $(LIBPIXMAN_VERSION)
 libpixman-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://cairographics.org/releases/pixman-$(LIBPIXMAN_VERSION).tar.gz)
 	$(call EXTRACT_TAR,pixman-$(LIBPIXMAN_VERSION).tar.gz,pixman-$(LIBPIXMAN_VERSION),libpixman)
+	$(call DO_PATCH,libpixman,libpixman,-p1)
 
 ifneq ($(wildcard $(BUILD_WORK)/libpixman/.build_complete),)
 libpixman:

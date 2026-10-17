@@ -28,6 +28,8 @@ else
 duktape: duktape-setup
 	cd $(BUILD_WORK)/duktape && python2 tools/configure.py --output-directory \
 		$(BUILD_STAGE)/duktape/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include -UDUK_USE_ES6_PROXY
+	cp -a $(BUILD_STAGE)/duktape/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include/{duk_config.h,duktape.h,duktape.c} \
+		$(BUILD_WORK)/duktape/src/
 	+$(MAKE) -C $(BUILD_WORK)/duktape -f Makefile.sharedlibrary install \
 		INSTALL_PREFIX="$(BUILD_STAGE)/duktape/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)"
 	+$(MAKE) -C $(BUILD_WORK)/duktape -f Makefile.cmdline
@@ -62,6 +64,7 @@ duktape-package: duktape-stage
 
 	# duktape.mk Sign
 	$(call SIGN,duktape,general.xml)
+	$(call SIGN,duktape-dev,general.xml)
 	$(call SIGN,libduktape206,general.xml)
 
 	# duktape.mk Make .debs

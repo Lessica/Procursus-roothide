@@ -17,7 +17,8 @@ libcdio:
 else
 libcdio: libcdio-setup ncurses libcddb
 	cd $(BUILD_WORK)/libcdio && ./configure -C \
-		$(DEFAULT_CONFIGURE_FLAGS)
+		$(DEFAULT_CONFIGURE_FLAGS) \
+		CXX="$(CXX) $(CXXFLAGS)"
 	+$(MAKE) -C $(BUILD_WORK)/libcdio
 	+$(MAKE) -C $(BUILD_WORK)/libcdio install \
 		DESTDIR=$(BUILD_STAGE)/libcdio

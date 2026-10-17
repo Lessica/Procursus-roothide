@@ -4,7 +4,7 @@ Architecture: @DEB_ARCH@
 Maintainer: @DEB_MAINTAINER@
 Section: Libraries
 Priority: optional
-Depends: libunibilium4
+Depends: libunibilium4, libncursesw6
 Description: library for processing keyboard input
  This library allows easy processing of keyboard entry from terminal-based
  programs. It handles all the necessary logic to recognise special keys, UTF-8
