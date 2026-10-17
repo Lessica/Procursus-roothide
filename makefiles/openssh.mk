@@ -19,13 +19,14 @@ OPENSSH_CONFIGURE_ARGS += ac_cv_func_strtonum=no
 endif
 
 ifneq (,$(findstring roothide,$(MEMO_TARGET)))
-OPENSSH_CONFIGURE_ARGS += --with-default-path=$(shell printf "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/bin/X11:/usr/games\n" | tr ':' '\n' | sed "p; s|^|$(MEMO_ROOTFS)|" | tr '\n' ':' | sed 's|:$$|\n|')
+OPENSSH_CONFIGURE_ARGS += --with-privsep-user=_sshd --with-default-path=$(shell printf "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/bin/X11:/usr/games\n" | tr ':' '\n' | sed "p; s|^|$(MEMO_ROOTFS)|" | tr '\n' ':' | sed 's|:$$|\n|')
 endif
 
 openssh-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://cdn.openbsd.org/pub/OpenBSD/OpenSSH/portable/openssh-$(OPENSSH_VERSION).tar.gz{$(comma).asc})
 	$(call PGP_VERIFY,openssh-$(OPENSSH_VERSION).tar.gz,asc)
 	$(call EXTRACT_TAR,openssh-$(OPENSSH_VERSION).tar.gz,openssh-$(OPENSSH_VERSION),openssh)
+	sed -i 's/octet->data/ASN1_STRING_get0_data(octet)/; s/octet->length/ASN1_STRING_length(octet)/' $(BUILD_WORK)/openssh/ssh-pkcs11.c
 ifeq (,$(findstring darwin,$(MEMO_TARGET)))
 	$(call DO_PATCH,openssh,openssh,-p1)
 endif
@@ -52,7 +53,10 @@ endif # (,$(findstring darwin,$(MEMO_TARGET)))
 	fi
 	sed -i '/HAVE_ENDIAN_H/d' $(BUILD_WORK)/openssh/config.h.in
 ifeq (,$(findstring ramdisk,$(MEMO_TARGET)))
-	cd $(BUILD_WORK)/openssh && ./configure -C \
+	cd $(BUILD_WORK)/openssh && PKG_CONFIG_PATH= \
+		PKG_CONFIG_LIBDIR="$(BUILD_BASE)$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/pkgconfig:$(BUILD_BASE)$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/local/lib/pkgconfig" \
+		PKG_CONFIG_SYSROOT_DIR="$(BUILD_BASE)" \
+		./configure -C \
 		$(DEFAULT_CONFIGURE_FLAGS) \
 		--sysconfdir=$(MEMO_PREFIX)/etc/ssh \
 		--with-xauth=$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/xauth \

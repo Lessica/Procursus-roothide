@@ -48,6 +48,7 @@ endif
 		ac_cv_have_working_vsnprintf=yes \
 		ac_cv_header_libutil_h=no
 	sed -i 's/-Wc,-static-libgcc/ /g' $(BUILD_WORK)/sudo/{src,,plugins/*,logsrvd,lib/util}/Makefile
+	sed -i 's|^INSTALL = .*install-sh -c$$|INSTALL = install -c|' $(BUILD_WORK)/sudo/{src,,plugins/*,logsrvd,lib/util}/Makefile
 	+$(MAKE) -C $(BUILD_WORK)/sudo
 	+$(MAKE) -C $(BUILD_WORK)/sudo install \
 		DESTDIR=$(BUILD_STAGE)/sudo \
