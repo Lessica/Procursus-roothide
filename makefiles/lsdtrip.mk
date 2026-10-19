@@ -15,6 +15,7 @@ lsdtrip-setup: setup
 		http://newosxbook.com/tools/lsdtrip.tgz)
 	mkdir -p $(BUILD_WORK)/lsdtrip
 	tar xf $(BUILD_SOURCE)/lsdtrip-$(LSDTRIP_VERSION).tar.gz -C $(BUILD_WORK)/lsdtrip
+	$(call DO_PATCH,lsdtrip,lsdtrip,-p1)
 
 ifneq ($(wildcard $(BUILD_WORK)/lsdtrip/.build_complete),)
 lsdtrip:

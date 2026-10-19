@@ -16,6 +16,12 @@ endif
 SHSHD_VERSION := 1.1.1.1
 DEB_SHSHD_V   ?= $(SHSHD_VERSION)
 
+ifneq ($(shell command -v xcrun),)
+SWIFTC ?= $(shell xcrun --find swiftc)
+else
+SWIFTC ?= swiftc
+endif
+
 shshd-setup: setup
 	$(call GITHUB_ARCHIVE,Diatrus,SHSHDaemon,$(SHSHD_VERSION),v$(SHSHD_VERSION))
 	$(call EXTRACT_TAR,SHSHDaemon-$(SHSHD_VERSION).tar.gz,SHSHDaemon-$(SHSHD_VERSION),shshd)
@@ -28,7 +34,7 @@ shshd:
 else
 shshd: shshd-setup dimentio
 	cd $(BUILD_WORK)/shshd; \
-		swiftc -Osize \
+		SDKROOT="$(TARGET_SYSROOT)" $(SWIFTC) -Osize \
 			--target=$(LLVM_TARGET) \
 			-sdk $(TARGET_SYSROOT) \
 			-I$(BUILD_STAGE)/dimentio/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include \

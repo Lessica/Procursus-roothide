@@ -4,7 +4,8 @@ endif
 
 SUBPROJECTS     += gtk-doc
 GTK_DOC_VERSION := 1.32
-DEB_GTK_DOC_V   ?= $(GTK_DOC_VERSION)-1
+DEB_GTK_DOC_V   ?= $(GTK_DOC_VERSION)-2
+GTK_DOC_ITSTOOL ?= itstool
 
 gtk-doc-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://download.gnome.org/sources/gtk-doc/$(GTK_DOC_VERSION)/gtk-doc-$(GTK_DOC_VERSION).tar.xz)
@@ -17,7 +18,8 @@ else
 gtk-doc: gtk-doc-setup
 	cd $(BUILD_WORK)/gtk-doc && ./configure -C \
 		$(DEFAULT_CONFIGURE_FLAGS) \
-		--with-xml-catalog="$(XML_CATALOG_FILES)"
+		--with-xml-catalog="$(XML_CATALOG_FILES)" \
+		ITSTOOL="$(GTK_DOC_ITSTOOL)"
 	+$(MAKE) -C $(BUILD_WORK)/gtk-doc
 	+$(MAKE) -C $(BUILD_WORK)/gtk-doc install \
 		DESTDIR=$(BUILD_STAGE)/gtk-doc

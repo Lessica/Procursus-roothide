@@ -17,10 +17,15 @@ else
 myman: myman-setup ncurses
 	unset CC CFLAGS CXXFLAGS CPPFLAGS LDFLAGS && cd $(BUILD_WORK)/myman && ./configure \
 		$(DEFAULT_CONFIGURE_FLAGS)
-	+unset CC CFLAGS CXXFLAGS CPPFLAGS LDFLAGS && $(MAKE) -C $(BUILD_WORK)/myman install \
+	# This makefile uses CC/LD for build tools and HOSTCC/HOSTLD for the target.
+	+SDKROOT="$(MACOSX_SYSROOT)" $(MAKE) -C $(BUILD_WORK)/myman install \
 		DESTDIR="$(BUILD_STAGE)/myman" \
 		RMDIR="rmdir" \
+		CC="$(CC_FOR_BUILD)" LD="$(CC_FOR_BUILD)" \
+		CFLAGS="$(CFLAGS_FOR_BUILD)" CPPFLAGS="$(CPPFLAGS_FOR_BUILD)" \
+		LDFLAGS="$(LDFLAGS_FOR_BUILD)" \
 		HOSTCC="$(CC)" \
+		HOSTLD="$(CC)" \
 		HOSTCFLAGS="$(CFLAGS)" \
 		HOSTCPPFLAGS="$(CPPFLAGS)" \
 		HOSTLDFLAGS="$(LDFLAGS)" \

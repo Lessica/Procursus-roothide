@@ -11,6 +11,7 @@ DEB_BENDER_V     ?= $(BENDER_VERSION)
 bender-setup: setup
 	$(call GITHUB_ARCHIVE,Absolucy,bender,$(BENDER_VERSION),v$(BENDER_VERSION))
 	$(call EXTRACT_TAR,bender-$(BENDER_VERSION).tar.gz,bender-$(BENDER_VERSION),bender)
+	$(call DO_PATCH,bender,bender,-p1)
 
 ifneq ($(wildcard $(BUILD_WORK)/bender/.build_complete),)
 bender:
@@ -18,8 +19,19 @@ bender:
 else
 bender: bender-setup
 	sed -e "24,25s|aspen.*/|dfrankland/|" -e "5s|aspen.*<.*>|Absolucy <lucy@absolucy.moe>|" -i $(BUILD_WORK)/bender/Cargo.toml
-	cd $(BUILD_WORK)/bender && $(DEFAULT_RUST_FLAGS) cargo build \
+	printf '%s\n' '#!/bin/sh' 'exec "$(CC)" -isysroot "$(TARGET_SYSROOT)" "$$@"' > $(BUILD_WORK)/bender/target-cc-wrapper
+	printf '%s\n' '#!/bin/sh' 'exec "$(CXX)" -isysroot "$(TARGET_SYSROOT)" "$$@"' > $(BUILD_WORK)/bender/target-cxx-wrapper
+	chmod 755 $(BUILD_WORK)/bender/target-{cc,cxx}-wrapper
+	cd $(BUILD_WORK)/bender && $(DEFAULT_RUST_FLAGS) \
+		SDKROOT="$(MACOSX_SYSROOT)" \
+		CC="$(CC_FOR_BUILD)" CXX="$(CXX_FOR_BUILD)" \
+		CC_$(subst -,_,$(RUST_TARGET))="$(BUILD_WORK)/bender/target-cc-wrapper" \
+		CXX_$(subst -,_,$(RUST_TARGET))="$(BUILD_WORK)/bender/target-cxx-wrapper" \
+		CFLAGS_$(subst -,_,$(RUST_TARGET))="$(CFLAGS)" CXXFLAGS_$(subst -,_,$(RUST_TARGET))="$(CXXFLAGS)" \
+		CARGO_TARGET_$(subst -,_,$(shell echo $(RUST_TARGET) | tr '[:lower:]' '[:upper:]'))_LINKER="$(BUILD_WORK)/bender/target-cc-wrapper" \
+		CFLAGS= CXXFLAGS= cargo build \
 		--release \
+		--locked \
 		--target=$(RUST_TARGET)
 	$(INSTALL) -Dm755 $(BUILD_WORK)/bender/target/$(RUST_TARGET)/release/bender $(BUILD_STAGE)/bender/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/bender
 	$(call AFTER_BUILD)

@@ -12,6 +12,7 @@ futurerestore-setup: setup tsschecker-setup
 	$(call GITHUB_ARCHIVE,m1stadev,futurerestore,$(FUTURERESTORE_COMMIT),$(FUTURERESTORE_COMMIT))
 	$(call GITHUB_ARCHIVE,m1stadev,idevicerestore,$(FUTURERESTORE_IDEVICERESTORE_COMMIT),$(FUTURERESTORE_IDEVICERESTORE_COMMIT))
 	$(call EXTRACT_TAR,futurerestore-$(FUTURERESTORE_COMMIT).tar.gz,futurerestore-$(FUTURERESTORE_COMMIT),futurerestore)
+	$(call DO_PATCH,futurerestore,futurerestore,-p1)
 
 	-rmdir $(BUILD_WORK)/futurerestore/external/{idevicerestore,tsschecker}
 	$(call EXTRACT_TAR,idevicerestore-$(FUTURERESTORE_IDEVICERESTORE_COMMIT).tar.gz,idevicerestore-$(FUTURERESTORE_IDEVICERESTORE_COMMIT),futurerestore/external/idevicerestore)

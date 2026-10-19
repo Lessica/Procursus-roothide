@@ -22,14 +22,19 @@ r2ghidra:
 	@echo "Using previously built r2ghidra."
 else
 r2ghidra: r2ghidra-setup radare2 libpugixml
+	+$(MAKE) -C $(BUILD_WORK)/r2ghidra/ghidra-native/src/decompiler sleigh_opt \
+		CXX="$(CXX_FOR_BUILD)" ARCH_TYPE= ADDITIONAL_FLAGS= \
+		OPT_CXXFLAGS="$(CXXFLAGS_FOR_BUILD) -std=c++11" LNK="$(LDFLAGS_FOR_BUILD)"
 	cd $(BUILD_WORK)/r2ghidra && ./configure -C \
 		$(DEFAULT_CONFIGURE_FLAGS) \
 		R2_PREFIX="$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)" \
 		R2_LIBR_PLUGINS="$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/radare2/$(RADARE2_VERSION)" \
 		R2_USER_PLUGINS="$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/radare2/$(RADARE2_VERSION)" \
 		PKGCONFIG="$(BUILD_TOOLS)/cross-pkg-config"
-	+$(MAKE) -C $(BUILD_WORK)/r2ghidra
+	+$(MAKE) -C $(BUILD_WORK)/r2ghidra \
+		R2_LIBEXT=dylib SLEIGHC="$(BUILD_WORK)/r2ghidra/ghidra-native/src/decompiler/sleigh_opt"
 	+$(MAKE) -C $(BUILD_WORK)/r2ghidra install \
+		R2_LIBEXT=dylib \
 		DESTDIR="$(BUILD_STAGE)/r2ghidra"
 	$(call AFTER_BUILD)
 endif
