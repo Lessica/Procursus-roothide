@@ -4,7 +4,10 @@ endif
 
 SUBPROJECTS                    += liblocale-gettext-perl
 LIBLOCALE-GETTEXT-PERL_VERSION := 1.07
-DEB_LIBLOCALE-GETTEXT-PERL_V   ?= $(LIBLOCALE-GETTEXT-PERL_VERSION)
+DEB_LIBLOCALE-GETTEXT-PERL_V   ?= $(LIBLOCALE-GETTEXT-PERL_VERSION)-2
+PERL_HOST                      ?= $(shell command -v perl)
+PERL_HOST_CORE                 ?= $(shell $(PERL_HOST) -MConfig -e 'print "$$Config{archlib}/CORE"')
+PERL_TARGET_CORE               = $(BUILD_STAGE)/perl/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/perl5/$(PERL_MAJOR)/CORE
 
 liblocale-gettext-perl-setup: setup
 	$(call DOWNLOAD_FILE,$(BUILD_SOURCE)/liblocale-gettext-perl-$(LIBLOCALE-GETTEXT-PERL_VERSION).tar.gz, \
@@ -17,19 +20,28 @@ liblocale-gettext-perl:
 	@echo "Using previously built liblocale-gettext-perl."
 else
 liblocale-gettext-perl: liblocale-gettext-perl-setup perl gettext
-	cd $(BUILD_WORK)/liblocale-gettext-perl && /opt/procursus/bin/perl Makefile.PL \
-		$(DEFAULT_PERL_MAKE_FLAGS)
+	cd $(BUILD_WORK)/liblocale-gettext-perl && $(PERL_HOST) Makefile.PL \
+		$(DEFAULT_PERL_MAKE_FLAGS) \
+		DLEXT=so \
+		LDDLFLAGS="$(LDFLAGS) -L$(PERL_TARGET_CORE) -lperl -shared"
 	echo "#define HAVE_DGETTEXT" > $(BUILD_WORK)/liblocale-gettext-perl/config.h
 	echo "#define HAVE_NGETTEXT" >> $(BUILD_WORK)/liblocale-gettext-perl/config.h
 	echo "#define HAVE_NGETTEXT" >> $(BUILD_WORK)/liblocale-gettext-perl/config.h
 	echo "#define HAVE_BIND_TEXTDOMAIN_CODESET" >> $(BUILD_WORK)/liblocale-gettext-perl/config.h
 	+$(MAKE) -C $(BUILD_WORK)/liblocale-gettext-perl \
 		$(DEFAULT_PERL_MAKE_FLAGS) \
+		DLEXT=so \
+		PERL_INCDEP="$(PERL_HOST_CORE)" \
+		LDDLFLAGS="$(LDFLAGS) -L$(PERL_TARGET_CORE) -lperl -shared" \
 		INST_DYNAMIC_FIX=-lintl
 	+$(MAKE) -C $(BUILD_WORK)/liblocale-gettext-perl install \
 		$(DEFAULT_PERL_MAKE_FLAGS) \
+		DLEXT=so \
+		PERL_INCDEP="$(PERL_HOST_CORE)" \
+		LDDLFLAGS="$(LDFLAGS) -L$(PERL_TARGET_CORE) -lperl -shared" \
 		DESTDIR="$(BUILD_STAGE)/liblocale-gettext-perl"
 	rm -f $(BUILD_STAGE)/liblocale-gettext-perl/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/perl5/$(PERL_MAJOR)/perllocal.pod
+	rm -f $(BUILD_STAGE)/liblocale-gettext-perl/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/perl5/$(PERL_MAJOR)/auto/Locale/gettext/gettext.bundle
 	chmod 755 $(BUILD_STAGE)/liblocale-gettext-perl/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/perl5/$(PERL_MAJOR)/auto/Locale/gettext/gettext.so
 	$(call AFTER_BUILD)
 endif
@@ -40,6 +52,8 @@ liblocale-gettext-perl-package: liblocale-gettext-perl-stage
 
 	# liblocale-gettext-perl.mk Prep liblocale-gettext-perl
 	cp -a $(BUILD_STAGE)/liblocale-gettext-perl $(BUILD_DIST)
+	find $(BUILD_DIST)/liblocale-gettext-perl -type f -name .packlist -delete
+	rm -f $(BUILD_DIST)/liblocale-gettext-perl/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/perl5/$(PERL_MAJOR)/auto/Locale/gettext/gettext.bundle
 
 	# liblocale-gettext-perl.mk Sign
 	$(call SIGN,liblocale-gettext-perl,general.xml)
