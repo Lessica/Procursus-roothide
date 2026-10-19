@@ -1,0 +1,10 @@
+Package: libxslt1.1
+Version: @DEB_LIBXSLT_V@
+Architecture: @DEB_ARCH@
+Maintainer: @DEB_MAINTAINER@
+Depends: libxml2, libgcrypt20
+Section: Libraries
+Priority: optional
+Homepage: https://gitlab.gnome.org/GNOME/libxslt
+Description: XSLT and EXSLT transformation libraries
+ XSLT 1.0 processor and EXSLT extensions, including crypto support.

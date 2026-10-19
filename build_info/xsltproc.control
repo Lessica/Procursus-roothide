@@ -1,0 +1,10 @@
+Package: xsltproc
+Version: @DEB_LIBXSLT_V@
+Architecture: @DEB_ARCH@
+Maintainer: @DEB_MAINTAINER@
+Depends: libxslt1.1 (= @DEB_LIBXSLT_V@), libxml2
+Section: XML
+Priority: optional
+Homepage: https://gitlab.gnome.org/GNOME/libxslt
+Description: XSLT command line processor
+ Transform XML documents using XSLT stylesheets and EXSLT extensions.

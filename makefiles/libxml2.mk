@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS     += libxml2
 LIBXML2_VERSION := 2.9.12
-DEB_LIBXML2_V   ?= $(LIBXML2_VERSION)
+DEB_LIBXML2_V   ?= $(LIBXML2_VERSION)-1
 
 ### Provided by macOS/iOS and only used for tools. Try not to link anything to this.
 
@@ -35,6 +35,12 @@ libxml2: libxml2-setup xz ncurses readline python3
 		--root="$(BUILD_STAGE)/libxml2" \
 		--install-lib="$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/python3/dist-packages"
 	find $(BUILD_STAGE)/libxml2 -name __pycache__ -prune -exec rm -rf {} \;
+	# Configure's private static link flags contain the build sysroot.
+	# Installed development interfaces must resolve libraries on the target.
+	sed -i 's|$(BUILD_BASE)||g' \
+		$(BUILD_STAGE)/libxml2/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/xml2-config \
+		$(BUILD_STAGE)/libxml2/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)$(MEMO_ALT_PREFIX)/lib/pkgconfig/libxml-2.0.pc \
+		$(BUILD_STAGE)/libxml2/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)$(MEMO_ALT_PREFIX)/lib/xml2Conf.sh
 	$(call AFTER_BUILD)
 endif
 
