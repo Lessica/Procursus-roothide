@@ -4,11 +4,12 @@ endif
 
 SUBPROJECTS        += wptc-track
 WPTC_TRACK_VERSION := 2020.09.26
-DEB_WPTC_TRACK_V   ?= $(WPTC_TRACK_VERSION)
+DEB_WPTC_TRACK_V   ?= $(WPTC_TRACK_VERSION)-1
 
 wptc-track-setup: setup
 	$(call GITHUB_ARCHIVE,titoxd,wptc-track,$(WPTC_TRACK_VERSION),69bfe15eef70be9da64339eba41de1d00b0a6ec9)
 	$(call EXTRACT_TAR,wptc-track-$(WPTC_TRACK_VERSION).tar.gz,wptc-track-69bfe15eef70be9da64339eba41de1d00b0a6ec9,wptc-track)
+	$(call DO_PATCH,wptc-track,wptc-track,-p1)
 	sed -i 's@../data@$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share/wptc-track@g' $(BUILD_WORK)/wptc-track/tracks/{refresh-nhc,track.c}
 	sed -i 's@../png/output.png@./track.png@g' $(BUILD_WORK)/wptc-track/tracks/track.c
 
@@ -18,7 +19,7 @@ wptc-track:
 else
 wptc-track: wptc-track-setup cairo
 	cd $(BUILD_WORK)/wptc-track/tracks; \
-	$(CC) $(CFLAGS) -g -Wall scales.c template.c tab.c track.c tcr.c atcf.c hurdat2.c hurdat.c md.c $(BUILD_BASE)$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/libcairo.dylib -o track -I$(BUILD_BASE)$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include/cairo
+	$(CC) $(CFLAGS) -g -Wall scales.c template.c tab.c track.c tcr.c atcf.c hurdat2.c hurdat.c md.c $(LDFLAGS) $(BUILD_BASE)$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/libcairo.dylib -o track -I$(BUILD_BASE)$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include/cairo
 	mkdir -p $(BUILD_STAGE)/wptc-track/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/{share,bin,sbin}
 	mkdir -p $(BUILD_STAGE)/wptc-track/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share/wptc-track
 	$(INSTALL) -Dm755 $(BUILD_WORK)/wptc-track/tracks/track $(BUILD_STAGE)/wptc-track/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/track

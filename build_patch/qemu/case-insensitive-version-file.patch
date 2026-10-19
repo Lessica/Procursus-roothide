@@ -1,0 +1,113 @@
+--- a/configure
++++ b/configure
+@@ -898,7 +898,7 @@
+   case "$opt" in
+   --help|-h) show_help=yes
+   ;;
+-  --version|-V) exec cat $source_path/VERSION
++  --version|-V) exec cat $source_path/VERSION.txt
+   ;;
+   --prefix=*) prefix="$optarg"
+   ;;
+@@ -5883,7 +5883,7 @@
+   fi
+ 
+   if test "$QEMU_GA_VERSION" = ""; then
+-      QEMU_GA_VERSION=$(cat $source_path/VERSION)
++      QEMU_GA_VERSION=$(cat $source_path/VERSION.txt)
+   fi
+ 
+   QEMU_GA_MSI_MINGW_DLL_PATH="-D Mingw_dlls=$($pkg_config --variable=prefix glib-2.0)/bin"
+@@ -5998,7 +5998,7 @@
+ fi
+ if test "$mingw32" = "yes" ; then
+   echo "CONFIG_WIN32=y" >> $config_host_mak
+-  rc_version=$(cat $source_path/VERSION)
++  rc_version=$(cat $source_path/VERSION.txt)
+   version_major=${rc_version%%.*}
+   rc_version=${rc_version#*.}
+   version_minor=${rc_version%%.*}
+@@ -6106,7 +6106,7 @@
+ if test "$xfs" = "yes" ; then
+   echo "CONFIG_XFS=y" >> $config_host_mak
+ fi
+-qemu_version=$(head $source_path/VERSION)
++qemu_version=$(head $source_path/VERSION.txt)
+ echo "PKGVERSION=$pkgversion" >>$config_host_mak
+ echo "SRC_PATH=$source_path" >> $config_host_mak
+ echo "TARGET_DIRS=$target_list" >> $config_host_mak
+--- a/meson.build
++++ b/meson.build
+@@ -1,7 +1,7 @@
+ project('qemu', ['c'], meson_version: '>=0.55.0',
+         default_options: ['warning_level=1', 'c_std=gnu99', 'cpp_std=gnu++11', 'b_colorout=auto'] +
+                          (meson.version().version_compare('>=0.56.0') ? [ 'b_staticpic=false' ] : []),
+-        version: run_command('head', meson.source_root() / 'VERSION').stdout().strip())
++        version: run_command('head', meson.source_root() / 'VERSION.txt').stdout().strip())
+ 
+ not_found = dependency('', required: false)
+ if meson.version().version_compare('>=0.56.0')
+--- a/Makefile
++++ b/Makefile
+@@ -105,7 +105,7 @@
+ endif
+ 
+ # 1. ensure config-host.mak is up-to-date
+-config-host.mak: $(SRC_PATH)/configure $(SRC_PATH)/pc-bios $(SRC_PATH)/VERSION
++config-host.mak: $(SRC_PATH)/configure $(SRC_PATH)/pc-bios $(SRC_PATH)/VERSION.txt
+ 	@echo config-host.mak is out-of-date, running configure
+ 	@if test -f meson-private/coredata.dat; then \
+ 	  ./config.status --skip-meson; \
+@@ -223,7 +223,7 @@
+ 	rm -f TAGS cscope.* *.pod *~ */*~
+ 	rm -f fsdev/*.pod scsi/*.pod
+ 
+-VERSION = $(shell cat $(SRC_PATH)/VERSION)
++VERSION = $(shell cat $(SRC_PATH)/VERSION.txt)
+ 
+ dist: qemu-$(VERSION).tar.bz2
+ 
+--- a/docs/conf.py
++++ b/docs/conf.py
+@@ -99,7 +99,7 @@
+ # command line, which override this.
+ try:
+     extracted_version = None
+-    with open(os.path.join(qemu_docdir, '../VERSION')) as f:
++    with open(os.path.join(qemu_docdir, '../VERSION.txt')) as f:
+         extracted_version = f.readline().strip()
+ except:
+     pass
+--- a/scripts/oss-fuzz/build.sh
++++ b/scripts/oss-fuzz/build.sh
+@@ -44,7 +44,7 @@
+    [ -e "./MAINTAINERS" ] &&
+    [ -e "./Makefile" ] &&
+    [ -e "./docs" ] &&
+-   [ -e "./VERSION" ] &&
++   [ -e "./VERSION.txt" ] &&
+    [ -e "./linux-user" ] &&
+    [ -e "./softmmu" ];} ; then
+     fatal "Please run the script from the top of the QEMU tree"
+--- a/scripts/checkpatch.pl
++++ b/scripts/checkpatch.pl
+@@ -461,7 +461,7 @@
+ 
+ 	my @tree_check = (
+ 		"COPYING", "MAINTAINERS", "Makefile",
+-		"README.rst", "docs", "VERSION",
++		"README.rst", "docs", "VERSION.txt",
+ 		"linux-user", "softmmu"
+ 	);
+ 
+--- a/scripts/coverity-scan/run-coverity-scan
++++ b/scripts/coverity-scan/run-coverity-scan
+@@ -295,7 +295,7 @@
+ fi
+ 
+ echo "Checking this is a QEMU source tree..."
+-if ! [ -e "$SRCDIR/VERSION" ]; then
++if ! [ -e "$SRCDIR/VERSION.txt" ]; then
+     echo "Not in a QEMU source tree?"
+     exit 1
+ fi

@@ -9,18 +9,20 @@ DEB_QEMU_V   ?= $(QEMU_VERSION)-1
 qemu-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://github.com/utmapp/qemu/releases/download/v$(QEMU_VERSION)-asi/qemu-$(QEMU_VERSION)-asi.tar.bz2)
 	$(call EXTRACT_TAR,qemu-$(QEMU_VERSION)-asi.tar.bz2,qemu-$(QEMU_VERSION)-asi,qemu)
+	$(call DO_PATCH,qemu,qemu,-p1)
+	if [ -f $(BUILD_WORK)/qemu/VERSION ]; then mv $(BUILD_WORK)/qemu/VERSION $(BUILD_WORK)/qemu/VERSION.txt; fi
 
 ifneq ($(wildcard $(BUILD_WORK)/qemu/.build_complete),)
 qemu:
 	@echo "Using previously built qemu."
 else
-qemu: qemu-setup glib2.0 gnutls libjpeg-turbo libpng16 libssh libusb liblzo2 ncurses nettle libpixman libsnappy lzfse gnutls curl libvde
-	cd $(BUILD_WORK)/qemu && STRIP="strip -x" CFLAGS+=" -DNCURSES_WIDECHAR=1 -I$(BUILD_BASE)$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include/pixman-1" ./configure \
-		$(DEFAULT_CONFIGURE_FLAGS) \
+qemu: qemu-setup glib2.0 gnutls libjpeg-turbo libpng16 libssh libusb liblzo2 ncurses nettle libpixman libsnappy lzfse gnutls curl libvde capstone openpam zstd
+	cd $(BUILD_WORK)/qemu && STRIP="strip -x" PKG_CONFIG="$(BUILD_TOOLS)/cross-pkg-config" CFLAGS+=" -DNCURSES_WIDECHAR=1 -I$(BUILD_BASE)$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include/pixman-1" ./configure \
+		$(filter-out --enable-silent-rules --enable-shared --enable-static PKG_CONFIG=%,$(DEFAULT_CONFIGURE_FLAGS)) \
 		--cpu=aarch64 \
 		--cross-prefix="" \
 		--cc=$(CC) \
-		--host-cc=cc \
+		--host-cc="$(CC_FOR_BUILD)" \
 		--prefix=$(MEMO_PREFIX)$(MEMO_SUB_PREFIX) \
 		--disable-bsd-user \
 		--disable-guest-agent \
@@ -35,6 +37,7 @@ qemu: qemu-setup glib2.0 gnutls libjpeg-turbo libpng16 libssh libusb liblzo2 ncu
 		--enable-modules \
 		--enable-module-upgrades
 	+$(MAKE) -C $(BUILD_WORK)/qemu install \
+		.SHELLFLAGS="-o pipefail -c" \
 		DESTDIR=$(BUILD_STAGE)/qemu
 	$(call AFTER_BUILD)
 endif
@@ -85,6 +88,7 @@ qemu-package: qemu-stage
 
 	# qemu.mk Prep qemu-utils
 	cp -a $(BUILD_STAGE)/qemu/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/qemu-{img,io,nbd,edid} $(BUILD_DIST)/qemu-utils/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin
+	cp -a $(BUILD_STAGE)/qemu/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/elf2dmp $(BUILD_DIST)/qemu-utils/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin
 
 	# qemu.mk Sign
 	$(call SIGN,qemu-block-extra,qemu-ios.xml)
