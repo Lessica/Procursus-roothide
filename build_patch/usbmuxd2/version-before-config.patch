@@ -1,0 +1,15 @@
+--- a/usbmuxd2/main.cpp
++++ b/usbmuxd2/main.cpp
+@@ -285,6 +285,12 @@
+ 
+ 
+ int main(int argc, const char * argv[]) {
++    // A version query must not create or change daemon configuration.
++    if (argc == 2 && (!strcmp(argv[1], "--version") || !strcmp(argv[1], "-V"))) {
++        printf("%s\n", VERSION_STRING);
++        return 0;
++    }
++
+     int err = 0;
+     int lfd = -1;
+     struct flock lock = {};

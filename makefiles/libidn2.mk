@@ -4,7 +4,7 @@ endif
 
 STRAPPROJECTS += libidn2
 IDN2_VERSION  := 2.3.7
-DEB_IDN2_V    ?= $(IDN2_VERSION)
+DEB_IDN2_V    ?= $(IDN2_VERSION)-1
 
 libidn2-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://ftpmirror.gnu.org/libidn/libidn2-$(IDN2_VERSION).tar.gz{$(comma).sig})
@@ -41,7 +41,9 @@ libidn2-package: libidn2-stage
 	cp -a $(BUILD_STAGE)/libidn2/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share/locale $(BUILD_DIST)/libidn2-0/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share
 
 	# libidn2.mk Prep libidn2-dev
+	cp -a $(BUILD_STAGE)/libidn2/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include $(BUILD_DIST)/libidn2-dev/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)
 	cp -a $(BUILD_STAGE)/libidn2/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/{libidn2.{dylib,a},pkgconfig} $(BUILD_DIST)/libidn2-dev/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib
+	sed -i -E 's@ -[LR]/[^ ]*/build_base/[^ ]+@@g' $(BUILD_DIST)/libidn2-dev/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/pkgconfig/libidn2.pc
 	cp -a $(BUILD_STAGE)/libidn2/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share/man/man3 $(BUILD_DIST)/libidn2-dev/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share/man
 
 	# libidn2.mk Sign

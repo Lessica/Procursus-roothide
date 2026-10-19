@@ -7,12 +7,16 @@ ifeq (,$(findstring darwin,$(MEMO_TARGET)))
 SUBPROJECTS      += usbmuxd2
 USBMUXD2_COMMIT  := 753b79eaf317c56df6c8b1fb6da5847cc54a0bb0
 USBMUXD2_VERSION := 46
-DEB_USBMUXD2_V   ?= $(USBMUXD2_VERSION)-1
+DEB_USBMUXD2_V   ?= $(USBMUXD2_VERSION)-2
 
 
 usbmuxd2-setup: setup
 	$(call GITHUB_ARCHIVE,tihmstar,usbmuxd2,$(USBMUXD2_COMMIT),$(USBMUXD2_COMMIT))
 	$(call EXTRACT_TAR,usbmuxd2-$(USBMUXD2_COMMIT).tar.gz,usbmuxd2-$(USBMUXD2_COMMIT),usbmuxd2)
+	$(call DO_PATCH,usbmuxd2,usbmuxd2,-p1)
+	# Archive builds must not read the enclosing Procursus Git history.
+	sed -i -e 's/git rev-list --count HEAD/printf $(USBMUXD2_VERSION)/g' \
+		-e 's/git rev-parse HEAD/printf $(USBMUXD2_COMMIT)/g' $(BUILD_WORK)/usbmuxd2/configure.ac
 	sed -i 's/2.2.1/2.2.0/' $(BUILD_WORK)/usbmuxd2/configure.ac
 	sed -i 's/va_list ap = {}/va_list ap = NULL/' $(BUILD_WORK)/usbmuxd2/usbmuxd2/log.c
 

@@ -5,17 +5,20 @@ endif
 SUBPROJECTS         += libipatcher
 LIBIPATCHER_VERSION := 81
 LIBIPATCHER_COMMIT  := ad44d0da23f5120c3c77a72062bd627c50f37e71
-DEB_LIBIPATCHER_V   ?= $(LIBIPATCHER_VERSION)-2
+LIBIPATCHER_IBOOT32PATCHER_COMMIT := 266f2383874b7242ec65ad4feb8b89a4b6ac7215
+LIBIPATCHER_JSSY_COMMIT           := 10ee9e17ab48cbeccc1038e5d7e72c5421719a51
+DEB_LIBIPATCHER_V   ?= $(LIBIPATCHER_VERSION)-3
 
 libipatcher-setup: setup
 	$(call GITHUB_ARCHIVE,tihmstar,libipatcher,$(LIBIPATCHER_VERSION),$(LIBIPATCHER_VERSION))
 	$(call EXTRACT_TAR,libipatcher-$(LIBIPATCHER_VERSION).tar.gz,libipatcher-$(LIBIPATCHER_VERSION),libipatcher)
 
-	$(call GITHUB_ARCHIVE,tihmstar,iBoot32Patcher,master,master)
-	$(call GITHUB_ARCHIVE,tihmstar,jssy,master,master)
+	$(call GITHUB_ARCHIVE,tihmstar,iBoot32Patcher,$(LIBIPATCHER_IBOOT32PATCHER_COMMIT),$(LIBIPATCHER_IBOOT32PATCHER_COMMIT))
+	$(call GITHUB_ARCHIVE,tihmstar,jssy,$(LIBIPATCHER_JSSY_COMMIT),$(LIBIPATCHER_JSSY_COMMIT))
 	rm -rf $(BUILD_WORK)/libipatcher/external/{jssy,iBoot32Patcher}
-	$(call EXTRACT_TAR,jssy-master.tar.gz,jssy-master,libipatcher/external/jssy)
-	$(call EXTRACT_TAR,iBoot32Patcher-master.tar.gz,iBoot32Patcher-master,libipatcher/external/iBoot32Patcher)
+	$(call EXTRACT_TAR,jssy-$(LIBIPATCHER_JSSY_COMMIT).tar.gz,jssy-$(LIBIPATCHER_JSSY_COMMIT),libipatcher/external/jssy)
+	$(call EXTRACT_TAR,iBoot32Patcher-$(LIBIPATCHER_IBOOT32PATCHER_COMMIT).tar.gz,iBoot32Patcher-$(LIBIPATCHER_IBOOT32PATCHER_COMMIT),libipatcher/external/iBoot32Patcher)
+	$(call DO_PATCH,libipatcher,libipatcher,-p1)
 
 	sed -i '/AC_FUNC_MALLOC/d' $(BUILD_WORK)/libipatcher/configure.ac
 	sed -i '/AC_FUNC_REALLOC/d' $(BUILD_WORK)/libipatcher/configure.ac
@@ -28,6 +31,7 @@ libipatcher:
 	@echo "Using previously built libipatcher."
 else
 libipatcher: libipatcher-setup libpng16 openssl img4tool liboffsetfinder64 libgeneral libplist curl xpwn
+	cd $(BUILD_WORK)/libipatcher && $(LIBTOOLIZE) --force --copy
 	cd $(BUILD_WORK)/libipatcher && ./autogen.sh \
 		$(DEFAULT_CONFIGURE_FLAGS) \
 		CFLAGS="$(CFLAGS) -I$(BUILD_BASE)$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include/xpwn" \

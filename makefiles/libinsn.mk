@@ -18,6 +18,7 @@ libinsn:
 	@echo "Using previously built libinsn."
 else
 libinsn: libinsn-setup libgeneral
+	cd $(BUILD_WORK)/libinsn && $(LIBTOOLIZE) --force --copy
 	cd $(BUILD_WORK)/libinsn && ./autogen.sh \
 		$(DEFAULT_CONFIGURE_FLAGS)
 	+$(MAKE) -C $(BUILD_WORK)/libinsn

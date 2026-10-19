@@ -1,0 +1,8 @@
+--- a/libwget.pc.in
++++ b/libwget.pc.in
+@@ -8,4 +8,4 @@
+ Version: @LIBWGET_VERSION@
+ URL: @PACKAGE_URL@
+ Libs: -L${libdir} -lwget
+-Cflags: -I${includedir}/libwget -I${libdir}/libwget/include
++Cflags: -I${includedir}

@@ -8,8 +8,8 @@ LIBOFFSETFINDER64_COMMIT  := 35d3411bf675a83bdb768bc0ec26fe2344be16f3
 DEB_LIBOFFSETFINDER64_V   ?= $(LIBOFFSETFINDER64_VERSION)-1
 
 liboffsetfinder64-setup: setup
-	$(call GITHUB_ARCHIVE,tihmstar,liboffsetfinder64,$(LIBOFFSETFINDER64_COMMIT),$(LIBOFFSETFINDER64_COMMIT))
-	$(call EXTRACT_TAR,liboffsetfinder64-$(LIBOFFSETFINDER64_COMMIT).tar.gz,liboffsetfinder64-$(LIBOFFSETFINDER64_COMMIT),liboffsetfinder64)
+	$(call GITHUB_ARCHIVE,tihmstar,libpatchfinder,$(LIBOFFSETFINDER64_COMMIT),$(LIBOFFSETFINDER64_COMMIT),liboffsetfinder64)
+	$(call EXTRACT_TAR,liboffsetfinder64-$(LIBOFFSETFINDER64_COMMIT).tar.gz,libpatchfinder-$(LIBOFFSETFINDER64_COMMIT),liboffsetfinder64)
 
 	sed -i 's/git rev\-list \-\-count HEAD/printf ${LIBOFFSETFINDER64_VERSION}/g' $(BUILD_WORK)/liboffsetfinder64/configure.ac
 	sed -i 's/git rev\-parse HEAD/printf ${LIBOFFSETFINDER64_COMMIT}/g' $(BUILD_WORK)/liboffsetfinder64/configure.ac
@@ -19,6 +19,7 @@ liboffsetfinder64:
 	@echo "Using previously built liboffsetfinder64."
 else
 liboffsetfinder64: liboffsetfinder64-setup libgeneral libinsn img4tool openssl libplist
+	cd $(BUILD_WORK)/liboffsetfinder64 && $(LIBTOOLIZE) --force --copy
 	cd $(BUILD_WORK)/liboffsetfinder64 && ./autogen.sh \
 		$(DEFAULT_CONFIGURE_FLAGS)
 	+$(MAKE) -C $(BUILD_WORK)/liboffsetfinder64

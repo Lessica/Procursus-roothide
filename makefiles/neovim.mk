@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS    += neovim
 NEOVIM_VERSION := 0.9.0
-DEB_NEOVIM_V   ?= $(NEOVIM_VERSION)
+DEB_NEOVIM_V   ?= $(NEOVIM_VERSION)-1
 
 neovim-setup: setup
 	$(call GITHUB_ARCHIVE,neovim,neovim,v$(NEOVIM_VERSION),v$(NEOVIM_VERSION))
@@ -25,8 +25,22 @@ neovim:
 else
 neovim: neovim-setup gettext lua-luv libuv1 msgpack libvterm libtermkey unibilium luajit tree-sitter libmpack-lua lua-lpeg
 	@echo "Install neovim before building"
+	# Retain Neovim's five pinned default parsers while using system libraries.
+	SDKROOT="$(TARGET_SYSROOT)" $(MEMO_DEPLOYMENT) cmake \
+		-S $(BUILD_WORK)/neovim/cmake.deps -B $(BUILD_WORK)/neovim/build-parsers \
+		$(DEFAULT_CMAKE_FLAGS) \
+		-DCMAKE_OSX_DEPLOYMENT_TARGET="$(lastword $(subst =, ,$(PLATFORM_VERSION_MIN)))" \
+		-DUSE_BUNDLED=OFF -DUSE_BUNDLED_TS_PARSERS=ON
+	+SDKROOT="$(TARGET_SYSROOT)" $(MEMO_DEPLOYMENT) $(MAKE) -C $(BUILD_WORK)/neovim/build-parsers
 	cd $(BUILD_WORK)/neovim/build && $(MEMO_DEPLOYMENT) cmake . \
 		$(DEFAULT_CMAKE_FLAGS) \
+		-DCMAKE_OSX_DEPLOYMENT_TARGET="$(lastword $(subst =, ,$(PLATFORM_VERSION_MIN)))" \
+		-DCMAKE_FIND_ROOT_PATH_MODE_PACKAGE=ONLY \
+		-DCMAKE_FIND_ROOT_PATH_MODE_LIBRARY=ONLY \
+		-DCMAKE_FIND_ROOT_PATH_MODE_INCLUDE=ONLY \
+		-DCMAKE_FIND_ROOT_PATH_MODE_PROGRAM=NEVER \
+		-DCMAKE_DISABLE_FIND_PACKAGE_libuv=TRUE \
+		-DDEPS_PREFIX="$(BUILD_WORK)/neovim/build-parsers/usr" \
 		-DXGETTEXT_PRG="`which xgettext`" \
 		-DLUA_PRG="`which luajit`" \
 		-DGETTEXT_MSGFMT_EXECUTABLE="`which msgfmt`" \
