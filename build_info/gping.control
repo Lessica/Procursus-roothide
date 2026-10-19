@@ -4,4 +4,5 @@ Architecture: @DEB_ARCH@
 Maintainer: @DEB_MAINTAINER@
 Section: Utilities
 Priority: optional
+Depends: network-cmds
 Description: Ping, but with a graph.

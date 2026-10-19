@@ -6,7 +6,7 @@ ifeq (,$(findstring darwin,$(MEMO_TARGET)))
 
 STRAPPROJECTS       += pam-modules
 PAM-MODULES_VERSION := 1000.0
-DEB_PAM-MODULES_V   ?= $(PAM-MODULES_VERSION)
+DEB_PAM-MODULES_V   ?= $(PAM-MODULES_VERSION)-1
 
 ###
 # TODO: Have a look at the sacl and launchd and utmpw modules.

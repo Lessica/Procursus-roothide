@@ -5,6 +5,7 @@ endif
 SUBPROJECTS    += ktool
 KTOOL_VERSION  := 1.0.0
 DEB_KTOOL_V    ?= $(KTOOL_VERSION)
+PYTHON_HOST ?= python$(PYTHON3_MAJOR_V)
 
 ktool-setup: setup
 	$(call GITHUB_ARCHIVE,cxnder,ktool,$(KTOOL_VERSION),$(KTOOL_VERSION))
@@ -16,11 +17,11 @@ ktool:
 	@echo "Using previously built ktool."
 else
 ktool: ktool-setup python3-kimg4 python3-pyaes pygments python3
-	cd $(BUILD_WORK)/ktool && $(DEFAULT_SETUP_PY_ENV) python3 ./.legacy_setup.py \
+	cd $(BUILD_WORK)/ktool && $(PYTHON_HOST) ./.legacy_setup.py \
 		build \
 		--executable="$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/python3" \
 		install \
-		--install-layout=deb \
+		--install-lib="$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/python3/dist-packages" \
 		--root="$(BUILD_STAGE)/ktool" \
 		--prefix="$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)"
 	find $(BUILD_STAGE)/ktool -name __pycache__ -prune -exec rm -rf {} \;

@@ -4,11 +4,12 @@ endif
 
 SUBPROJECTS += pzb
 PZB_VERSION := 36
-DEB_PZB_V   ?= $(PZB_VERSION)-1
+DEB_PZB_V   ?= $(PZB_VERSION)-2
 
 pzb-setup: setup
 	$(call GITHUB_ARCHIVE,tihmstar,partialZipBrowser,$(PZB_VERSION),$(PZB_VERSION))
 	$(call EXTRACT_TAR,partialZipBrowser-$(PZB_VERSION).tar.gz,partialZipBrowser-$(PZB_VERSION),pzb)
+	$(call DO_PATCH,pzb,pzb,-p1)
 
 ifneq ($(wildcard $(BUILD_WORK)/pzb/.build_complete),)
 pzb:

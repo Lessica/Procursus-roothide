@@ -4,11 +4,12 @@ endif
 
 SUBPROJECTS    += gping
 GPING_VERSION  := 1.2.6
-DEB_GPING_V    ?= $(GPING_VERSION)
+DEB_GPING_V    ?= $(GPING_VERSION)-1
 
 gping-setup: setup
 	$(call GITHUB_ARCHIVE,orf,gping,$(GPING_VERSION),gping-v$(GPING_VERSION))
 	$(call EXTRACT_TAR,gping-$(GPING_VERSION).tar.gz,gping-gping-v$(GPING_VERSION),gping)
+	$(call DO_PATCH,gping,gping,-p1)
 
 ifneq ($(wildcard $(BUILD_WORK)/gping/.build_complete),)
 gping:
@@ -18,6 +19,7 @@ gping: gping-setup
 	cd $(BUILD_WORK)/gping && $(DEFAULT_RUST_FLAGS) cargo build \
 		--release \
 		--all-features \
+		--locked \
 		--target=$(RUST_TARGET)
 	$(INSTALL) -Dm755 $(BUILD_WORK)/gping/target/$(RUST_TARGET)/release/gping $(BUILD_STAGE)/gping/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/gping
 	$(call AFTER_BUILD)

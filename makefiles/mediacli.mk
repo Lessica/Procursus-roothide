@@ -9,6 +9,7 @@ DEB_MEDIACLI_V   ?= $(MEDIACLI_VERSION)
 mediacli-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://github.com/absidue/mediacli/releases/download/v$(MEDIACLI_VERSION)/mediacli-$(MEDIACLI_VERSION).tar.xz)
 	$(call EXTRACT_TAR,mediacli-$(MEDIACLI_VERSION).tar.xz,mediacli-$(MEDIACLI_VERSION),mediacli)
+	$(call DO_PATCH,mediacli,mediacli,-p1)
 
 ifneq ($(wildcard $(BUILD_WORK)/mediacli/.build_complete),)
 mediacli:

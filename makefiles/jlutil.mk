@@ -9,6 +9,7 @@ DEB_JLUTIL_V      ?= $(JLUTIL_VERSION)
 jlutil-setup: setup
 	$(call DOWNLOAD_FILE,$(BUILD_SOURCE)/jlutil-$(JLUTIL_VERSION).tar.gz, \
 		http://newosxbook.com/tools/jlutil.tgz)
+	$(call CHECKSUM_VERIFY,sha256,jlutil-$(JLUTIL_VERSION).tar.gz,3421a7df939cd36fd3408202d1ed458b96eaa6d054c3eabe1f8a166a3541ffb8)
 	mkdir -p $(BUILD_WORK)/jlutil
 	tar xf $(BUILD_SOURCE)/jlutil-$(JLUTIL_VERSION).tar.gz -C $(BUILD_WORK)/jlutil
 

@@ -1,0 +1,14 @@
+--- a/Makefile
++++ b/Makefile
+@@ -15,9 +15,9 @@
+ 
+ all: build/media build/media.1
+ 
+-build/media: main.m ent.plist
++build/media: main.m ent.plist Makefile
+ 	mkdir -p build
+-	$(CC) $(CFLAGS) -o build/media main.m -Iinclude -FPrivateFrameworks -framework Foundation -framework CoreFoundation -framework MediaRemote -framework Celestial -fobjc-arc
++	$(CC) $(CFLAGS) $(LDFLAGS) -o build/media main.m -Iinclude -FPrivateFrameworks -framework Foundation -framework CoreFoundation -framework MediaRemote -framework Celestial -fobjc-arc
+ 	$(STRIP) build/media
+ 	$(LDID) -Sent.plist build/media
+ 

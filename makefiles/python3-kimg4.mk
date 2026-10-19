@@ -6,6 +6,7 @@ SUBPROJECTS           += python3-kimg4
 PYTHON3_KIMG4_VERSION := 0.1.1
 PYTHON3_KIMG4_COMMIT  := 2e117290a90fbd53a4f5c4a8b60f8e32e6af0ad8
 DEB_PYTHON3_KIMG4_V   ?= $(PYTHON3_KIMG4_VERSION)
+PYTHON_HOST ?= python$(PYTHON3_MAJOR_V)
 
 python3-kimg4-setup: setup
 	$(call GITHUB_ARCHIVE,cxnder,kimg4,$(PYTHON3_KIMG4_VERSION),$(PYTHON3_KIMG4_COMMIT))
@@ -16,11 +17,11 @@ python3-kimg4:
 	@echo "Using previously built python3-kimg4."
 else
 python3-kimg4: python3-kimg4-setup python3-pyaes python3
-	cd $(BUILD_WORK)/python3-kimg4 && $(DEFAULT_SETUP_PY_ENV) python3 ./setup.py \
+	cd $(BUILD_WORK)/python3-kimg4 && $(PYTHON_HOST) ./setup.py \
 		build \
 		--executable="$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/python3" \
 		install \
-		--install-layout=deb \
+		--install-lib="$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/python3/dist-packages" \
 		--root="$(BUILD_STAGE)/python3-kimg4" \
 		--prefix="$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)"
 	find $(BUILD_STAGE)/python3-kimg4 -name __pycache__ -prune -exec rm -rf {} \;

@@ -4,11 +4,12 @@ endif
 
 SUBPROJECTS      += pincrush
 PINCRUSH_VERSION := 0.9.2
-DEB_PINCRUSH_V   ?= $(PINCRUSH_VERSION)-1
+DEB_PINCRUSH_V   ?= $(PINCRUSH_VERSION)-2
 
 pincrush-setup: setup
 	$(call GITHUB_ARCHIVE,DHowett,pincrush,$(PINCRUSH_VERSION),$(PINCRUSH_VERSION))
 	$(call EXTRACT_TAR,pincrush-$(PINCRUSH_VERSION).tar.gz,pincrush-$(PINCRUSH_VERSION),pincrush)
+	$(call DO_PATCH,pincrush,pincrush,-p1)
 	mkdir -p $(BUILD_STAGE)/pincrush/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin
 
 ifneq ($(wildcard $(BUILD_WORK)/pincrush/.build_complete),)
@@ -17,7 +18,6 @@ pincrush:
 else
 pincrush: pincrush-setup libpng16
 	cd $(BUILD_WORK)/pincrush; \
-	sed -i '/#include <stdbool.h>/a #include <string.h>' pincrush.c; \
 	$(CC) $(CFLAGS) $(LDFLAGS) -DVERSION=\"$(PINCRUSH_VERSION)\" -o $(BUILD_STAGE)/pincrush/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/pincrush pincrush.c -lpng16 -lz
 	$(call AFTER_BUILD)
 endif

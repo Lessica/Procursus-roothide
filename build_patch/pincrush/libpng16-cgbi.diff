@@ -1,0 +1,273 @@
+--- a/pincrush.c
++++ b/pincrush.c
+@@ -2,8 +2,12 @@
+ #include <stdlib.h>
+ #include <stdarg.h>
+ #include <stdbool.h>
++#include <string.h>
+ #include <unistd.h>
+ #include <png.h>
++#include <stdint.h>
++#include <zlib.h>
++#include <sys/stat.h>
+ 
+ #define RDERR(...) { debuglog(LEVEL_ERROR, infilename, __VA_ARGS__); goto out; }
+ #define WRERR(...) { debuglog(LEVEL_ERROR, inplace?infilename:outfilename, __VA_ARGS__); goto out; }
+@@ -42,21 +46,32 @@
+ 		debuglog(LEVEL_INFO, filename, msg);
+ }
+ 
+-void copy(char *inf, char *outf) {
+-	FILE *in, *out;
+-	in = fopen(inf, "rb");
+-	out = fopen(outf, "wb");
+-
+-	fseek(in, 0, SEEK_END);
+-	int len = ftell(in);
+-	rewind(in);
+-
+-	char *filebuf = malloc(len);
+-	fread(filebuf, 1, len, in);
+-	fclose(in);
+-	fwrite(filebuf, 1, len, out);
+-	fclose(out);
+-	free(filebuf);
++int copy(char *inf, char *outf) {
++ FILE *in = NULL, *out = NULL;
++ unsigned char buf[8192];
++ size_t size;
++ int result = 1;
++ struct stat ist, ost;
++ bool output_opened = false;
++ in = fopen(inf, "rb");
++ if (!in) goto done;
++ if (!fstat(fileno(in), &ist) && !stat(outf, &ost) &&
++     ist.st_dev == ost.st_dev && ist.st_ino == ost.st_ino) {
++  result = 0;
++  goto done;
++ }
++ out = fopen(outf, "wb");
++ if (!out) goto done;
++ output_opened = true;
++ while ((size = fread(buf, 1, sizeof(buf), in)) != 0)
++  if (fwrite(buf, 1, size, out) != size) goto done;
++ if (ferror(in)) goto done;
++ result = 0;
++done:
++ if (in && fclose(in)) result = 1;
++ if (out && fclose(out)) result = 1;
++ if (result && output_opened) unlink(outf);
++ return result;
+ }
+ 
+ int unknown_chunk_read_cb(png_structp ptr, png_unknown_chunkp chunk) {
+@@ -78,12 +93,81 @@
+ 	}
+ }
+ 
+-void crush(char *infilename, char *outfilename) {
++/* CgBI stores raw DEFLATE, while libpng's public writer requires a zlib
++ * stream. Compact only the IDAT stream framing after libpng finishes; pixel
++ * transforms and compression remain with libpng. Memory stays bounded. */
++static uint32_t chunk_length(const unsigned char *p) {
++ return ((uint32_t)p[0] << 24) | ((uint32_t)p[1] << 16) |
++        ((uint32_t)p[2] << 8) | p[3];
++}
++
++static void chunk_number(unsigned char *p, uint32_t n) {
++ p[0] = n >> 24; p[1] = n >> 16; p[2] = n >> 8; p[3] = n;
++}
++
++static bool copy_range(FILE *fp, long src, long *dst, uint32_t count, uLong *crc) {
++ unsigned char buf[8192];
++ while (count) {
++  size_t size = count > sizeof(buf) ? sizeof(buf) : count;
++  if (fseek(fp, src, SEEK_SET) || fread(buf, 1, size, fp) != size) return false;
++  if (fseek(fp, *dst, SEEK_SET) || fwrite(buf, 1, size, fp) != size) return false;
++  if (crc) *crc = crc32(*crc, buf, (uInt)size);
++  src += size; *dst += size; count -= size;
++ }
++ return true;
++}
++
++static bool cgbi_raw_idat(FILE *fp) {
++ unsigned char header[8], crcbuf[4];
++ uint64_t total = 0, offset = 0;
++ long src = 8, dst = 8;
++ if (fflush(fp)) return false;
++ for (;;) {
++  if (fseek(fp, src, SEEK_SET) || fread(header, 1, 8, fp) != 8) return false;
++  uint32_t len = chunk_length(header);
++  if (!memcmp(header + 4, "IDAT", 4)) total += len;
++  src += 12 + (long)len;
++  if (!memcmp(header + 4, "IEND", 4)) break;
++ }
++ if (total < 6) return false;
++ src = 8;
++ for (;;) {
++  if (fseek(fp, src, SEEK_SET) || fread(header, 1, 8, fp) != 8) return false;
++  uint32_t len = chunk_length(header);
++  bool idat = !memcmp(header + 4, "IDAT", 4);
++  bool end = !memcmp(header + 4, "IEND", 4);
++  if (idat) {
++   uint32_t skip = offset < 2 ? (uint32_t)(2 - offset) : 0;
++   if (skip > len) skip = len;
++   uint64_t limit = total - 4 > offset ? total - 4 - offset : 0;
++   uint32_t stop = limit < len ? (uint32_t)limit : len;
++   uint32_t keep = stop > skip ? stop - skip : 0;
++   chunk_number(header, keep);
++   if (fseek(fp, dst, SEEK_SET) || fwrite(header, 1, 8, fp) != 8) return false;
++   dst += 8;
++   uLong crc = crc32(0, header + 4, 4);
++   if (!copy_range(fp, src + 8 + skip, &dst, keep, &crc)) return false;
++   chunk_number(crcbuf, (uint32_t)crc);
++   if (fseek(fp, dst, SEEK_SET) || fwrite(crcbuf, 1, 4, fp) != 4) return false;
++   dst += 4; offset += len;
++  } else {
++   if (!copy_range(fp, src, &dst, len + 12, NULL)) return false;
++  }
++  src += 12 + (long)len;
++  if (end) break;
++ }
++ return !fflush(fp) && !ftruncate(fileno(fp), dst);
++}
++
++int crush(char *infilename, char *outfilename) {
++	int result = 1;
+ 	if(!outfilename) {
+ 		asprintf(&outfilename, "%s.crush", infilename);
+ 	}
+ 
+-	FILE *fp_in = NULL, *fp_out = NULL;
++	FILE *fp_in = NULL;
++	FILE * volatile fp_out = NULL;
++	volatile bool output_opened = false;
+ 
+ 	{
+ 		debuglog(LEVEL_INFO, NULL, "Crushing %s.\n", infilename);
+@@ -93,22 +177,25 @@
+ 		}
+ 
+ 		png_byte header[8];
+-		fread(header, 1, 8, fp_in);
++		if(fread(header, 1, 8, fp_in) != 8)
++			RDERR("Error: truncated PNG signature.\n");
+ 		if(png_sig_cmp(header, 0, 8) != 0) {
+ 			RDERR("Error: Not a valid PNG file.\n", infilename);
+ 		}
+ 
+-		fseek(fp_in, 12, SEEK_SET);
+ 		png_byte cgbi[4];
+-		fread(cgbi, 1, 4, fp_in);
++		if(fseek(fp_in, 12, SEEK_SET) || fread(cgbi, 1, 4, fp_in) != 4)
++			RDERR("Error: truncated PNG header.\n");
+ 		if(!strncmp((char*)cgbi, "CgBI", 4)) {
+-			fclose(fp_in); fp_in = NULL;
++			int input_close_error = fclose(fp_in); fp_in = NULL;
++			if(input_close_error) RDERR("Error: could not close input.\n");
+ 			INFO(LEVEL_INFO, "Warning: This file is already crushed. Doing nothing.\n");
+-			if(!inplace)
+-				copy(infilename, outfilename);
++			if(!inplace && copy(infilename, outfilename))
++				RDERR("Error: could not copy crushed PNG.\n");
++			result = 0;
+ 			goto out;
+ 		}
+-		fseek(fp_in, 8, SEEK_SET);
++		if(fseek(fp_in, 8, SEEK_SET)) RDERR("Error: could not seek input.\n");
+ 
+ 		png_structp read_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
+ 		if(!read_ptr) RDERR("Error: failed to init libpng for reading.\n");
+@@ -134,13 +221,18 @@
+ 		png_init_io(read_ptr, fp_in);
+ 		png_set_sig_bytes(read_ptr, 8); // Already read the signature.
+ 
+-		fp_out = fopen(outfilename, "wb");
++		struct stat input_stat, output_stat;
++		if (!fstat(fileno(fp_in), &input_stat) && !stat(outfilename, &output_stat) &&
++		    input_stat.st_dev == output_stat.st_dev && input_stat.st_ino == output_stat.st_ino)
++			WRERR("Error: input and output are the same file; use -i.\n");
++		fp_out = fopen(outfilename, "w+b");
+ 		if(!fp_out) {
+ 			WRERR("Error: could not open for writing.\n", outfilename);
+ 		}
++		output_opened = true;
+ 		png_structp write_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
+ 		if(!write_ptr) WRERR("Error: failed to init libpng for writing.\n");
+-		png_set_error_fn(read_ptr, (void*)(inplace?infilename:outfilename), NULL, png_warning_cb);
++		png_set_error_fn(write_ptr, (void*)(inplace?infilename:outfilename), NULL, png_warning_cb);
+ 
+ 		png_infop write_info = png_create_info_struct(write_ptr);
+ 		if(!write_info) {
+@@ -162,9 +254,8 @@
+ 
+ 		png_set_filter(write_ptr, 0, PNG_FILTER_NONE);
+ 
+-		// The default window size is 15 bits. Setting it to -15 causes zlib to discard the header and crc information.
+-		// This is critical to making a proper CgBI PNG
+-		png_set_compression_window_bits(write_ptr, -15);
++		// Remove zlib framing locally after writing to produce raw CgBI IDAT.
++		png_set_compression_window_bits(write_ptr, 15);
+ 
+ 		// Handle ALL unknown chunks.
+ 		png_set_keep_unknown_chunks(read_ptr, PNG_HANDLE_CHUNK_ALWAYS, NULL, 0);
+@@ -203,8 +294,8 @@
+ 		}
+ 
+ 		png_set_read_user_transform_fn(read_ptr, swap_and_premultiply_alpha_transform);
++		png_set_user_transform_info(read_ptr, NULL, 8, 4);
+ 		png_read_update_info(read_ptr, read_info);
+-		png_set_user_transform_info(read_ptr, NULL, 8, 4);
+ 		if(png_get_valid(read_ptr, read_info, PNG_INFO_gAMA)) png_get_gAMA(read_ptr, read_info, &gamma);
+ 		if(png_get_valid(read_ptr, read_info, PNG_INFO_cHRM)) {
+ 			double wx,wy,rx,ry,gx,gy,bx,by;
+@@ -294,21 +385,25 @@
+ 
+ 		png_read_end(read_ptr, read_end);
+ 		png_write_end(write_ptr, write_info);
+-		fclose(fp_in); fp_in = NULL;
+-		fclose(fp_out); fp_out = NULL;
++		if (!cgbi_raw_idat(fp_out)) WRERR("Error: could not finish raw CgBI stream.\n");
++		int input_close_error = fclose(fp_in); fp_in = NULL;
++		if(input_close_error) RDERR("Error: could not close input.\n");
++		int output_close_error = fclose(fp_out); fp_out = NULL;
++		if(output_close_error) WRERR("Error: could not close output.\n");
+ 		png_destroy_read_struct(&read_ptr, &read_info, &read_end);
+ 		png_destroy_write_struct(&write_ptr, &write_info);
+ 
+-		if(inplace) {
+-			unlink(infilename);
+-			rename(outfilename, infilename);
+-		}
++		if(inplace && rename(outfilename, infilename))
++			WRERR("Error: could not replace input.\n");
++		result = 0;
+ 	}
+ 
+ out:
+ 	if(fp_in) fclose(fp_in);
+ 	if(fp_out) fclose(fp_out);
++	if(result && output_opened) unlink(outfilename);
+ 	free(outfilename);
++	return result;
+ }
+ 
+ void usage(char *argv0) {
+@@ -356,11 +451,12 @@
+ 		exit(1);
+ 	}
+ 
++	int result = 0;
+ 	if(inplace) {
+ 		for(int i = 0; i < argc; i++)
+-			crush(argv[i], NULL);
++			result |= crush(argv[i], NULL);
+ 	} else
+-		crush(argv[0], strdup(argv[1]));
+-
+-	return 0;
+-}
++		result = crush(argv[0], strdup(argv[1]));
++
++	return result;
++}
