@@ -39,6 +39,8 @@ sdl2: sdl2-setup
 ifeq (,$(findstring darwin,$(MEMO_TARGET)))
 	cp $(BUILD_WORK)/sdl2/include/SDL_config_iphoneos.h $(BUILD_WORK)/sdl2/include/SDL_config.h
 endif
+	# iOS backends use C99 declarations; retain the warning without treating it as an error.
+	sed -i 's/-Werror=declaration-after-statement/-Wno-error=declaration-after-statement/g' $(BUILD_WORK)/sdl2/Makefile
 	+$(MAKE) -C $(BUILD_WORK)/sdl2 install \
 		DESTDIR=$(BUILD_STAGE)/sdl2
 	$(call AFTER_BUILD,copy)

@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS      += aptitude
 APTITUDE_VERSION := 0.8.13
-DEB_APTITUDE_V   ?= $(APTITUDE_VERSION)-2
+DEB_APTITUDE_V   ?= $(APTITUDE_VERSION)-3
 
 aptitude-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),http://deb.debian.org/debian/pool/main/a/aptitude/aptitude_$(APTITUDE_VERSION).orig.tar.xz)
@@ -22,12 +22,12 @@ ifneq ($(wildcard $(BUILD_WORK)/aptitude/.build_complete),)
 aptitude:
 	@echo "Using previously built aptitude."
 else
-aptitude: aptitude-setup ncurses libboost xapian cwidget apt googletest libsigcplusplus
+aptitude: aptitude-setup ncurses libboost xapian cwidget apt googletest libsigcplusplus autoconf-archive
 	sed -i 's|/usr/share/xml/docbook/stylesheet/nwalsh|$(DOCBOOK_XSL)|g' \
 		$(BUILD_WORK)/aptitude/buildlib/docbook.mk \
 		$(BUILD_WORK)/aptitude/doc/aptitude-{txt,man,html}.xsl \
 		$(BUILD_WORK)/aptitude/doc/{de,nl,it,es,ja,en,ru,fr,pl,fi,cs}/Makefile.in
-	cd $(BUILD_WORK)/aptitude && autoreconf -fi
+	cd $(BUILD_WORK)/aptitude && ACLOCAL_PATH=$(BUILD_STAGE)/autoconf-archive/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share/aclocal:$(BUILD_BASE)$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share/aclocal:$(ACLOCAL_PATH) autoreconf -fi
 	cd $(BUILD_WORK)/aptitude && ./configure -C \
 		$(DEFAULT_CONFIGURE_FLAGS) \
 		--disable-qt \

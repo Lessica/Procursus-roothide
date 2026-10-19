@@ -15,7 +15,8 @@ libass:
 	@echo "Using previously built libass."
 else
 libass: libass-setup freetype fontconfig libfribidi harfbuzz
-	cd $(BUILD_WORK)/libass && ./configure -C \
+	cd $(BUILD_WORK)/libass && FRIBIDI_CFLAGS="-I$(BUILD_BASE)$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include/fribidi" \
+		FRIBIDI_LIBS="-L$(BUILD_BASE)$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib -lfribidi" ./configure -C \
 		$(DEFAULT_CONFIGURE_FLAGS)
 	+$(MAKE) -C $(BUILD_WORK)/libass
 	+$(MAKE) -C $(BUILD_WORK)/libass install \

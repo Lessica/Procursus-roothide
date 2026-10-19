@@ -5,7 +5,7 @@ endif
 SUBPROJECTS += icu4c
 ICU_VERSION := 69.1
 ICU_API_V   := $(shell echo $(ICU_VERSION) | cut -f1 -d.)
-DEB_ICU_V   ?= $(ICU_VERSION)
+DEB_ICU_V   ?= $(ICU_VERSION)-1
 
 icu4c-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE), \
@@ -31,6 +31,17 @@ icu4c: icu4c-setup
 	+$(MAKE) -C $(BUILD_WORK)/icu4c/source
 	+$(MAKE) -C $(BUILD_WORK)/icu4c/source install \
 		DESTDIR=$(BUILD_STAGE)/icu4c
+	# Keep installed ICU build helpers usable with the target toolchain and
+	# relocatable target paths; never ship the host build machine's SDK paths.
+	sed -i -e 's|^CC = .*|CC = cc|' \
+		-e 's|^CPP = .*|CPP = cc -E|' \
+		-e 's|^CXX = .*|CXX = c++|' \
+		$(BUILD_STAGE)/icu4c/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/icu/$(ICU_VERSION)/Makefile.inc
+	sed -i -e 's|$(CC)|cc|g' \
+		-e 's|-isysroot $(TARGET_SYSROOT)||g' \
+		-e 's|$(BUILD_BASE)||g' \
+		-e 's|^INSTALL_CMD=.*|INSTALL_CMD=install --strip-program=strip|' \
+		$(BUILD_STAGE)/icu4c/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/icu/$(ICU_VERSION)/pkgdata.inc
 	$(call AFTER_BUILD,copy)
 
 	for lib in $(BUILD_STAGE)/icu4c/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/libicu*.$(ICU_VERSION).dylib $(BUILD_BASE)$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/libicu*.$(ICU_VERSION).dylib; do \

@@ -7,7 +7,7 @@ SENSIBLE-UTILS_VERSION := 0.0.17
 DEB_SENSIBLE-UTILS_V   ?= $(SENSIBLE-UTILS_VERSION)-1
 
 sensible-utils-setup: setup
-	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),http://deb.debian.org/debian/pool/main/s/sensible-utils/sensible-utils_$(SENSIBLE-UTILS_VERSION).tar.xz)
+	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://snapshot.debian.org/archive/debian/20230120T000000Z/pool/main/s/sensible-utils/sensible-utils_$(SENSIBLE-UTILS_VERSION).tar.xz)
 	$(call EXTRACT_TAR,sensible-utils_$(SENSIBLE-UTILS_VERSION).tar.xz,sensible-utils-$(SENSIBLE-UTILS_VERSION),sensible-utils)
 
 ifneq ($(wildcard $(BUILD_WORK)/sensible-utils/.build_complete),)

@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS      += libgit2
 LIBGIT2_VERSION  := 1.5.0
-DEB_LIBGIT2_V    ?= $(LIBGIT2_VERSION)
+DEB_LIBGIT2_V    ?= $(LIBGIT2_VERSION)-1
 
 libgit2-setup: setup
 	$(call GITHUB_ARCHIVE,libgit2,libgit2,$(LIBGIT2_VERSION),v$(LIBGIT2_VERSION))
@@ -27,6 +27,7 @@ libgit2: libgit2-setup openssl libssh2 pcre2
 	+$(MAKE) -C $(BUILD_WORK)/libgit2
 	+$(MAKE) -C $(BUILD_WORK)/libgit2 install \
 		DESTDIR="$(BUILD_STAGE)/libgit2"
+	sed -E -i '/^Libs.private:/s@-[LR]/[^ ]+@@g' $(BUILD_STAGE)/libgit2/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/pkgconfig/libgit2.pc
 	$(call AFTER_BUILD,copy)
 endif
 
