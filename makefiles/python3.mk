@@ -5,7 +5,7 @@ endif
 SUBPROJECTS      += python3
 PYTHON3_MAJOR_V  := 3.9
 PYTHON3_VERSION  := $(PYTHON3_MAJOR_V).9
-DEB_PYTHON3_V    ?= $(PYTHON3_VERSION)-2
+DEB_PYTHON3_V    ?= $(PYTHON3_VERSION)-3
 
 ifeq ($(shell [ "$(CFVER_WHOLE)" -lt 1900 ] && echo 1),1)
 PYTHON3_CONFIGURE_FLAGS = ac_cv_func_mkfifoat=no \
@@ -48,6 +48,10 @@ endif
 		ax_cv_c_float_words_bigendian=no \
 		ac_cv_working_tzset=yes \
 		$(PYTHON3_CONFIGURE_FLAGS)
+	# Modules/_localemodule.c is built into libpython; its libintl.h macros
+	# produce direct libintl references that must be recorded in the dylib.
+	# Python 3.9's Modules/Setup documents -lintl but leaves it commented out.
+	sed -i '/^LIBS[[:space:]]*=/s/$$/ -lintl/' $(BUILD_WORK)/python3/Makefile
 	+$(MAKE) -C $(BUILD_WORK)/python3
 	+$(MAKE) -C $(BUILD_WORK)/python3 install \
 		DESTDIR=$(BUILD_STAGE)/python3
@@ -71,6 +75,26 @@ python3-package: python3-stage
 	# python3.mk Prep libpython$(PYTHON3_MAJOR_V)
 	cp -a $(BUILD_STAGE)/python3/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)$(MEMO_ALT_PREFIX)/lib/python$(PYTHON3_MAJOR_V) $(BUILD_DIST)/libpython$(PYTHON3_MAJOR_V)/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)$(MEMO_ALT_PREFIX)/lib
 	cp -a $(BUILD_STAGE)/python3/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/{libpython$(PYTHON3_MAJOR_V).dylib,python3,python$(PYTHON3_MAJOR_V)} $(BUILD_DIST)/libpython$(PYTHON3_MAJOR_V)/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib
+	# Normalize the installed extension-build Makefile without changing target ABI flags.
+	python_makefile="$(BUILD_DIST)/libpython$(PYTHON3_MAJOR_V)/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/python$(PYTHON3_MAJOR_V)/config-$(PYTHON3_MAJOR_V)-darwin/Makefile"; \
+	sed -i \
+		-e 's|^abs_srcdir=.*|abs_srcdir= .|' \
+		-e 's|^abs_builddir=.*|abs_builddir= .|' \
+		-e 's|^CC=.*|CC= cc|' \
+		-e 's|^CXX=.*|CXX= c++|' \
+		-e 's|^CPP=.*|CPP= cc -E|' \
+		-e 's|^INSTALL=.*|INSTALL= install|' \
+		-e 's|^MKDIR_P=.*|MKDIR_P= mkdir -p|' \
+		-e 's| -isysroot [^ ]*||g' \
+		-e 's|-isystem $(BUILD_BASE)[^ ]*/usr/include|-isystem $(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include|g' \
+		-e 's|-isystem $(BUILD_BASE)[^ ]*/usr/local/include|-isystem $(MEMO_PREFIX)$(MEMO_SUB_PREFIX)$(MEMO_ALT_PREFIX)/include|g' \
+		-e 's|-I$(BUILD_BASE)[^ ]*/usr/include|-I$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include|g' \
+		-e 's|-L$(BUILD_BASE)[^ ]*/usr/lib|-L$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib|g' \
+		-e 's|-L$(BUILD_BASE)[^ ]*/usr/local/lib|-L$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)$(MEMO_ALT_PREFIX)/lib|g' \
+		-e 's|-F$(BUILD_BASE)[^ ]*/System/Library/Frameworks|-F/System/Library/Frameworks|g' \
+		-e 's|-F$(BUILD_BASE)[^ ]*/Library/Frameworks|-F/Library/Frameworks|g' \
+		-e 's|^LIBFFI_INCLUDEDIR=.*|LIBFFI_INCLUDEDIR= $(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include|' \
+		"$$python_makefile"
 
 	# python3.mk Prep libpython$(PYTHON3_MAJOR_V)-dev
 	cp -a $(BUILD_STAGE)/python3/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include $(BUILD_DIST)/libpython$(PYTHON3_MAJOR_V)-dev/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)

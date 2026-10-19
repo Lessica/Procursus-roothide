@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS += xar
 XAR_VERSION := 487.100.1
-DEB_XAR_V   ?= 1.8.0.$(XAR_VERSION)-1
+DEB_XAR_V   ?= 1.8.0.$(XAR_VERSION)-2
 
 xar-setup: setup
 	$(call GITHUB_ARCHIVE,apple-oss-distributions,xar,$(XAR_VERSION),xar-$(XAR_VERSION))
@@ -40,7 +40,8 @@ xar-package: xar-stage
 	# xar.mk Package Structure
 	rm -rf $(BUILD_DIST)/xar $(BUILD_DIST)/libxar{1,-dev}
 	mkdir -p $(BUILD_DIST)/xar/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share/man \
-		$(BUILD_DIST)/libxar{1,-dev}/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib
+		$(BUILD_DIST)/libxar{1,-dev}/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib \
+		$(BUILD_DIST)/libxar-dev/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include
 
 	# xar.mk Prep xar
 	cp -a $(BUILD_STAGE)/xar/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/{bin,share} $(BUILD_DIST)/xar/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)
@@ -50,6 +51,7 @@ xar-package: xar-stage
 
 	# xar.mk Prep libxar-dev
 	cp -a $(BUILD_STAGE)/xar/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/!(libxar.1.dylib) $(BUILD_DIST)/libxar-dev/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib
+	cp -a $(BUILD_STAGE)/xar/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include/xar $(BUILD_DIST)/libxar-dev/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include
 
 	# xar.mk Sign
 	$(call SIGN,xar,general.xml)
