@@ -11,6 +11,7 @@ rav1e-setup: setup
 	$(call GITHUB_ARCHIVE,xiph,rav1e,$(RAV1E_VERSION),v$(RAV1E_VERSION))
 	$(call EXTRACT_TAR,rav1e-$(RAV1E_VERSION).tar.gz,rav1e-$(RAV1E_VERSION),rav1e)
 	sed -i 's|clap = { version = "4.0.18"|clap = { version = "4.0.32"|g' $(BUILD_WORK)/rav1e/Cargo.toml
+	cp $(BUILD_MISC)/rav1e/Cargo.lock $(BUILD_WORK)/rav1e/Cargo.lock
 
 ifneq ($(wildcard $(BUILD_WORK)/rav1e/.build_complete),)
 rav1e:
@@ -29,6 +30,7 @@ rav1e: rav1e-setup aom dav1d
 		CARGO_TARGET_$(subst -,_,$(shell echo $(RUST_TARGET) | tr '[:lower:]' '[:upper:]'))_LINKER="$(BUILD_WORK)/rav1e/target-cc-wrapper" \
 		CARGO_TARGET_DIR="$(RAV1E_CARGO_TARGET_DIR)" CFLAGS= cargo build \
 		--release \
+		--locked \
 		--target=$(RUST_TARGET)
 	cd $(BUILD_WORK)/rav1e && $(DEFAULT_RUST_FLAGS) \
 		SDKROOT="$(MACOSX_SYSROOT)" \
@@ -39,6 +41,7 @@ rav1e: rav1e-setup aom dav1d
 		CARGO_TARGET_$(subst -,_,$(shell echo $(RUST_TARGET) | tr '[:lower:]' '[:upper:]'))_LINKER="$(BUILD_WORK)/rav1e/target-cc-wrapper" \
 		CARGO_TARGET_DIR="$(RAV1E_CARGO_TARGET_DIR)" CFLAGS= cargo cbuild \
 		--release \
+		--locked \
 		--prefix=$(MEMO_PREFIX)$(MEMO_SUB_PREFIX) \
 		--target=$(RUST_TARGET) \
 		--library-type staticlib
