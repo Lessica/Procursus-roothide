@@ -4,7 +4,7 @@ endif
 
 STRAPPROJECTS    += brotli
 BROTLI_VERSION   := 1.1.0
-DEB_BROTLI_V     ?= $(BROTLI_VERSION)
+DEB_BROTLI_V     ?= $(BROTLI_VERSION)-1
 
 brotli-setup: setup
 	$(call GITHUB_ARCHIVE,google,brotli,$(BROTLI_VERSION),v$(BROTLI_VERSION))
@@ -44,7 +44,7 @@ brotli-package: brotli-stage
 	cp -a $(BUILD_WORK)/brotli/docs/brotli.1 $(BUILD_DIST)/brotli/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share/man/man1
 
 	# brotli.mk Prep libbrotli-dev
-	cp -a $(BUILD_STAGE)/brotli/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include/brotli/{decode,encode,port,types}.h $(BUILD_DIST)/libbrotli-dev/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include/brotli
+	cp -a $(BUILD_STAGE)/brotli/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include/brotli/*.h $(BUILD_DIST)/libbrotli-dev/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include/brotli
 	cp -a $(BUILD_STAGE)/brotli/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/libbrotli{common,dec,enc}.{a,dylib} $(BUILD_DIST)/libbrotli-dev/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib
 	cp -a $(BUILD_STAGE)/brotli/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/pkgconfig/libbrotli{common,dec,enc}.pc $(BUILD_DIST)/libbrotli-dev/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/pkgconfig
 
