@@ -1,0 +1,45 @@
+--- a/libs/cairo/configure
++++ b/libs/cairo/configure
+@@ -6268,6 +6268,9 @@
+ # is found, the user is instructed to specify the ordering.
+ 
+ ax_cv_c_float_words_bigendian=unknown
++# Inspect native object bytes, not an LTO intermediate representation.
++ax_float_saved_CFLAGS=$CFLAGS
++case " $CFLAGS " in *-flto*) CFLAGS="$CFLAGS -fno-lto" ;; esac
+ cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+ /* end confdefs.h.  */
+ 
+@@ -6399,7 +6402,8 @@
+ 
+ 
+ fi
+-rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext ;;
++rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
++CFLAGS=$ax_float_saved_CFLAGS ;;
+ esac
+ fi
+ { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ax_cv_c_float_words_bigendian" >&5
+--- a/libs/cairo/m4/float.m4
++++ b/libs/cairo/m4/float.m4
+@@ -24,6 +24,9 @@
+ # is found, the user is instructed to specify the ordering.
+ 
+ ax_cv_c_float_words_bigendian=unknown
++# Inspect native object bytes, not an LTO intermediate representation.
++ax_float_saved_CFLAGS=$CFLAGS
++case " $CFLAGS " in *-flto*) CFLAGS="$CFLAGS -fno-lto" ;; esac
+ AC_COMPILE_IFELSE([AC_LANG_SOURCE([[
+ 
+ double d = 90904234967036810337470478905505011476211692735615632014797120844053488865816695273723469097858056257517020191247487429516932130503560650002327564517570778480236724525140520121371739201496540132640109977779420565776568942592.0;
+@@ -44,7 +47,9 @@
+   fi
+ fi
+ 
+-])])
++ ])
++CFLAGS=$ax_float_saved_CFLAGS
++])
+ 
+ case $ax_cv_c_float_words_bigendian in
+   yes)

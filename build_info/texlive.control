@@ -2,9 +2,9 @@ Package: texlive
 Version: @DEB_TEXLIVE_V@
 Architecture: @DEB_ARCH@
 Maintainer: @DEB_MAINTAINER@
-Depends: libcairo2, fontconfig, libfreetype6, libgraphite2-3,
+Depends: perl, bash, libcairo2, fontconfig, libfreetype6, libgraphite2-3,
     libharfbuzz-dev, libicu69, libgd3, libgmp10, libpixman-1-0,
-    libpaper1, libpng16-16, libx11-6, libxaw7, libmpfi-dev,
+    libpaper1, libpng16-16, libx11-6, libxaw7,
     libmpfr6, potrace, teckit, libz-ng2, zziplib
 Section: tex
 Priority: optional
