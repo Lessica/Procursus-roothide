@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS      += torsocks
 TORSOCKS_VERSION := 2.3.0
-DEB_TORSOCKS_V   ?= $(TORSOCKS_VERSION)
+DEB_TORSOCKS_V   ?= $(TORSOCKS_VERSION)-1
 
 torsocks-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE), \
@@ -13,13 +13,18 @@ torsocks-setup: setup
 	$(call EXTRACT_TAR,torsocks-$(TORSOCKS_VERSION).tar.xz,torsocks-$(TORSOCKS_VERSION),torsocks)
 	$(call DO_PATCH,torsocks,torsocks,-p1)
 
+ifneq (,$(findstring roothide,$(MEMO_TARGET)))
+TORSOCKS_CONFIGURE_ARGS := LDFLAGS="$(LDFLAGS) -Wl,-rpath,@loader_path/.."
+endif
+
 ifneq ($(wildcard $(BUILD_WORK)/torsocks/.build_complete),)
 torsocks:
 	@echo "Using previously built torsocks."
 else
 torsocks: torsocks-setup
 	cd $(BUILD_WORK)/torsocks && ./configure -C \
-		$(DEFAULT_CONFIGURE_FLAGS)
+		$(DEFAULT_CONFIGURE_FLAGS) \
+		$(TORSOCKS_CONFIGURE_ARGS)
 	+$(MAKE) -C $(BUILD_WORK)/torsocks \
 		CFLAGS="$(CFLAGS) -DLIBIOSEXEC_INTERNAL" \
 		CPPFLAGS="$(CPPFLAGS) -DLIBIOSEXEC_INTERNAL"

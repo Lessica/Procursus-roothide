@@ -4,10 +4,11 @@ endif
 
 SUBPROJECTS       += lua-bitop
 LUA-BITOP_VERSION := 1.0.2
-DEB_LUA-BITOP_V   ?= $(LUA-BITOP_VERSION)
+DEB_LUA-BITOP_V   ?= $(LUA-BITOP_VERSION)-1
 
 lua-bitop-setup: setup
-	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://bitop.luajit.org/download/LuaBitOp-$(LUA-BITOP_VERSION).tar.gz)
+	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://sources.openwrt.org/LuaBitOp-$(LUA-BITOP_VERSION).tar.gz)
+	$(call CHECKSUM_VERIFY,sha256,LuaBitOp-$(LUA-BITOP_VERSION).tar.gz,1207c9293dcd52eb9dca6538d1b87352bd510f4e760938f5048433f7f272ce99)
 	$(call EXTRACT_TAR,LuaBitOp-$(LUA-BITOP_VERSION).tar.gz,LuaBitOp-$(LUA-BITOP_VERSION),lua-bitop)
 	mkdir -p $(BUILD_STAGE)/lua-bitop/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/lua/5.{1..2}
 

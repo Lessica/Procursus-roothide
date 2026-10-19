@@ -31,6 +31,9 @@ endif
 	cd $(BUILD_WORK)/chezmoi && \
 		CGO_CC="$(CC_FOR_BUILD)" CGO_CFLAGS="$(CFLAGS_FOR_BUILD)" CGO_CPPFLAGS="$(CPPFLAGS_FOR_BUILD)" CGO_LDFLAGS="$(LDFLAGS_FOR_BUILD)" \
 		go build -o chezmoi-host
+ifeq ($(UNAME),Darwin)
+	codesign --force --sign - $(BUILD_WORK)/chezmoi/chezmoi-host
+endif
 
 	$(BUILD_WORK)/chezmoi/chezmoi-host completion zsh > $(BUILD_STAGE)/chezmoi/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share/zsh/site-functions/_chezmoi
 	$(BUILD_WORK)/chezmoi/chezmoi-host completion bash > $(BUILD_STAGE)/chezmoi/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share/bash-completion/completions/chezmoi

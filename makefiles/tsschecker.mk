@@ -5,15 +5,18 @@ endif
 SUBPROJECTS        += tsschecker
 TSSCHECKER_VERSION := 367
 TSSCHECKER_COMMIT  := 9e7762e0edcc4821635b96feddf232b930c34e90
-DEB_TSSCHECKER_V   ?= $(TSSCHECKER_VERSION)
+# Gitlink recorded by the fixed tsschecker source commit.
+TSSCHECKER_JSSY_COMMIT := 6de3dc6b853d9338b971c1bea0c41465276e640a
+DEB_TSSCHECKER_V   ?= $(TSSCHECKER_VERSION)-1
 
 tsschecker-setup: setup
 	$(call GITHUB_ARCHIVE,1Conan,tsschecker,$(TSSCHECKER_VERSION),$(TSSCHECKER_VERSION))
-	$(call GITHUB_ARCHIVE,tihmstar,jssy,master,master)
+	$(call GITHUB_ARCHIVE,tihmstar,jssy,$(TSSCHECKER_JSSY_COMMIT),$(TSSCHECKER_JSSY_COMMIT))
 	$(call EXTRACT_TAR,tsschecker-$(TSSCHECKER_VERSION).tar.gz,tsschecker-$(TSSCHECKER_VERSION),tsschecker)
+	$(call DO_PATCH,tsschecker,tsschecker,-p1)
 	# so EXTRACT_TAR wont fail
 	-rmdir $(BUILD_WORK)/tsschecker/external/jssy
-	$(call EXTRACT_TAR,jssy-master.tar.gz,jssy-master,tsschecker/external/jssy)
+	$(call EXTRACT_TAR,jssy-$(TSSCHECKER_JSSY_COMMIT).tar.gz,jssy-$(TSSCHECKER_JSSY_COMMIT),tsschecker/external/jssy)
 
 	sed -i 's/git rev\-list \-\-count HEAD/printf ${TSSCHECKER_VERSION}/g' $(BUILD_WORK)/tsschecker/configure.ac
 	sed -i 's/git rev\-parse HEAD/printf ${TSSCHECKER_COMMIT}/g' $(BUILD_WORK)/tsschecker/configure.ac

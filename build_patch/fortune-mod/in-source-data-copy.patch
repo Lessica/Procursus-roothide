@@ -1,0 +1,18 @@
+--- a/datfiles/CMakeLists.txt
++++ b/datfiles/CMakeLists.txt
+@@ -6,6 +6,7 @@
+     SET(SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/${c}")
+ 
+     SET(PATH_PERL ${PERL_EXECUTABLE})
++    IF (NOT CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_CURRENT_BINARY_DIR)
+     ADD_CUSTOM_COMMAND(
+         OUTPUT "${c}"
+         COMMAND ${PATH_PERL}
+@@ -16,6 +17,7 @@
+         DEPENDS "${SOURCE}"
+         VERBATIM
+     )
++    ENDIF()
+     ADD_CUSTOM_COMMAND(
+         OUTPUT "${DEST}"
+         COMMAND "${_strfile}"

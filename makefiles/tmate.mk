@@ -17,7 +17,8 @@ else
 tmate: tmate-setup libevent ncurses msgpack libssh
 	cd $(BUILD_WORK)/tmate && ./autogen.sh
 	cd $(BUILD_WORK)/tmate && ./configure -C \
-		$(DEFAULT_CONFIGURE_FLAGS)
+		$(DEFAULT_CONFIGURE_FLAGS) \
+		--disable-static
 	+$(MAKE) -C $(BUILD_WORK)/tmate install \
 		DESTDIR="$(BUILD_STAGE)/tmate"
 	$(call AFTER_BUILD)

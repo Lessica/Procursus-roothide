@@ -4,13 +4,14 @@ endif
 
 SUBPROJECTS     += weechat
 WEECHAT_VERSION := 2.9
-DEB_WEECHAT_V   ?= $(WEECHAT_VERSION)
+DEB_WEECHAT_V   ?= $(WEECHAT_VERSION)-1
 
 weechat-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://www.weechat.org/files/src/weechat-$(WEECHAT_VERSION).tar.xz)
 	$(call EXTRACT_TAR,weechat-$(WEECHAT_VERSION).tar.xz,weechat-$(WEECHAT_VERSION),weechat)
 	sed -i -e 's/`pkg-config/`$$PKG_CONFIG/' -e 's/libgcrypt-config/$$PKG_CONFIG libgcrypt/'\
 		$(BUILD_WORK)/weechat/configure.ac
+	$(call DO_PATCH,weechat,weechat,-p1)
 
 ifneq ($(wildcard $(BUILD_WORK)/weechat/.build_complete),)
 weechat:
@@ -20,6 +21,7 @@ weechat: weechat-setup ncurses gettext gnutls curl libgcrypt
 	cd $(BUILD_WORK)/weechat && ./autogen.sh
 	cd $(BUILD_WORK)/weechat && ./configure \
 		$(DEFAULT_CONFIGURE_FLAGS) \
+		CURL_CONFIG="$(BUILD_BASE)$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/curl-config" \
 		--disable-dependency-tracking \
 		--disable-static \
 		--disable-alias \

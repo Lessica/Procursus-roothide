@@ -18,7 +18,7 @@ else
 idevicerestore: idevicerestore-setup curl libimobiledevice-glue libimobiledevice libirecovery libplist libzip
 	cd $(BUILD_WORK)/idevicerestore && ./autogen.sh \
 		$(DEFAULT_CONFIGURE_FLAGS) \
-		PACKAGE_VERSION="$(IDEVICERESTORE_VERSION)"
+		PACKAGE_VERSION="$(IDEVICERESTORE_VERSION)" \
 		zlib_LIBS="-L$(TARGET_SYSROOT)/usr/lib -lz" \
 		zlib_CFLAGS="-I$(TARGET_SYSROOT)/usr/include"
 	+$(MAKE) -C $(BUILD_WORK)/idevicerestore

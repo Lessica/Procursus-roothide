@@ -10,6 +10,7 @@ DEB_GHOSTBIN_V    ?= $(GHOSTBIN_VERSION)-1
 ghostbin-setup: setup
 	$(call GITHUB_ARCHIVE,DHowett,spectre,v$(GHOSTBIN_COMMIT),$(GHOSTBIN_COMMIT),ghostbin)
 	$(call EXTRACT_TAR,ghostbin-v$(GHOSTBIN_COMMIT).tar.gz,spectre-$(GHOSTBIN_COMMIT),ghostbin)
+	$(call DO_PATCH,ghostbin,ghostbin,-p1)
 	sed -i '/account creation has been disabled/,+3d' $(BUILD_WORK)/ghostbin/auth.go
 
 ifneq ($(wildcard $(BUILD_WORK)/ghostbin/.build_complete),)

@@ -4,7 +4,7 @@ endif
 
 STRAPPROJECTS     += libgcrypt
 LIBGCRYPT_VERSION := 1.10.3
-DEB_LIBGCRYPT_V   ?= $(LIBGCRYPT_VERSION)
+DEB_LIBGCRYPT_V   ?= $(LIBGCRYPT_VERSION)-1
 
 libgcrypt-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://gnupg.org/ftp/gcrypt/libgcrypt/libgcrypt-$(LIBGCRYPT_VERSION).tar.bz2{$(comma).sig})
@@ -44,6 +44,11 @@ libgcrypt-package: libgcrypt-stage
 	cp -a $(BUILD_STAGE)/libgcrypt/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/{bin,share} $(BUILD_DIST)/libgcrypt20-dev/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)
 	cp -a $(BUILD_STAGE)/libgcrypt/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include $(BUILD_DIST)/libgcrypt20-dev/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)
 	cp -a $(BUILD_STAGE)/libgcrypt/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/libgcrypt.{dylib,a} $(BUILD_DIST)/libgcrypt20-dev/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib
+
+	cp -a $(BUILD_STAGE)/libgcrypt/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/pkgconfig $(BUILD_DIST)/libgcrypt20-dev/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib
+	sed -i -e 's|^gpg_error_libs=.*|gpg_error_libs="-L$${libdir} -lgpg-error"|' \
+		-e 's|^gpg_error_cflags=.*|gpg_error_cflags="-I$${includedir}"|' \
+		$(BUILD_DIST)/libgcrypt20-dev/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/libgcrypt-config
 
 	# libgcrypt.mk Sign
 	$(call SIGN,libgcrypt20,general.xml)

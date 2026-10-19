@@ -8,11 +8,12 @@ else # ($(MEMO_TARGET),darwin-\*)
 SUBPROJECTS   += zsh
 endif # ($(MEMO_TARGET),darwin-\*)
 ZSH_VERSION   := 5.9
-DEB_ZSH_V     ?= $(ZSH_VERSION)
+DEB_ZSH_V     ?= $(ZSH_VERSION)-2
 
 zsh-setup: setup
-	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://www.zsh.org/pub/zsh-$(ZSH_VERSION).tar.xz{$(comma).asc})
+	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://www.zsh.org/pub/old/zsh-$(ZSH_VERSION).tar.xz{$(comma).asc})
 	$(call EXTRACT_TAR,zsh-$(ZSH_VERSION).tar.xz,zsh-$(ZSH_VERSION),zsh)
+	$(call DO_PATCH,zsh,zsh,-p1)
 ifeq (,$(findstring darwin,$(MEMO_TARGET)))
 ZSH_CONFIGURE_ARGS := --enable-etcdir=$(MEMO_PREFIX)/etc \
 		zsh_cv_path_utmpx=/var/run/utmpx \
@@ -20,6 +21,10 @@ ZSH_CONFIGURE_ARGS := --enable-etcdir=$(MEMO_PREFIX)/etc \
 		LIBS="-L$(BUILD_BASE)/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib -liosexec"
 else
 ZSH_CONFIGURE_ARGS := --enable-etcdir=$(MEMO_PREFIX)/etc
+endif
+ifneq (,$(findstring roothide,$(MEMO_TARGET)))
+ZSH_CONFIGURE_ARGS += DLLDFLAGS="-bundle -twolevel_namespace -undefined dynamic_lookup" \
+		EXELDFLAGS="-Wl,-export_dynamic"
 endif
 
 ifneq ($(wildcard $(BUILD_WORK)/zsh/.build_complete),)
@@ -63,7 +68,7 @@ zsh: zsh-setup pcre ncurses
 		CPP="$(CPP) $(CPPFLAGS)"
 	+$(MAKE) -C $(BUILD_WORK)/zsh install \
 		DESTDIR="$(BUILD_STAGE)/zsh"
-	rm -f $(BUILD_STAGE)/zsh/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/zsh-$(ZSH_VERSION)
+	rm -f $(BUILD_STAGE)/zsh/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/{zsh-$(ZSH_VERSION),zsh.old}
 	$(call AFTER_BUILD)
 endif
 
