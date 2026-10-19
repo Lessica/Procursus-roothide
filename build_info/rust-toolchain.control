@@ -5,4 +5,4 @@ Maintainer: @DEB_MAINTAINER@
 Section: Development
 Priority: optional
 Homepage: https://www.rust-lang.org/
-Description: aarch64-darwin-apple and x86_64-darwin-apple Rust toolchains
+Description: Rust compiler libraries and target standard library for iOS

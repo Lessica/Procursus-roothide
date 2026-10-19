@@ -3,12 +3,16 @@ profile = "user"
 
 [llvm]
 optimize = true
-ccache = true
+ccache = false
 targets = "AArch64;ARM;X86"
 
 [build]
+build = "PROCURSUS_BUILD_HOST"
 host = ["PROCURSUS_TARGET"]
+target = ["PROCURSUS_TARGET"]
 build-dir = "PROCURSUS_BUILD_DIR"
+build-stage = 2
+install-stage = 2
 extended = true
 tools = ["cargo", "clippy", "src"]
 
@@ -21,3 +25,8 @@ optimize = true
 incremental = true
 default-linker = "clang"
 channel = "stable"
+
+[target."PROCURSUS_TARGET"]
+cc = "PROCURSUS_HOST_CC"
+cxx = "PROCURSUS_HOST_CXX"
+linker = "PROCURSUS_HOST_LINKER"
