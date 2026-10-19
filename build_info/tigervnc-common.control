@@ -2,6 +2,7 @@ Package: tigervnc-common
 Version: @DEB_TIGERVNC_V@
 Architecture: @DEB_ARCH@
 Maintainer: @DEB_MAINTAINER@
+Depends: libsm6, libice6, libx11-6, libxext6, libjpeg62-turbo, libpixman-1-0, libgnutls30
 Section: X11
 Description: Virtual network computing; Common software needed by servers
  VNC stands for Virtual Network Computing. It is, in essence, a remote

@@ -1,0 +1,11 @@
+--- a/unix/xserver/hw/vnc/Makefile.am
++++ b/unix/xserver/hw/vnc/Makefile.am
+@@ -67,6 +67,7 @@
+ 
+ libvnc_la_LDFLAGS = -module -avoid-version
+ 
+-libvnc_la_LIBADD = libvnccommon.la $(COMMON_LIBS)
++libvnc_la_LIBADD = libvnccommon.la $(COMMON_LIBS) \
++	-ljpeg -lpixman-1 -lgnutls
+ 
+ EXTRA_DIST = Xvnc.man

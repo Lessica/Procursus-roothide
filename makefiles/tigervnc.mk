@@ -23,22 +23,32 @@ tigervnc:
 	@echo "Using previously built tigervnc."
 else
 ifneq (,$(findstring darwin,$(MEMO_TARGET)))
-tigervnc: tigervnc-setup libmd libx11 libxau libxmu xorgproto libpixman gnutls libjpeg-turbo libxdamage libxfixes libxtst libxrandr libxfont2 mesa libgeneral libxdmcp libxdamage
+tigervnc: tigervnc-setup libmd libx11 libxau libxmu xorgproto font-util libpixman gnutls libjpeg-turbo libxdamage libxfixes libxtst libxrandr libxfont2 mesa libgeneral libxdmcp libxdamage
 else
-tigervnc: tigervnc-setup libmd libx11 libxau libxmu xorgproto libpixman gnutls libjpeg-turbo libxdamage libxfixes libxtst libxrandr libxfont2 mesa libgeneral libxdmcp libxdamage openpam
+tigervnc: tigervnc-setup libmd libx11 libxau libxmu xorgproto font-util libpixman gnutls libjpeg-turbo libxdamage libxfixes libxtst libxrandr libxfont2 mesa libgeneral libxdmcp libxdamage openpam
 endif
-	cd $(BUILD_WORK)/tigervnc && cmake . \
+	cd $(BUILD_WORK)/tigervnc && SDKROOT="$(TARGET_SYSROOT)" cmake . \
 		$(DEFAULT_CMAKE_FLAGS) \
+		-DCMAKE_OSX_DEPLOYMENT_TARGET=$(if $(findstring darwin,$(MEMO_TARGET)),$(MACOSX_DEPLOYMENT_TARGET),$(IPHONEOS_DEPLOYMENT_TARGET)) \
+		-DCMAKE_FIND_ROOT_PATH="$(BUILD_BASE);$(TARGET_SYSROOT)" \
+		-DCMAKE_FIND_ROOT_PATH_MODE_LIBRARY=ONLY \
+		-DCMAKE_FIND_ROOT_PATH_MODE_INCLUDE=ONLY \
+		-DCMAKE_FIND_ROOT_PATH_MODE_PACKAGE=ONLY \
+		-DCMAKE_FIND_ROOT_PATH_MODE_PROGRAM=NEVER \
+		-DCMAKE_EXE_LINKER_FLAGS="$(LDFLAGS)" \
+		-DCMAKE_MODULE_LINKER_FLAGS="$(LDFLAGS)" \
+		-DCMAKE_SHARED_LINKER_FLAGS="$(LDFLAGS)" \
 		-DBUILD_VIEWER=FALSE \
 		-DUSE_JAVA=FALSE \
 		-DGETTEXT_MSGFMT_EXECUTABLE=$(shell command -v msgfmt)
-	+$(MAKE) -i -C $(BUILD_WORK)/tigervnc
-	+$(MAKE) -i -C $(BUILD_WORK)/tigervnc install \
+	+$(MAKE) -C $(BUILD_WORK)/tigervnc
+	+$(MAKE) -C $(BUILD_WORK)/tigervnc install \
 		DESTDIR=$(BUILD_STAGE)/tigervnc
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://www.x.org/archive//individual/xserver/xorg-server-$(XORG-SERVER_VERSION).tar.gz{$(comma).sig})
 	$(call PGP_VERIFY,xorg-server-$(XORG-SERVER_VERSION).tar.gz)
 	$(call EXTRACT_TAR,xorg-server-$(XORG-SERVER_VERSION).tar.gz,xorg-server-$(XORG-SERVER_VERSION),xorg-server-vnc)
 	cp -R $(BUILD_WORK)/xorg-server-vnc/. $(BUILD_WORK)/tigervnc/unix/xserver
+	cat $(BUILD_WORK)/tigervnc/LICENCE.TXT $(BUILD_WORK)/xorg-server-vnc/COPYING > $(BUILD_WORK)/tigervnc/COPYING
 	sed -i 's/__APPLE__/__PEAR__/' $(BUILD_WORK)/tigervnc/unix/xserver/miext/rootless/rootlessWindow.c
 	cd $(BUILD_WORK)/tigervnc/unix/xserver && patch -p1 < $(BUILD_WORK)/tigervnc/unix/xserver$(XORG_VERSION).patch && \
 	export ACLOCAL='aclocal -I $(BUILD_BASE)/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share/aclocal' && \
@@ -77,16 +87,16 @@ endif
 	+$(MAKE) -C $(BUILD_WORK)/tigervnc/unix/xserver install \
 		DESTDIR=$(BUILD_STAGE)/tigervnc
 	rm -f $(BUILD_STAGE)/tigervnc/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/xorg/protocol.txt
-	rm -f $(BUILD_STAGE)/tigervnc/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share/man1/Xserver.1
+	rm -f $(BUILD_STAGE)/tigervnc/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share/man/man1/Xserver.1
 	$(call AFTER_BUILD,copy)
 endif
 
 tigervnc-package: tigervnc-stage
 # tigervnc.mk Package Structure
 	rm -rf $(BUILD_DIST)/tigervnc-{standalone-server,xorg-extension,scraping-server,common}
-	mkdir -p $(BUILD_DIST)/tigervnc-standalone-server/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin \
-		$(BUILD_DIST)/tigervnc-common/{$(MEMO_PREFIX)/etc,$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin} \
-		$(BUILD_DIST)/tigervnc-scraping-server/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/{libexec,bin} \
+	mkdir -p $(BUILD_DIST)/tigervnc-standalone-server/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/{bin,sbin,libexec,lib/systemd/system,share/man/man{1,8}} \
+		$(BUILD_DIST)/tigervnc-common/{$(MEMO_PREFIX)/etc,$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/{bin,share/man/man1}} \
+		$(BUILD_DIST)/tigervnc-scraping-server/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/{bin,share/man/man1} \
 		$(BUILD_DIST)/tigervnc-xorg-extension/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/xorg/modules/extensions \
 
 # tigervnc.mk Prep tigervnc-standalone-server
@@ -96,7 +106,7 @@ tigervnc-package: tigervnc-stage
 		$(BUILD_DIST)/tigervnc-standalone-server/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin
 
 # tigervnc.mk Prep tigervnc-common
-	cp -a $(BUILD_STAGE)/tigervnc/$(MEMO_PREFIX)/etc $(BUILD_DIST)/tigervnc-common$(MEMO_PREFIX)/etc
+	cp -a $(BUILD_STAGE)/tigervnc/$(MEMO_PREFIX)/etc/. $(BUILD_DIST)/tigervnc-common$(MEMO_PREFIX)/etc/
 	cp -a $(BUILD_STAGE)/tigervnc/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/{vncconfig,vncpasswd} \
 		$(BUILD_DIST)/tigervnc-common/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin
 
@@ -107,8 +117,16 @@ tigervnc-package: tigervnc-stage
 # tigervnc.mk Prep tigervnc-scraping-server
 	cp -a $(BUILD_STAGE)/tigervnc/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/x0vncserver \
 		$(BUILD_DIST)/tigervnc-scraping-server/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/
-	cp -a $(BUILD_STAGE)/tigervnc/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/libexec \
-		$(BUILD_DIST)/tigervnc-scraping-server/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/libexec
+	cp -a $(BUILD_STAGE)/tigervnc/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/libexec/. \
+		$(BUILD_DIST)/tigervnc-standalone-server/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/libexec/
+	cp -a $(BUILD_STAGE)/tigervnc/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/sbin/vncsession \
+		$(BUILD_DIST)/tigervnc-standalone-server/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/sbin/
+	cp -a $(BUILD_STAGE)/tigervnc/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/systemd/system/vncserver@.service \
+		$(BUILD_DIST)/tigervnc-standalone-server/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/systemd/system/
+	cp -a $(BUILD_STAGE)/tigervnc/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share/man/man1/Xvnc.1* $(BUILD_DIST)/tigervnc-standalone-server/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share/man/man1/
+	cp -a $(BUILD_STAGE)/tigervnc/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share/man/man8/{vncsession,vncserver}.8* $(BUILD_DIST)/tigervnc-standalone-server/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share/man/man8/
+	cp -a $(BUILD_STAGE)/tigervnc/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share/man/man1/{vncconfig,vncpasswd}.1* $(BUILD_DIST)/tigervnc-common/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share/man/man1/
+	cp -a $(BUILD_STAGE)/tigervnc/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share/man/man1/x0vncserver.1* $(BUILD_DIST)/tigervnc-scraping-server/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share/man/man1/
 
 # tigervnc.mk Sign
 	$(call SIGN,tigervnc-standalone-server,general.xml)
