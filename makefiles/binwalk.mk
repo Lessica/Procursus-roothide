@@ -5,6 +5,7 @@ endif
 SUBPROJECTS     += binwalk
 BINWALK_VERSION := 2.3.3
 DEB_BINWALK_V   ?= $(BINWALK_VERSION)
+PYTHON_HOST ?= python$(PYTHON3_MAJOR_V)
 
 binwalk-setup: setup
 	$(call GITHUB_ARCHIVE,ReFirmLabs,binwalk,$(BINWALK_VERSION),v$(BINWALK_VERSION))
@@ -16,10 +17,10 @@ binwalk:
 	@echo "Using previously built binwalk."
 else
 binwalk: binwalk-setup
-	cd $(BUILD_WORK)/binwalk && $(DEFAULT_SETUP_PY_ENV) python3 ./setup.py build \
+	cd $(BUILD_WORK)/binwalk && GIT_CEILING_DIRECTORIES="$(BUILD_WORK)" $(PYTHON_HOST) ./setup.py build \
 		--executable="$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/python3" \
 		install \
-		--install-layout=deb \
+		--install-lib="$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/python3/dist-packages" \
 		--root="$(BUILD_STAGE)/binwalk" \
 		--prefix="$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)"
 	find $(BUILD_STAGE)/binwalk -name __pycache__ -prune -exec rm -rf {} \;

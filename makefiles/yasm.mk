@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS  += yasm
 YASM_VERSION := 1.3.0
-DEB_YASM_V   ?= $(YASM_VERSION)
+DEB_YASM_V   ?= $(YASM_VERSION)-1
 
 yasm-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://www.tortall.net/projects/yasm/releases/yasm-$(YASM_VERSION).tar.gz)

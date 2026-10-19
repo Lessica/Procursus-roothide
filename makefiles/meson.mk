@@ -5,6 +5,7 @@ endif
 SUBPROJECTS   += meson
 MESON_VERSION := 0.64.0
 DEB_MESON_V   ?= $(MESON_VERSION)
+PYTHON_HOST ?= python$(PYTHON3_MAJOR_V)
 
 meson-setup: setup
 	$(call GITHUB_ARCHIVE,mesonbuild,meson,$(MESON_VERSION),$(MESON_VERSION))
@@ -15,10 +16,10 @@ meson:
 	@echo "Using previously built meson."
 else
 meson: meson-setup python3 ninja
-	cd $(BUILD_WORK)/meson && $(DEFAULT_SETUP_PY_ENV) python3 ./setup.py build \
+	cd $(BUILD_WORK)/meson && $(PYTHON_HOST) ./setup.py build \
 		--executable="$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/python3" \
 		install \
-		--install-layout=deb \
+		--install-lib="$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/python3/dist-packages" \
 		--root="$(BUILD_STAGE)/meson" \
 		--prefix="$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)"
 	find $(BUILD_STAGE)/meson -name __pycache__ -prune -exec rm -rf {} \;

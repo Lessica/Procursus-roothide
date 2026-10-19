@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS    += micro
 MICRO_VERSION  := 2.0.10
-DEB_MICRO_V    ?= $(MICRO_VERSION)
+DEB_MICRO_V    ?= $(MICRO_VERSION)-3
 
 micro-setup: setup
 	$(call GITHUB_ARCHIVE,zyedidia,micro,$(MICRO_VERSION),v$(MICRO_VERSION),micro)
@@ -17,6 +17,8 @@ micro:
 else
 micro: micro-setup
 	$(MAKE) -C $(BUILD_WORK)/micro build \
+		VERSION="$(MICRO_VERSION)" \
+		HASH=archive \
 		$(DEFAULT_GOLANG_FLAGS)
 	$(INSTALL) -Dm755 $(BUILD_WORK)/micro/micro $(BUILD_STAGE)/micro/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/micro
 	$(INSTALL) -Dm644 $(BUILD_WORK)/micro/assets/packaging/micro.1 $(BUILD_STAGE)/micro/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share/man/man1/micro.1
@@ -31,6 +33,10 @@ micro-package: micro-stage
 
 	# micro.mk Prep micro
 	cp -a $(BUILD_STAGE)/micro/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/{bin,share} $(BUILD_DIST)/micro/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)
+	# Reconstruct the manual from the pinned source to avoid duplicate compression
+	rm -f $(BUILD_DIST)/micro/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share/man/man1/micro.1*
+	$(INSTALL) -Dm644 $(BUILD_WORK)/micro/assets/packaging/micro.1 $(BUILD_DIST)/micro/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share/man/man1/micro.1
+	$(MEMO_MANPAGE_COMPCMD) $(MEMO_MANPAGE_COMPFLGS) $(BUILD_DIST)/micro/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share/man/man1/micro.1
 
 	# micro.mk Sign
 	$(call SIGN,micro,general.xml)

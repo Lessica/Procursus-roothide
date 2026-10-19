@@ -6,6 +6,7 @@ SUBPROJECTS   += xonsh
 XONSH_COMMIT  := 33a5689db2d23e6c403aa463dddf50f7474241e5
 XONSH_VERSION := 0.10.1-$(shell echo $(XONSH_COMMIT) | cut -c -7)
 DEB_XONSH_V   ?= $(XONSH_VERSION)
+PYTHON_HOST ?= python$(PYTHON3_MAJOR_V)
 
 xonsh-setup: setup
 	$(call GITHUB_ARCHIVE,xonsh,xonsh,$(XONSH_COMMIT),$(XONSH_COMMIT))
@@ -16,11 +17,11 @@ xonsh:
 	@echo "Using previously built xonsh."
 else
 xonsh: xonsh-setup python3-prompt-toolkit
-	cd $(BUILD_WORK)/xonsh && $(DEFAULT_SETUP_PY_ENV) python3 ./setup.py \
+	cd $(BUILD_WORK)/xonsh && $(PYTHON_HOST) ./setup.py \
 		build \
 		--executable="$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/python3" \
 		install \
-		--install-layout=deb \
+		--install-lib="$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/python3/dist-packages" \
 		--root=$(BUILD_STAGE)/xonsh \
 		--prefix=$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)
 	sed -i "s|$$(cat $(BUILD_STAGE)/xonsh/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/xonsh | grep \#! | sed 's/#!//')|$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/python3|" $(BUILD_STAGE)/xonsh/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/*

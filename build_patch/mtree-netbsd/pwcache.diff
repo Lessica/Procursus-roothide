@@ -1,5 +1,3 @@
-diff --git a/lib/libc/gen/pwcache.c b/lib/libc/gen/pwcache.c
-index 7049932f1bbb..2b5174d50cf6 100644
 --- a/pwcache.c
 +++ b/pwcache.c
 @@ -65,8 +65,6 @@
@@ -11,7 +9,7 @@ index 7049932f1bbb..2b5174d50cf6 100644
  #endif
  
  #include <sys/cdefs.h>
-@@ -78,8 +76,6 @@ __RCSID("$NetBSD: pwcache.c,v 1.32 2018/11/08 06:43:52 msaitoh Exp $");
+@@ -78,8 +76,6 @@
  #endif
  #endif /* LIBC_SCCS and not lint */
  
@@ -20,7 +18,7 @@ index 7049932f1bbb..2b5174d50cf6 100644
  #include <sys/types.h>
  #include <sys/param.h>
  
-@@ -93,13 +89,9 @@ __RCSID("$NetBSD: pwcache.c,v 1.32 2018/11/08 06:43:52 msaitoh Exp $");
+@@ -93,13 +89,9 @@
  
  #if HAVE_NBTOOL_CONFIG_H
  /* XXX Now, re-apply the renaming that we undid above. */
@@ -34,7 +32,7 @@ index 7049932f1bbb..2b5174d50cf6 100644
  __weak_alias(pwcache_groupdb,_pwcache_groupdb)
  #endif
  
-@@ -154,7 +146,7 @@ st_hash(const char *name, size_t len, int tabsz)
+@@ -154,7 +146,7 @@
  {
  	u_int key = 0;
  
@@ -43,10 +41,12 @@ index 7049932f1bbb..2b5174d50cf6 100644
  
  	while (len--) {
  		key += *name++;
-@@ -248,144 +240,6 @@ grptb_start(void)
+@@ -246,147 +238,9 @@
+ 		return (-1);
+ 	}
  	return (0);
- }
- 
+-}
+-
 -/*
 - * user_from_uid()
 - *	caches the name (if any) for the uid. If noname clear, we always
@@ -114,9 +114,9 @@ index 7049932f1bbb..2b5174d50cf6 100644
 -		ptr->valid = VALID;
 -	}
 -	return (ptr->name);
--}
--
--/*
+ }
+ 
+ /*
 - * group_from_gid()
 - *	caches the name (if any) for the gid. If noname clear, we always
 - *	return the stored name (if valid or invalid match).
@@ -163,7 +163,7 @@ index 7049932f1bbb..2b5174d50cf6 100644
 -	if ((gr = (*_pwcache_getgrgid)(gid)) == NULL) {
 -		/*
 -		 * no match for this gid in the local group file, put in
--		 * a string that is the gid in numberic format
+-		 * a string that is the gid in numeric format
 -		 */
 -		if (ptr == NULL)
 -			return (NULL);
@@ -185,18 +185,7 @@ index 7049932f1bbb..2b5174d50cf6 100644
 -	return (ptr->name);
 -}
 -
- /*
+-/*
   * uid_from_user()
   *	caches the uid for a given user name. We use a simple hash table.
-diff --color -urN mtree-netbsd-debian-20180822-6/Makefile.in mtree-netbsd/Makefile.in
---- mtree-netbsd-debian-20180822-6/Makefile.in	2021-01-12 10:49:06.000000000 -0500
-+++ mtree-netbsd/Makefile.in	2021-03-31 14:10:17.499824482 -0400
-@@ -22,7 +22,7 @@
- PROG=		mtree
- 
- OBJS=	compare.o crc.o create.o excludes.o misc.o mtree.o spec.o verify.o \
--	getid.o stat_flags.o pack_dev.o
-+	getid.o stat_flags.o pack_dev.o pwcache.o
- 
- all: $(PROG)
- 
+  * Return

@@ -5,3 +5,4 @@ Maintainer: @DEB_MAINTAINER@
 Section: Development
 Priority: optional
 Description: Modular BSD reimplementation of NASM
+Depends: libintl8
