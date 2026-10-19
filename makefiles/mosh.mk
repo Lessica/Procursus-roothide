@@ -4,10 +4,11 @@ endif
 
 SUBPROJECTS  += mosh
 MOSH_VERSION := 1.3.2
-DEB_MOSH_V   ?= $(MOSH_VERSION)-5
+DEB_MOSH_V   ?= $(MOSH_VERSION)-6
+PROTOC_FOR_BUILD ?= protoc
 
 mosh-setup: setup
-	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://mosh.org/mosh-$(MOSH_VERSION).tar.gz)
+	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://github.com/mobile-shell/mosh/releases/download/mosh-$(MOSH_VERSION)/mosh-$(MOSH_VERSION).tar.gz)
 	$(call EXTRACT_TAR,mosh-$(MOSH_VERSION).tar.gz,mosh-$(MOSH_VERSION),mosh)
 	$(call DO_PATCH,mosh,mosh,-p0)
 
@@ -22,10 +23,12 @@ mosh: mosh-setup libprotobuf openssl ncurses
 		--with-ncursesw \
 		--with-crypto-library=openssl \
 		--enable-completion \
+		PROTOC="$(PROTOC_FOR_BUILD)" \
 		TINFO_LIBS="-L$(BUILD_BASE)$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib -lncursesw"
 	+$(MAKE) -C $(BUILD_WORK)/mosh \
 		CXX="$(CXX) -std=c++11"
 	+$(MAKE) -C $(BUILD_WORK)/mosh install \
+		CXX="$(CXX) -std=c++11" \
 		DESTDIR=$(BUILD_STAGE)/mosh
 	$(call AFTER_BUILD)
 endif

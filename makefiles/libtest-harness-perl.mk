@@ -4,7 +4,8 @@ endif
 
 SUBPROJECTS                  += libtest-harness-perl
 LIBTEST-HARNESS-PERL_VERSION := 3.42
-DEB_LIBTEST-HARNESS-PERL_V   ?= $(LIBTEST-HARNESS-PERL_VERSION)
+DEB_LIBTEST-HARNESS-PERL_V   ?= $(LIBTEST-HARNESS-PERL_VERSION)-1
+PERL_HOST                   ?= $(shell command -v perl)
 
 libtest-harness-perl-setup: setup
 	$(call DOWNLOAD_FILE,$(BUILD_SOURCE)/libtest-harness-perl-$(LIBTEST-HARNESS-PERL_VERSION).tar.gz, \
@@ -16,7 +17,7 @@ libtest-harness-perl:
 	@echo "Using previously built libtest-harness-perl."
 else
 libtest-harness-perl: libtest-harness-perl-setup perl
-	cd $(BUILD_WORK)/libtest-harness-perl && /opt/procursus/bin/perl Makefile.PL \
+	cd $(BUILD_WORK)/libtest-harness-perl && $(PERL_HOST) Makefile.PL \
 		$(DEFAULT_PERL_MAKE_FLAGS)
 	+$(MAKE) -C $(BUILD_WORK)/libtest-harness-perl
 	+$(MAKE) -C $(BUILD_WORK)/libtest-harness-perl install \
@@ -31,6 +32,8 @@ libtest-harness-perl-package: libtest-harness-perl-stage
 
 	# libtest-harness-perl.mk Prep libtest-harness-perl
 	cp -a $(BUILD_STAGE)/libtest-harness-perl $(BUILD_DIST)
+	# Perl already ships the identical prove implementation with the target-safe shebang.
+	rm -f $(BUILD_DIST)/libtest-harness-perl/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/prove
 
 	# libtest-harness-perl.mk Make .debs
 	$(call PACK,libtest-harness-perl,DEB_LIBTEST-HARNESS-PERL_V)

@@ -15,7 +15,7 @@ transmission:
 	@echo "Using previously built transmission."
 else
 transmission: transmission-setup curl libevent
-	cd $(BUILD_WORK)/transmission && ./configure \
+	cd $(BUILD_WORK)/transmission && PKG_CONFIG_PATH="$(BUILD_BASE)$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib" ./configure \
 		$(DEFAULT_CONFIGURE_FLAGS) \
 		--disable-debug \
 		--enable-cli \

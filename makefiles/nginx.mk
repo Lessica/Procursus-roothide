@@ -3,7 +3,7 @@ $(error Use the main Makefile)
 endif
 SUBPROJECTS   += nginx
 NGINX_VERSION := 1.21.5
-DEB_NGINX_V   ?= $(NGINX_VERSION)-5
+DEB_NGINX_V   ?= $(NGINX_VERSION)-6
 
 ifeq ($(UNAME),Darwin)
 # CC := /usr/bin/cc
@@ -64,7 +64,7 @@ FULL_NGINX_FLAGS := $(GLOBAL_NGINX_FLAGS) \
   		               --with-stream_ssl_module \
   		               --with-stream_ssl_preread_module
 
-nginx-setup: setup pcre openssl libgeoip libgd libxml2
+nginx-setup: setup pcre2 openssl libgeoip libgd libxml2
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://nginx.org/download/nginx-$(NGINX_VERSION).tar.gz)
 	$(call EXTRACT_TAR,nginx-$(NGINX_VERSION).tar.gz,nginx-$(NGINX_VERSION),nginx)
 	$(call DO_PATCH,nginx,nginx,-p0)
@@ -97,6 +97,9 @@ nginx: nginx-setup
 	+$(MAKE) -C $(BUILD_WORK)/nginx install \
 		DESTDIR=$(BUILD_STAGE)/nginx/core
 
+	# Reinstalling nginx saves the previous executable; never process or ship it.
+	rm -f $(BUILD_STAGE)/nginx/{light,core}/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/nginx.old
+	rm -f $(BUILD_STAGE)/nginx/core/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/nginx/modules/*.so.old
 	$(call AFTER_BUILD)
 endif
 

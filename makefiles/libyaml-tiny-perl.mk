@@ -5,6 +5,7 @@ endif
 SUBPROJECTS               += libyaml-tiny-perl
 LIBYAML-TINY-PERL_VERSION := 1.73
 DEB_LIBYAML-TINY-PERL_V   ?= $(LIBYAML-TINY-PERL_VERSION)
+PERL_HOST               ?= $(shell command -v perl)
 
 libyaml-tiny-perl-setup: setup
 	$(call DOWNLOAD_FILE,$(BUILD_SOURCE)/libyaml-tiny-perl-$(LIBYAML-TINY-PERL_VERSION).tar.gz, \
@@ -16,7 +17,7 @@ libyaml-tiny-perl:
 	@echo "Using previously built libyaml-tiny-perl."
 else
 libyaml-tiny-perl: libyaml-tiny-perl-setup
-	cd $(BUILD_WORK)/libyaml-tiny-perl && /opt/procursus/bin/perl Makefile.PL \
+	cd $(BUILD_WORK)/libyaml-tiny-perl && $(PERL_HOST) Makefile.PL \
 		$(DEFAULT_PERL_MAKE_FLAGS)
 	+$(MAKE) -C $(BUILD_WORK)/libyaml-tiny-perl
 	+$(MAKE) -C $(BUILD_WORK)/libyaml-tiny-perl install \

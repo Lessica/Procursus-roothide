@@ -5,6 +5,7 @@ endif
 SUBPROJECTS           += libsgmls-perl
 LIBSGMLS-PERL_VERSION := 1.1
 DEB_LIBSGMLS-PERL_V   ?= $(LIBSGMLS-PERL_VERSION)
+PERL_HOST            ?= $(shell command -v perl)
 
 libsgmls-perl-setup: setup
 	$(call DOWNLOAD_FILE,$(BUILD_SOURCE)/libsgmls-perl-$(LIBSGMLS-PERL_VERSION).tar.gz, \
@@ -17,7 +18,7 @@ libsgmls-perl:
 	@echo "Using previously built libsgmls-perl."
 else
 libsgmls-perl: libsgmls-perl-setup perl
-	cd $(BUILD_WORK)/libsgmls-perl && /opt/procursus/bin/perl Makefile.PL \
+	cd $(BUILD_WORK)/libsgmls-perl && $(PERL_HOST) Makefile.PL \
 		$(DEFAULT_PERL_MAKE_FLAGS)
 	+$(MAKE) -C $(BUILD_WORK)/libsgmls-perl
 	+$(MAKE) -C $(BUILD_WORK)/libsgmls-perl install \

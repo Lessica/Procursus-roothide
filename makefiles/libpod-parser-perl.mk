@@ -5,6 +5,7 @@ endif
 SUBPROJECTS                += libpod-parser-perl
 LIBPOD-PARSER-PERL_VERSION := 1.63
 DEB_LIBPOD-PARSER-PERL_V   ?= $(LIBPOD-PARSER-PERL_VERSION)
+PERL_HOST                ?= $(shell command -v perl)
 
 libpod-parser-perl-setup: setup
 	$(call DOWNLOAD_FILE,$(BUILD_SOURCE)/libpod-parser-perl-$(LIBPOD-PARSER-PERL_VERSION).tar.gz, \
@@ -16,7 +17,7 @@ libpod-parser-perl:
 	@echo "Using previously built libpod-parser-perl."
 else
 libpod-parser-perl: libpod-parser-perl-setup perl
-	cd $(BUILD_WORK)/libpod-parser-perl && /opt/procursus/bin/perl Makefile.PL \
+	cd $(BUILD_WORK)/libpod-parser-perl && $(PERL_HOST) Makefile.PL \
 		$(DEFAULT_PERL_MAKE_FLAGS)
 	+$(MAKE) -C $(BUILD_WORK)/libpod-parser-perl
 	+$(MAKE) -C $(BUILD_WORK)/libpod-parser-perl install \
