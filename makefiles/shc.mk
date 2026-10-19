@@ -7,7 +7,7 @@ SHC_VERSION := 4.0.3
 DEB_SHC_V   ?= $(SHC_VERSION)
 
 shc-setup: setup
-	$(call GITHUB_ARCHIVE,neurobin,shc,$(SHC_VERSION),$(SHC_VERSION))
+	$(call DOWNLOAD_FILE,$(BUILD_SOURCE)/shc-$(SHC_VERSION).tar.gz,https://github.com/neurobin/shc/archive/refs/tags/$(SHC_VERSION).tar.gz)
 	$(call EXTRACT_TAR,shc-$(SHC_VERSION).tar.gz,shc-$(SHC_VERSION),shc)
 
 ifneq ($(wildcard $(BUILD_WORK)/shc/.build_complete),)

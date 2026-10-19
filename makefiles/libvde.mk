@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS    += libvde
 LIBVDE_VERSION := 2.3.2
-DEB_LIBVDE_V   ?= $(LIBVDE_VERSION)
+DEB_LIBVDE_V   ?= $(LIBVDE_VERSION)-1
 
 libvde-setup: setup file-setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://downloads.sourceforge.net/project/vde/vde2/$(LIBVDE_VERSION)/vde2-$(LIBVDE_VERSION).tar.gz)
@@ -22,6 +22,10 @@ libvde: libvde-setup openssl
 		--disable-python \
 		ac_cv_func_malloc_0_nonnull=yes \
 		ac_cv_func_realloc_0_nonnull=yes
+ifneq (,$(findstring roothide,$(MEMO_TARGET)))
+	# Old libtool selects flat namespace on newer Darwin hosts; RootHide requires two-level imports.
+	sed -i 's|^allow_undefined_flag=.*|allow_undefined_flag="-Wl,-twolevel_namespace -Wl,-undefined,dynamic_lookup"|' $(BUILD_WORK)/libvde/libtool
+endif
 	unset MAKEFLAGS && $(MAKE) -C $(BUILD_WORK)/libvde install \
 		DESTDIR="$(BUILD_STAGE)/libvde"
 	$(call AFTER_BUILD,copy)
@@ -59,11 +63,11 @@ libvde-package: libvde-stage
 	cp -a $(BUILD_STAGE)/libvde/etc/vde2/vdecmd $(BUILD_DIST)/vde2/etc/vde2
 	cp -a $(BUILD_STAGE)/libvde/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/{bin,share} $(BUILD_DIST)/vde2/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)
 	rm -f $(BUILD_DIST)/vde2/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/vde{cmd,kvm,qemu,_cryptcab}
-	rm -f $(BUILD_DIST)/vde2/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share/man/man1/vde{cmd,kvm,qemu,_cryptcab}.1
+	rm -f $(BUILD_DIST)/vde2/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share/man/man1/vde{cmd,kvm,qemu,_cryptcab}.1$(MEMO_MANPAGE_SUFFIX)
 
 	# libvde.mk Prep vde2-cryptcab
 	cp -a $(BUILD_STAGE)/libvde/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/vde_cryptcab $(BUILD_DIST)/vde2-cryptcab/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin
-	cp -a $(BUILD_STAGE)/libvde/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share/man/man1/vde_cryptcab.1 $(BUILD_DIST)/vde2-cryptcab/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share/man/man1
+	cp -a $(BUILD_STAGE)/libvde/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share/man/man1/vde_cryptcab.1$(MEMO_MANPAGE_SUFFIX) $(BUILD_DIST)/vde2-cryptcab/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share/man/man1
 
 	# libvde.mk Sign
 	$(call SIGN,libvde0,general.xml)

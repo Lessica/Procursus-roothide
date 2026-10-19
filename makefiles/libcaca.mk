@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS     += libcaca
 LIBCACA_VERSION := 0.99.beta19
-DEB_LIBCACA_V   ?= $(LIBCACA_VERSION)
+DEB_LIBCACA_V   ?= $(LIBCACA_VERSION)-1
 
 libcaca-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),http://caca.zoy.org/files/libcaca/libcaca-$(LIBCACA_VERSION).tar.gz)
@@ -17,6 +17,7 @@ else
 libcaca: libcaca-setup imlib2 slang2 ncurses
 	cd $(BUILD_WORK)/libcaca && ./configure -C \
 		$(DEFAULT_CONFIGURE_FLAGS) \
+		CXX="$(CXX) $(CXXFLAGS)" \
 		--enable-plugins \
 		--disable-doc \
 		--disable-java \
@@ -40,8 +41,8 @@ libcaca-package: libcaca-stage
 
 	# libcaca.mk Prep caca-utils
 	cp -a $(BUILD_STAGE)/libcaca/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin $(BUILD_DIST)/caca-utils/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)
+	rm -f $(BUILD_DIST)/caca-utils/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/caca-config
 	cp -a $(BUILD_STAGE)/libcaca/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share/man/man1/!(caca-config.1$(MEMO_MANPAGE_SUFFIX)) $(BUILD_DIST)/caca-utils/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share/man/man1
-	cp -a $(BUILD_STAGE)/libcaca/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/caca-config $(BUILD_DIST)/caca-utils/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin
 
 	# libcaca.mk Prep libcaca0
 	cp -a $(BUILD_STAGE)/libcaca/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/libcaca{,++}.0.dylib $(BUILD_DIST)/libcaca0/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib

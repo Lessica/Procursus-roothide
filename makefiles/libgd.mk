@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS   += libgd
 LIBGD_VERSION := 2.3.2
-DEB_LIBGD_V   ?= $(LIBGD_VERSION)-1
+DEB_LIBGD_V   ?= $(LIBGD_VERSION)-2
 
 libgd-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE), \
@@ -39,6 +39,11 @@ libgd: libgd-setup fontconfig freetype libjpeg-turbo libpng16 libtiff libwebp li
 	+$(MAKE) -C $(BUILD_WORK)/libgd
 	+$(MAKE) -C $(BUILD_WORK)/libgd install \
 		DESTDIR="$(BUILD_STAGE)/libgd"
+	sed -i \
+		-e 's|$(TARGET_SYSROOT)/usr/lib/libiconv.tbd|-liconv|g' \
+		-e 's|$(BUILD_BASE)$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/libwebp.dylib|-lwebp|g' \
+		-e '/^Libs.private:/s|;| |g' \
+		$(BUILD_STAGE)/libgd$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/pkgconfig/gdlib.pc
 	$(call AFTER_BUILD,copy)
 endif
 
