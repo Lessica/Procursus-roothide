@@ -6,7 +6,8 @@ endif
 
 SUBPROJECTS += rbw
 RBW_VERSION := 1.0.0
-DEB_RBW_V   ?= $(RBW_VERSION)
+DEB_RBW_V   ?= $(RBW_VERSION)-1
+RBW_TARGET_SYSROOT = $(BUILD_WORK)/rbw/apple-sdk/SDKs/$(notdir $(TARGET_SYSROOT))
 
 rbw-setup: setup
 	$(call GITHUB_ARCHIVE,doy,rbw,$(RBW_VERSION),$(RBW_VERSION))
@@ -18,8 +19,22 @@ rbw:
 else
 rbw: rbw-setup
 	$(call DO_PATCH,rbw,rbw,-p1)
-	cd $(BUILD_WORK)/rbw && $(DEFAULT_RUST_FLAGS) cargo build \
+	# openssl-src expects Apple's /SDKs/ layout; retain the selected SDK bytes.
+	mkdir -p $(BUILD_WORK)/rbw/apple-sdk/SDKs
+	ln -sfn "$(TARGET_SYSROOT)" "$(RBW_TARGET_SYSROOT)"
+	printf '%s\n' '#!/bin/sh' 'exec "$(CC)" -isysroot "$(RBW_TARGET_SYSROOT)" "$$@"' > $(BUILD_WORK)/rbw/target-cc-wrapper
+	printf '%s\n' '#!/bin/sh' 'exec "$(CXX)" -isysroot "$(RBW_TARGET_SYSROOT)" "$$@"' > $(BUILD_WORK)/rbw/target-cxx-wrapper
+	chmod 755 $(BUILD_WORK)/rbw/target-{cc,cxx}-wrapper
+	cd $(BUILD_WORK)/rbw && $(DEFAULT_RUST_FLAGS) \
+		SDKROOT="$(MACOSX_SYSROOT)" \
+		CC="$(CC_FOR_BUILD)" CXX="$(CXX_FOR_BUILD)" \
+		CC_$(subst -,_,$(RUST_TARGET))="$(BUILD_WORK)/rbw/target-cc-wrapper" \
+		CXX_$(subst -,_,$(RUST_TARGET))="$(BUILD_WORK)/rbw/target-cxx-wrapper" \
+		CFLAGS_$(subst -,_,$(RUST_TARGET))="$(subst $(TARGET_SYSROOT),$(RBW_TARGET_SYSROOT),$(CFLAGS))" CXXFLAGS_$(subst -,_,$(RUST_TARGET))="$(subst $(TARGET_SYSROOT),$(RBW_TARGET_SYSROOT),$(CXXFLAGS))" \
+		CARGO_TARGET_$(subst -,_,$(shell echo $(RUST_TARGET) | tr '[:lower:]' '[:upper:]'))_LINKER="$(BUILD_WORK)/rbw/target-cc-wrapper" \
+		CFLAGS= CXXFLAGS= CPPFLAGS= ASFLAGS= LDFLAGS= RUSTFLAGS="-L $(BUILD_BASE)/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib $(if $(filter iphoneos-arm64-roothide,$(MEMO_TARGET)),-C link-arg=-liosexec)" cargo build \
 		--release \
+		--locked \
 		--target=$(RUST_TARGET)
 	$(INSTALL) -Dm755 $(BUILD_WORK)/rbw/target/$(RUST_TARGET)/release/rbw $(BUILD_STAGE)/rbw/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/rbw
 	$(INSTALL) -Dm755 $(BUILD_WORK)/rbw/target/$(RUST_TARGET)/release/rbw-agent $(BUILD_STAGE)/rbw/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/rbw-agent
