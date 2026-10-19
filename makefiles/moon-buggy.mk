@@ -7,8 +7,9 @@ MOON-BUGGY_VERSION := 1.0.51
 DEB_MOON-BUGGY_V   ?= $(MOON-BUGGY_VERSION)-1
 
 moon-buggy-setup: setup file-setup
-	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://m.seehuhn.de/programs/moon-buggy-$(MOON-BUGGY_VERSION).tar.gz{$(comma).sig})
-	$(call PGP_VERIFY,moon-buggy-$(MOON-BUGGY_VERSION).tar.gz)
+	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://deb.debian.org/debian/pool/main/m/moon-buggy/moon-buggy_$(MOON-BUGGY_VERSION).orig.tar.gz)
+	echo '352dc16ccae4c66f1e87ab071e6a4ebeb94ff4e4f744ce1b12a769d02fe5d23f  $(BUILD_SOURCE)/moon-buggy_$(MOON-BUGGY_VERSION).orig.tar.gz' | shasum -a 256 -c -
+	cp $(BUILD_SOURCE)/moon-buggy_$(MOON-BUGGY_VERSION).orig.tar.gz $(BUILD_SOURCE)/moon-buggy-$(MOON-BUGGY_VERSION).tar.gz
 	$(call EXTRACT_TAR,moon-buggy-$(MOON-BUGGY_VERSION).tar.gz,moon-buggy-$(MOON-BUGGY_VERSION),moon-buggy)
 	cp -a $(BUILD_WORK)/file/config.sub $(BUILD_WORK)/moon-buggy
 	sed -i 's|$$(DESTDIR)$$(bindir)/moon-buggy -c||' $(BUILD_WORK)/moon-buggy/Makefile.am
