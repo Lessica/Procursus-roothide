@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS    += cowsay
 COWSAY_VERSION := 3.04
-DEB_COWSAY_V   ?= $(COWSAY_VERSION)-1
+DEB_COWSAY_V   ?= $(COWSAY_VERSION)-2
 
 cowsay-setup: setup
 	$(call GITHUB_ARCHIVE,tnalpgge,rank-amateur-cowsay,$(COWSAY_VERSION),cowsay-$(COWSAY_VERSION),cowsay)
@@ -16,7 +16,7 @@ cowsay:
 	@echo "Using previously built cowsay."
 else
 cowsay: cowsay-setup
-	sed -i -e 's|%BANGPERL%|!/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/perl|' -e 's|%PREFIX%|$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)|' $(BUILD_WORK)/cowsay/cowsay $(BUILD_WORK)/cowsay/cowsay.1
+	sed -i -e 's|%BANGPERL%|!$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/perl|' -e 's|%PREFIX%|$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)|' $(BUILD_WORK)/cowsay/cowsay $(BUILD_WORK)/cowsay/cowsay.1
 	cp -a $(BUILD_WORK)/cowsay/cowsay $(BUILD_STAGE)/cowsay/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/games
 	cp -a $(BUILD_WORK)/cowsay/cowsay.1 $(BUILD_STAGE)/cowsay/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share/man/man1
 	cp -a $(BUILD_WORK)/cowsay/cows $(BUILD_STAGE)/cowsay/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share

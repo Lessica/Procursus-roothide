@@ -1,0 +1,44 @@
+--- a/yaml/_yaml.pxd
++++ b/yaml/_yaml.pxd
+@@ -86,8 +86,8 @@
+         YAML_MAPPING_END_EVENT
+ 
+-    ctypedef int yaml_read_handler_t(void *data, char *buffer,
++    ctypedef int yaml_read_handler_t(void *data, unsigned char *buffer,
+             size_t size, size_t *size_read) except 0
+ 
+-    ctypedef int yaml_write_handler_t(void *data, char *buffer,
++    ctypedef int yaml_write_handler_t(void *data, unsigned char *buffer,
+             size_t size) except 0
+ 
+--- a/yaml/_yaml.pyx
++++ b/yaml/_yaml.pyx
+@@ -906,5 +906,5 @@
+         return 1
+ 
+-cdef int input_handler(void *data, char *buffer, size_t size, size_t *read) except 0:
++cdef int input_handler(void *data, unsigned char *buffer, size_t size, size_t *read) except 0:
+     cdef CParser parser
+     parser = <CParser>data
+@@ -925,5 +925,5 @@
+         size = parser.stream_cache_len - parser.stream_cache_pos
+     if size > 0:
+-        memcpy(buffer, PyString_AS_STRING(parser.stream_cache)
++        memcpy(<char *>buffer, PyString_AS_STRING(parser.stream_cache)
+                             + parser.stream_cache_pos, size)
+     read[0] = size
+@@ -1516,11 +1516,11 @@
+         return 1
+ 
+-cdef int output_handler(void *data, char *buffer, size_t size) except 0:
++cdef int output_handler(void *data, unsigned char *buffer, size_t size) except 0:
+     cdef CEmitter emitter
+     emitter = <CEmitter>data
+     if emitter.dump_unicode == 0:
+-        value = PyString_FromStringAndSize(buffer, size)
++        value = PyString_FromStringAndSize(<char *>buffer, size)
+     else:
+-        value = PyUnicode_DecodeUTF8(buffer, size, 'strict')
++        value = PyUnicode_DecodeUTF8(<char *>buffer, size, 'strict')
+     emitter.stream.write(value)
+     return 1

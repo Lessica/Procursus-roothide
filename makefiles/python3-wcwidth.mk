@@ -5,6 +5,7 @@ endif
 SUBPROJECTS             += python3-wcwidth
 PYTHON3-WCWIDTH_VERSION := 0.2.5
 DEB_PYTHON3-WCWIDTH_V   ?= $(PYTHON3-WCWIDTH_VERSION)
+PYTHON_HOST ?= python$(PYTHON3_MAJOR_V)
 
 python3-wcwidth-setup: setup
 	$(call GITHUB_ARCHIVE,jquast,wcwidth,$(PYTHON3-WCWIDTH_VERSION),$(PYTHON3-WCWIDTH_VERSION))
@@ -15,11 +16,11 @@ python3-wcwidth:
 	@echo "Using previously built python3-wcwidth."
 else
 python3-wcwidth: python3-wcwidth-setup python3
-	cd $(BUILD_WORK)/python3-wcwidth && $(DEFAULT_SETUP_PY_ENV) python3 ./setup.py \
+	cd $(BUILD_WORK)/python3-wcwidth && $(PYTHON_HOST) ./setup.py \
 		build \
 		--executable="$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/python3" \
 		install \
-		--install-layout=deb \
+		--install-lib="$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/python3/dist-packages" \
 		--prefix=$(MEMO_PREFIX)$(MEMO_SUB_PREFIX) \
 		--root=$(BUILD_STAGE)/python3-wcwidth
 	find $(BUILD_STAGE)/python3-wcwidth -name __pycache__ -prune -exec rm -rf {} \;

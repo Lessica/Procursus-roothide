@@ -9,16 +9,26 @@ DEB_LSD_V   ?= $(LSD_VERSION)
 lsd-setup: setup
 	$(call GITHUB_ARCHIVE,Peltoche,lsd,$(LSD_VERSION),$(LSD_VERSION))
 	$(call EXTRACT_TAR,lsd-$(LSD_VERSION).tar.gz,lsd-$(LSD_VERSION),lsd)
+	$(call DO_PATCH,lsd,lsd,-p1)
 
 ifneq ($(wildcard $(BUILD_WORK)/lsd/.build_complete),)
 lsd:
 	@echo "Using previously built lsd."
 else
 lsd: lsd-setup
-	sed -i -e 's|users = "0.11.*"|users = {git = "https://github.com/ogham/rust-users", rev = "refs/pull/46/head"}|g' \
-		$(BUILD_WORK)/lsd/Cargo.toml
-	cd $(BUILD_WORK)/lsd && $(DEFAULT_RUST_FLAGS) cargo build \
+	printf '%s\n' '#!/bin/sh' 'exec "$(CC)" -isysroot "$(TARGET_SYSROOT)" "$$@"' > $(BUILD_WORK)/lsd/target-cc-wrapper
+	printf '%s\n' '#!/bin/sh' 'exec "$(CXX)" -isysroot "$(TARGET_SYSROOT)" "$$@"' > $(BUILD_WORK)/lsd/target-cxx-wrapper
+	chmod 755 $(BUILD_WORK)/lsd/target-cc-wrapper $(BUILD_WORK)/lsd/target-cxx-wrapper
+	cd $(BUILD_WORK)/lsd && $(DEFAULT_RUST_FLAGS) \
+		SDKROOT="$(MACOSX_SYSROOT)" \
+		CC="$(CC_FOR_BUILD)" CXX="$(CXX_FOR_BUILD)" \
+		CC_$(subst -,_,$(RUST_TARGET))="$(BUILD_WORK)/lsd/target-cc-wrapper" \
+		CXX_$(subst -,_,$(RUST_TARGET))="$(BUILD_WORK)/lsd/target-cxx-wrapper" \
+		CFLAGS_$(subst -,_,$(RUST_TARGET))="$(CFLAGS)" CXXFLAGS_$(subst -,_,$(RUST_TARGET))="$(CXXFLAGS)" \
+		CARGO_TARGET_$(subst -,_,$(shell echo $(RUST_TARGET) | tr '[:lower:]' '[:upper:]'))_LINKER="$(BUILD_WORK)/lsd/target-cc-wrapper" \
+		CFLAGS= CXXFLAGS= RUSTFLAGS="-L $(BUILD_BASE)/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib $(if $(filter iphoneos-arm64-roothide,$(MEMO_TARGET)),-C link-arg=-liosexec)" cargo build \
 		--release \
+		--locked \
 		--target=$(RUST_TARGET)
 	$(INSTALL) -Dm755 $(BUILD_WORK)/lsd/target/$(RUST_TARGET)/release/lsd \
 		$(BUILD_STAGE)/lsd/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/lsd

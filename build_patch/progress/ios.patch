@@ -31,13 +31,16 @@ diff --color -urN progress-0.16/wordexp.c progress/wordexp.c
  #include <sys/cdefs.h>
  #include <sys/types.h>
  #include <assert.h>
-@@ -39,6 +38,9 @@
+@@ -39,7 +38,11 @@
  #include <unistd.h>
  #include <wordexp.h>
+-#include "extern.h"
  
 +#define __static_cast(x,y) (x)y
 +#define _DIAGASSERT(e) (__static_cast(void,0))
 +
++extern char **environ;
+
  #if defined(LIBC_SCCS) && !defined(lint)
  #if 0
  __FBSDID("$FreeBSD: /repoman/r/ncvs/src/lib/libc/gen/wordexp.c,v 1.5 2004/04/09 11:32:32 tjr Exp $");

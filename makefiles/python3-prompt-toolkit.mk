@@ -5,6 +5,7 @@ endif
 SUBPROJECTS                    += python3-prompt-toolkit
 PYTHON3-PROMPT-TOOLKIT_VERSION := 3.0.25
 DEB_PYTHON3-PROMPT-TOOLKIT_V   ?= $(PYTHON3-PROMPT-TOOLKIT_VERSION)-1
+PYTHON_HOST ?= python$(PYTHON3_MAJOR_V)
 
 python3-prompt-toolkit-setup: setup
 	$(call GITHUB_ARCHIVE,prompt-toolkit,python-prompt-toolkit,$(PYTHON3-PROMPT-TOOLKIT_VERSION),$(PYTHON3-PROMPT-TOOLKIT_VERSION))
@@ -15,11 +16,11 @@ python3-prompt-toolkit:
 	@echo "Using previously built python-prompt-toolkit."
 else
 python3-prompt-toolkit: python3-prompt-toolkit-setup python3-wcwidth
-	cd $(BUILD_WORK)/python3-prompt-toolkit && $(DEFAULT_SETUP_PY_ENV) python3 ./setup.py \
+	cd $(BUILD_WORK)/python3-prompt-toolkit && $(PYTHON_HOST) ./setup.py \
 		build \
 		--executable="$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/python3" \
 		install \
-		--install-layout=deb \
+		--install-lib="$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/python3/dist-packages" \
 		--prefix=$(MEMO_PREFIX)$(MEMO_SUB_PREFIX) \
 		--root=$(BUILD_STAGE)/python3-prompt-toolkit
 	find $(BUILD_STAGE)/python3-prompt-toolkit -name __pycache__ -prune -exec rm -rf {} \;

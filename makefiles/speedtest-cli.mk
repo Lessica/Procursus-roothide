@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS           += speedtest-cli
 SPEEDTEST-CLI_VERSION := 2.1.3
-DEB_SPEEDTEST-CLI_V   ?= $(SPEEDTEST-CLI_VERSION)
+DEB_SPEEDTEST-CLI_V   ?= $(SPEEDTEST-CLI_VERSION)-1
 
 speedtest-cli-setup: setup
 	$(call GITHUB_ARCHIVE,sivel,speedtest-cli,$(SPEEDTEST-CLI_VERSION),v$(SPEEDTEST-CLI_VERSION))
@@ -16,6 +16,7 @@ speedtest-cli:
 else
 speedtest-cli: speedtest-cli-setup
 	$(INSTALL) -Dm 755 $(BUILD_WORK)/speedtest-cli/speedtest.py "$(BUILD_STAGE)/speedtest-cli/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/speedtest-cli"
+	sed -i '1s|^#!.*|#!$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/python3|' "$(BUILD_STAGE)/speedtest-cli/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/speedtest-cli"
 	$(LN_S) speedtest-cli $(BUILD_STAGE)/speedtest-cli/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/speedtest
 	$(INSTALL) -Dm 644 $(BUILD_WORK)/speedtest-cli/speedtest-cli.1 -t "$(BUILD_STAGE)/speedtest-cli/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share/man/man1"
 	$(call AFTER_BUILD)

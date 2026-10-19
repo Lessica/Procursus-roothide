@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS += mc
 MC_VERSION  := 4.8.26
-DEB_MC_V    ?= $(MC_VERSION)
+DEB_MC_V    ?= $(MC_VERSION)-1
 
 mc-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),http://ftp.midnight-commander.org/mc-$(MC_VERSION).tar.xz)
@@ -29,6 +29,8 @@ mc-package: mc-stage
 
 # mc.mk Prep mc
 	cp -a $(BUILD_STAGE)/mc $(BUILD_DIST)
+	# Keep the installed helper scripts independent of the build host.
+	find $(BUILD_DIST)/mc/usr/libexec/mc -type f -exec sed -i 's|/opt/homebrew/bin/perl|/usr/bin/perl|g' {} +
 
 # mc.mk Sign
 	$(call SIGN,mc,general.xml)
