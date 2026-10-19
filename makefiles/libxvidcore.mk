@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS         += libxvidcore
 LIBXVIDCORE_VERSION := 1.3.7
-DEB_LIBXVIDCORE_V   ?= $(LIBXVIDCORE_VERSION)
+DEB_LIBXVIDCORE_V   ?= $(LIBXVIDCORE_VERSION)-1
 
 libxvidcore-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://downloads.xvid.com/downloads/xvidcore-$(LIBXVIDCORE_VERSION).tar.bz2)
@@ -17,6 +17,10 @@ else
 libxvidcore: libxvidcore-setup
 	cd $(BUILD_WORK)/libxvidcore/build/generic && ./configure -C \
 		$(DEFAULT_CONFIGURE_FLAGS)
+ifneq (,$(findstring roothide,$(MEMO_TARGET)))
+	# RootHide symbol redirection requires two-level Mach-O imports.
+	sed -i 's/-flat_namespace/-twolevel_namespace/g' $(BUILD_WORK)/libxvidcore/build/generic/platform.inc
+endif
 	+$(MAKE) -C $(BUILD_WORK)/libxvidcore/build/generic
 	+$(MAKE) -C $(BUILD_WORK)/libxvidcore/build/generic install \
 		DESTDIR=$(BUILD_STAGE)/libxvidcore
@@ -33,6 +37,7 @@ libxvidcore-package: libxvidcore-stage
 
 	# libxvidcore.mk Prep liblibxvidcore-dev
 	cp -a $(BUILD_STAGE)/libxvidcore/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/libxvidcore.a $(BUILD_DIST)/libxvidcore-dev/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib
+	$(LN_S) libxvidcore.4.dylib $(BUILD_DIST)/libxvidcore-dev/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/libxvidcore.dylib
 	cp -a $(BUILD_STAGE)/libxvidcore/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include $(BUILD_DIST)/libxvidcore-dev/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)
 
 	# libxvidcore.mk Sign

@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS   += libxo
 LIBXO_VERSION := 1.4.0
-DEB_LIBXO_V   ?= $(LIBXO_VERSION)
+DEB_LIBXO_V   ?= $(LIBXO_VERSION)-1
 
 ifeq ($(shell [ "$(CFVER_WHOLE)" -ge 2000 ] && echo 1),1)
 LIBXO_LIBDIR  := $(MEMO_PREFIX)$(MEMO_SUB_PREFIX)$(MEMO_ALT_PREFIX)/lib
@@ -36,6 +36,8 @@ libxo: libxo-setup
 	+$(MAKE) -C $(BUILD_WORK)/libxo install \
 		LIBTOOL='$(BUILD_WORK)/libxo/libtool' \
 		DESTDIR=$(BUILD_STAGE)/libxo
+	sed -i 's|echo -I${prefix}/include .*|echo -I${prefix}/include|' \
+		$(BUILD_STAGE)/libxo/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/libxo-config
 ifeq ($(shell [ "$(CFVER_WHOLE)" -ge 2000 ] && echo 1),1)
 	mkdir -p $(BUILD_BASE)$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/pkgconfig
 	# must use pc file from build misc because builtin lib prefix is always /usr

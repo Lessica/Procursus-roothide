@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS    += libvpx
 LIBVPX_VERSION := 1.11.0
-DEB_LIBVPX_V   ?= $(LIBVPX_VERSION)
+DEB_LIBVPX_V   ?= $(LIBVPX_VERSION)-1
 
 ifneq (,$(findstring arm64,$(MEMO_TARGET)))
 ifneq (,$(findstring darwin,$(MEMO_TARGET)))
@@ -19,6 +19,7 @@ endif
 libvpx-setup: setup
 	$(call GITHUB_ARCHIVE,webmproject,libvpx,$(LIBVPX_VERSION),v$(LIBVPX_VERSION))
 	$(call EXTRACT_TAR,libvpx-$(LIBVPX_VERSION).tar.gz,libvpx-$(LIBVPX_VERSION),libvpx)
+	$(call DO_PATCH,libvpx,libvpx,-p1)
 	sed -i 's/\[ "$$(show_darwin_sdk_major_version iphoneos)" -gt 8 \]/false/' $(BUILD_WORK)/libvpx/build/make/configure.sh
 
 ifneq ($(wildcard $(BUILD_WORK)/libvpx/.build_complete),)
@@ -26,7 +27,8 @@ libvpx:
 	@echo "Using previously built libvpx."
 else
 libvpx: libvpx-setup
-	cd $(BUILD_WORK)/libvpx && ./configure \
+	cd $(BUILD_WORK)/libvpx && VPX_DARWIN_SDK="$(TARGET_SYSROOT)" \
+		IOS_VERSION_MIN="$(IPHONEOS_DEPLOYMENT_TARGET)" ./configure \
 		--prefix=$(MEMO_PREFIX)$(MEMO_SUB_PREFIX) \
 		--disable-dependency-tracking \
 		--enable-shared \
@@ -44,7 +46,7 @@ libvpx: libvpx-setup
 		DESTDIR=$(BUILD_STAGE)/libvpx
 
 	for bin in $(BUILD_STAGE)/libvpx/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/*; do \
-		$(I_N_T) -change libvpx.7.dylib /$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/libvpx.7.dylib $$bin; \
+		$(I_N_T) -change libvpx.7.dylib $(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/libvpx.7.dylib $$bin; \
 	done
 	$(I_N_T) -id $(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/libvpx.7.dylib $(BUILD_STAGE)/libvpx/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/libvpx.7.dylib
 	$(call AFTER_BUILD,copy)

@@ -1,0 +1,18 @@
+diff --git a/Makefile b/Makefile
+--- a/Makefile
++++ b/Makefile
+@@ -32,1 +32,1 @@
+-	$(CC) $(CFLAGS) -o chntpw chntpw.o ntreg.o edlib.o libsam.o $(LIBS)
++	$(CC) $(CFLAGS) $(LDFLAGS) -o chntpw chntpw.o ntreg.o edlib.o libsam.o $(LIBS)
+@@ -38,1 +38,1 @@
+-	$(CC) $(CFLAGS) -o cpnt cpnt.o $(LIBS)
++	$(CC) $(CFLAGS) $(LDFLAGS) -o cpnt cpnt.o $(LIBS)
+@@ -41,1 +41,1 @@
+-	$(CC) $(CFLAGS) -o reged reged.o ntreg.o edlib.o
++	$(CC) $(CFLAGS) $(LDFLAGS) -o reged reged.o ntreg.o edlib.o
+@@ -50,1 +50,1 @@
+-	$(CC) $(CFLAGS) -o samusrgrp samusrgrp.o ntreg.o libsam.o 
++	$(CC) $(CFLAGS) $(LDFLAGS) -o samusrgrp samusrgrp.o ntreg.o libsam.o
+@@ -53,1 +53,1 @@
+-	$(CC) $(CFLAGS) -o sampasswd sampasswd.o ntreg.o libsam.o 
++	$(CC) $(CFLAGS) $(LDFLAGS) -o sampasswd sampasswd.o ntreg.o libsam.o

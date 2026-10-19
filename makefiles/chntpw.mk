@@ -4,11 +4,12 @@ endif
 
 SUBPROJECTS    += chntpw
 CHNTPW_VERSION := 1.0
-DEB_CHNTPW_V   ?= $(CHNTPW_VERSION)
+DEB_CHNTPW_V   ?= $(CHNTPW_VERSION)-1
 
 chntpw-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://deb.debian.org/debian/pool/main/c/chntpw/chntpw_$(CHNTPW_VERSION).orig.tar.gz)
 	$(call EXTRACT_TAR,chntpw_$(CHNTPW_VERSION).orig.tar.gz,chntpw-$(CHNTPW_VERSION),chntpw)
+	$(call DO_PATCH,chntpw,chntpw,-p1)
 	sed -i 's@/usr@$(BUILD_BASE)/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)@g' $(BUILD_WORK)/chntpw/Makefile
 	sed -i 's|gcc|$(CC) $(CFLAGS)|g' $(BUILD_WORK)/chntpw/Makefile
 	sed -i 's/-m32//g' $(BUILD_WORK)/chntpw/Makefile

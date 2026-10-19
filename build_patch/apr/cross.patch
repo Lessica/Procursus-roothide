@@ -35,3 +35,12 @@ Subject: compile gen_test_char with the build architecture compiler
  
  include/private/apr_escape_test_char.h: tools/gen_test_char@EXEEXT@
  	$(APR_MKDIR) include/private
+
+--- apr.orig/configure
++++ apr/configure
+@@ -22908 +22908,4 @@
+-    ac_cv_strerror_r_rc_int=no
++    case $host_os in
++        darwin*) ac_cv_strerror_r_rc_int=yes ;;
++        *) ac_cv_strerror_r_rc_int=no ;;
++    esac
