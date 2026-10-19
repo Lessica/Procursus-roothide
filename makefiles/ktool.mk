@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS    += ktool
 KTOOL_VERSION  := 1.0.0
-DEB_KTOOL_V    ?= $(KTOOL_VERSION)
+DEB_KTOOL_V    ?= $(KTOOL_VERSION)-1
 PYTHON_HOST ?= python$(PYTHON3_MAJOR_V)
 
 ktool-setup: setup

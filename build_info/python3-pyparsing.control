@@ -1,0 +1,9 @@
+Package: python3-pyparsing
+Version: @DEB_PYTHON3_PYPARSING_V@
+Architecture: all
+Maintainer: @DEB_MAINTAINER@
+Depends: python3
+Section: Python
+Priority: optional
+Homepage: https://pypi.org/project/pyparsing/
+Description: Python parsing expression grammar library
