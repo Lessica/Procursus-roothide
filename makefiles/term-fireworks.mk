@@ -16,8 +16,19 @@ term-fireworks:
 	@echo "Using previously built term-fireworks."
 else
 term-fireworks: term-fireworks-setup
-	cd $(BUILD_WORK)/term-fireworks && $(DEFAULT_RUST_FLAGS) cargo build \
+	printf '%s\n' '#!/bin/sh' 'exec "$(CC)" -isysroot "$(TARGET_SYSROOT)" "$$@"' > $(BUILD_WORK)/term-fireworks/target-cc-wrapper
+	printf '%s\n' '#!/bin/sh' 'exec "$(CXX)" -isysroot "$(TARGET_SYSROOT)" "$$@"' > $(BUILD_WORK)/term-fireworks/target-cxx-wrapper
+	chmod 755 $(BUILD_WORK)/term-fireworks/target-cc-wrapper $(BUILD_WORK)/term-fireworks/target-cxx-wrapper
+	cd $(BUILD_WORK)/term-fireworks && $(DEFAULT_RUST_FLAGS) \
+		SDKROOT="$(MACOSX_SYSROOT)" \
+		CC="$(CC_FOR_BUILD)" CXX="$(CXX_FOR_BUILD)" \
+		CC_$(subst -,_,$(RUST_TARGET))="$(BUILD_WORK)/term-fireworks/target-cc-wrapper" \
+		CXX_$(subst -,_,$(RUST_TARGET))="$(BUILD_WORK)/term-fireworks/target-cxx-wrapper" \
+		CFLAGS_$(subst -,_,$(RUST_TARGET))="$(CFLAGS)" CXXFLAGS_$(subst -,_,$(RUST_TARGET))="$(CXXFLAGS)" \
+		CARGO_TARGET_$(subst -,_,$(shell echo $(RUST_TARGET) | tr '[:lower:]' '[:upper:]'))_LINKER="$(BUILD_WORK)/term-fireworks/target-cc-wrapper" \
+		CFLAGS= CXXFLAGS= cargo build \
 		--release \
+		--locked \
 		--target=$(RUST_TARGET)
 	$(INSTALL) -Dm775 $(BUILD_WORK)/term-fireworks/target/$(RUST_TARGET)/release/fireworks \
 		$(BUILD_STAGE)/term-fireworks/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/fireworks

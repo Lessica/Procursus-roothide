@@ -5,11 +5,12 @@ endif
 STRAPPROJECTS     += launchctl
 LAUNCHCTL_COMMIT  := a869bc4e7cca20aaa26545104f1fd57fb9faff0e
 LAUNCHCTL_VERSION := 1.2.0
-DEB_LAUNCHCTL_V   ?= 1:$(LAUNCHCTL_VERSION)
+DEB_LAUNCHCTL_V   ?= 1:$(LAUNCHCTL_VERSION)-1
 
 launchctl-setup: setup
 	$(call GITHUB_ARCHIVE,roothide,launchctl,$(LAUNCHCTL_COMMIT),$(LAUNCHCTL_COMMIT))
 	$(call EXTRACT_TAR,launchctl-$(LAUNCHCTL_COMMIT).tar.gz,launchctl-$(LAUNCHCTL_COMMIT),launchctl)
+	$(call DO_PATCH,launchctl,launchctl,-p1)
 
 ifneq ($(wildcard $(BUILD_WORK)/launchctl/.build_complete),)
 launchctl:

@@ -5,6 +5,7 @@ endif
 SUBPROJECTS         += asciidoctor
 ASCIIDOCTOR_VERSION := 2.0.17
 DEB_ASCIIDOCTOR_V   ?= $(ASCIIDOCTOR_VERSION)
+ASCIIDOCTOR_GEM     ?= gem3.1
 
 asciidoctor-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE)/gems,https://rubygems.org/downloads/asciidoctor-$(ASCIIDOCTOR_VERSION).gem)
@@ -14,7 +15,7 @@ asciidoctor:
 else
 asciidoctor: asciidoctor-setup
 	mkdir -p $(BUILD_WORK)/asciidoctor
-	gem3.1 install \
+	$(ASCIIDOCTOR_GEM) install \
 			--ignore-dependencies \
 			--no-user-install \
 			--verbose \

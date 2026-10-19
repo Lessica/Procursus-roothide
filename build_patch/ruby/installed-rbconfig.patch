@@ -1,0 +1,30 @@
+--- /dev/null
++++ b/tool/roothide-rbconfig.rb
+@@ -0,0 +1,27 @@
++# Normalize installed development configuration; never change cross-build rbconfig.
++require 'find'
++require 'shellwords'
++decode = ->(value) { value.start_with?('"') ? value.undump : value[1...-1].gsub(/\\([\\'])/, '\\1') }
++stage, cc, cxx, base, sysroot, pkgconfig, source, target_ruby = ARGV
++active = %w[CC CXX CPP CFLAGS CXXFLAGS CPPFLAGS ASFLAGS LDFLAGS DLDFLAGS
++            LDSHARED LDSHAREDXX MJIT_CC PKG_CONFIG MAKEDIRS MKDIR_P GREP EGREP INSTALL]
++Find.find(stage) do |path|
++  next unless File.file?(path) && File.basename(path) == 'rbconfig.rb'
++  text = File.read(path)
++  text = text.gsub("-isysroot #{sysroot}", '').gsub(base, '')
++  text = text.gsub("#{source}/nativebuild/install/bin/ruby", target_ruby)
++  text = text.gsub(cxx, 'clang++').gsub(cc, 'clang').gsub(pkgconfig, 'pkg-config')
++  text = text.gsub(source, '.')
++  text = text.gsub(/^(\s*CONFIG\["(?:MAKEDIRS|MKDIR_P|GREP|EGREP|INSTALL)"\] = )(".*"|'.*')$/) do
++    prefix, value = $1, decode.call($2)
++    words = Shellwords.split(value)
++    words[0] = File.basename(words[0]) if words[0].start_with?('/opt/', '/Applications/')
++    prefix + Shellwords.join(words).dump
++  end
++  text.each_line do |line|
++    next unless line =~ /^\s*CONFIG\["([^"]+)"\] = (".*"|'.*')$/ && active.include?($1)
++    value = decode.call($2)
++    abort "host path in installed Ruby config: #{line}" if value =~ %r{/Users/|/Applications/|/opt/homebrew/}
++  end
++  File.write(path, text)
++end

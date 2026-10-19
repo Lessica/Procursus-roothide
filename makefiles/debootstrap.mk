@@ -7,7 +7,8 @@ DEBOOTSTRAP_VERSION := 1.0.128+nmu2
 DEB_DEBOOTSTRAP_V   ?= $(DEBOOTSTRAP_VERSION)
 
 debootstrap-setup: setup
-	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),http://deb.debian.org/debian/pool/main/d/debootstrap/debootstrap_$(DEBOOTSTRAP_VERSION).tar.gz)
+	$(call DOWNLOAD_FILE,$(BUILD_SOURCE)/debootstrap_$(DEBOOTSTRAP_VERSION).tar.gz,https://snapshot.debian.org/file/dd207b1f59a6b84fb357c2fb9c1ca5c4d8a6eb5f)
+	$(call CHECKSUM_VERIFY,sha256,debootstrap_$(DEBOOTSTRAP_VERSION).tar.gz,528523228d93a31c9e0cd4eb932977ea8ceec2bfbf8db1103bec2397cc7434fa)
 	tar xf $(BUILD_SOURCE)/debootstrap_$(DEBOOTSTRAP_VERSION).tar.gz -C $(BUILD_WORK)
 	$(call DO_PATCH,debootstrap,debootstrap,-p1)
 	sed -i 's/@VERSION@/$(DEB_DEBOOTSTRAP_V)/g' $(BUILD_WORK)/debootstrap/debootstrap

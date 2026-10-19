@@ -1,0 +1,47 @@
+--- a/configure
++++ b/configure
+@@ -624,7 +624,7 @@
+ if [ $? = 0 ]; then
+ echo yes; HAVE_PKGCFG_LIBLZ4=1;
+ LZ4_LDFLAGS=$tmp; fi; fi
+-if [ 11 = "$WITH_SYSLZ4$LZ4_CFLAGS" ]; then
++if [ 11 = "$WITH_SYSLZ4$HAVE_PKGCFG_LIBLZ4" ]; then
+ 
+ USE_SYSLZ4="1"
+ else
+--- a/configure.acr
++++ b/configure.acr
+@@ -61,7 +61,7 @@
+ (( LZ4 ))
+ PKGCFG LZ4_CFLAGS LZ4_LDFLAGS liblz4
+ ARG_WITH WITH_SYSLZ4 syslz4 force to use system's liblz4 ;
+-IFAND WITH_SYSLZ4 LZ4_CFLAGS {
++IFAND WITH_SYSLZ4 HAVE_PKGCFG_LIBLZ4 {
+ 	USE_SYSLZ4 = 1 ;
+ }{
+ 	USE_SYSLZ4 = 0 ;
+--- a/config-user.mk.acr
++++ b/config-user.mk.acr
+@@ -101,6 +101,8 @@
+ LIBXXHASH=@LIBXXHASH@
+ 
+ USE_SYSLZ4=@USE_SYSLZ4@
++LZ4_CFLAGS=@LZ4_CFLAGS@
++LZ4_LDFLAGS=@LZ4_LDFLAGS@
+ 
+ ifeq ($(HAVE_LIB_SSL),1)
+ SSL_CFLAGS=@SSL_CFLAGS@
+--- a/libr/util/Makefile
++++ b/libr/util/Makefile
+@@ -27,8 +27,9 @@
+ endif
+ 
+ ifeq ($(USE_SYSLZ4),1)
+-CFLAGS+=@LZ4_CFLAGS@
+-PCLIBS+=@LZ4_LDFLAGS@
++CFLAGS+=$(LZ4_CFLAGS)
++PCLIBS+=$(LZ4_LDFLAGS)
++LDFLAGS+=$(LZ4_LDFLAGS)
+ else
+ OBJS+=$(SHLR)/lz4/lz4.o
+ endif
