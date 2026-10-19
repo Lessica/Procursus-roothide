@@ -4,12 +4,13 @@ endif
 
 SUBPROJECTS      += libcrack
 LIBCRACK_VERSION := 2.9.7
-DEB_LIBCRACK_V   ?= $(LIBCRACK_VERSION)
+DEB_LIBCRACK_V   ?= $(LIBCRACK_VERSION)-1
 
 libcrack-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://github.com/cracklib/cracklib/releases/download/v$(LIBCRACK_VERSION)/cracklib-$(LIBCRACK_VERSION).tar.gz)
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://github.com/cracklib/cracklib/releases/download/v$(LIBCRACK_VERSION)/cracklib-words-$(LIBCRACK_VERSION).gz)
 	$(call EXTRACT_TAR,cracklib-$(LIBCRACK_VERSION).tar.gz,cracklib-$(LIBCRACK_VERSION),libcrack)
+	$(call DO_PATCH,libcrack,libcrack,-p1)
 	gzip -dc < $(BUILD_SOURCE)/cracklib-words-$(LIBCRACK_VERSION).gz > $(BUILD_WORK)/libcrack/dicts/libcrack-words
 
 ifneq ($(wildcard $(BUILD_WORK)/libcrack/.build_complete),)

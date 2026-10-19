@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS        += libfribidi
 LIBFRIBIDI_VERSION := 1.0.10
-DEB_LIBFRIBIDI_V   ?= $(LIBFRIBIDI_VERSION)
+DEB_LIBFRIBIDI_V   ?= $(LIBFRIBIDI_VERSION)-1
 
 libfribidi-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://github.com/fribidi/fribidi/releases/download/v$(LIBFRIBIDI_VERSION)/fribidi-$(LIBFRIBIDI_VERSION).tar.xz)
@@ -33,7 +33,7 @@ libfribidi-package: libfribidi-stage
 	cp -a $(BUILD_STAGE)/libfribidi/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/libfribidi.0.dylib $(BUILD_DIST)/libfribidi0/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib
 
 	# libfribidi.mk Prep libfribidi-dev
-	cp -a $(BUILD_STAGE)/libfribidi/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/libfribidi.dylib $(BUILD_DIST)/libfribidi-dev/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib
+	cp -a $(BUILD_STAGE)/libfribidi/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/{libfribidi.a,libfribidi.dylib,pkgconfig} $(BUILD_DIST)/libfribidi-dev/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib
 	cp -a $(BUILD_STAGE)/libfribidi/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include $(BUILD_DIST)/libfribidi-dev/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)
 	cp -a $(BUILD_STAGE)/libfribidi/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share $(BUILD_DIST)/libfribidi-dev/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)
 

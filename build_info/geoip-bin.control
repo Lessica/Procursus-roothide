@@ -4,7 +4,7 @@ Version: @DEB_LIBGEOIP_V@
 Architecture: @DEB_ARCH@
 Maintainer: @DEB_MAINTAINER@
 Priority: optional
-Depends: libgeoip1, geoip-bin
+Depends: libgeoip1
 Description: IP lookup command line tools that use the GeoIP library
  GeoIP is a C library that enables the user to find the country that any
  IP address or hostname originates from. It uses a file based database.

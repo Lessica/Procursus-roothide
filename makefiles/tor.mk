@@ -4,13 +4,14 @@ endif
 
 SUBPROJECTS  += tor
 TOR_VERSION  := 0.4.7.8
-DEB_TOR_V    ?= $(TOR_VERSION)
+DEB_TOR_V    ?= $(TOR_VERSION)-1
 
 tor-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://dist.torproject.org/tor-$(TOR_VERSION).tar.gz{$(comma).sha256sum{$(comma).asc}})
 	$(call PGP_VERIFY,tor-$(TOR_VERSION).tar.gz.sha256sum,asc)
 	$(call CHECKSUM_VERIFY,sha256sum,tor-$(TOR_VERSION).tar.gz)
 	$(call EXTRACT_TAR,tor-$(TOR_VERSION).tar.gz,tor-$(TOR_VERSION),tor)
+	$(call DO_PATCH,tor,tor,-p1)
 
 ifneq ($(wildcard $(BUILD_WORK)/tor/.build_complete),)
 tor:

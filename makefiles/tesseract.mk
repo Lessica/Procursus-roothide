@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS       += tesseract
 TESSERACT_VERSION := 5.1.0
-DEB_TESSERACT_V   ?= $(TESSERACT_VERSION)
+DEB_TESSERACT_V   ?= $(TESSERACT_VERSION)-1
 
 ###
 # TODO:
@@ -24,13 +24,16 @@ else
 tesseract: tesseract-setup leptonica libarchive curl
 	cd $(BUILD_WORK)/tesseract && ./autogen.sh
 	rm -f $(BUILD_WORK)/tesseract/VERSION # This, amazingly enough, makes compiling on macOS not work. (Non-case-sensitive)
-	cd $(BUILD_WORK)/tesseract && ./configure -C \
+	cd $(BUILD_WORK)/tesseract && PKG_CONFIG_PATH="$(BUILD_BASE)$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/pkgconfig:$(BUILD_BASE)$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)$(MEMO_ALT_PREFIX)/lib/pkgconfig:$(BUILD_BASE)$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share/pkgconfig" ./configure -C \
 		$(DEFAULT_CONFIGURE_FLAGS) \
 		--datarootdir=$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share/tesseract-ocr/5/ \
 		--disable-doc # The docs do not work, so we'll disable them for now
 	+$(MAKE) -C $(BUILD_WORK)/tesseract
 	+$(MAKE) -C $(BUILD_WORK)/tesseract install \
 		DESTDIR="$(BUILD_STAGE)/tesseract"
+	sed -i -e 's|$(BUILD_BASE)$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)|$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)|g' \
+		-e 's|^datarootdir = |datarootdir=|' \
+		$(BUILD_STAGE)/tesseract/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/pkgconfig/tesseract.pc
 	$(call AFTER_BUILD,copy)
 endif
 

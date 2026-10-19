@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS      += libgeoip
 LIBGEOIP_VERSION := 1.6.12
-DEB_LIBGEOIP_V   ?= $(LIBGEOIP_VERSION)
+DEB_LIBGEOIP_V   ?= $(LIBGEOIP_VERSION)-1
 
 libgeoip-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE), \

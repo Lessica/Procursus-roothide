@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS    += wimlib
 WIMLIB_VERSION := 1.13.3
-DEB_WIMLIB_V   ?= $(WIMLIB_VERSION)
+DEB_WIMLIB_V   ?= $(WIMLIB_VERSION)-1
 
 wimlib-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://wimlib.net/downloads/wimlib-$(WIMLIB_VERSION).tar.gz)
@@ -43,6 +43,7 @@ wimlib-package: wimlib-stage
 
 	# wimlib.mk Prep libwim-dev
 	cp -a $(BUILD_STAGE)/wimlib/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/{libwim.{a,dylib},pkgconfig} $(BUILD_DIST)/libwim-dev/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib
+	cp -a $(BUILD_STAGE)/wimlib/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include $(BUILD_DIST)/libwim-dev/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)
 
 	# wimlib.mk Sign
 	$(call SIGN,wimtools,general.xml)

@@ -1,0 +1,35 @@
+--- a/lib/rules.c
++++ b/lib/rules.c
+@@ -8,6 +8,7 @@
+ 
+ #include "config.h"
+ #include <string.h>
++#include <stdarg.h>
+ #ifdef HAVE_INTTYPES_H
+ #include <inttypes.h>
+ #endif
+@@ -20,17 +21,16 @@
+ 
+ #if 0
+ static void
+-Debug(val, a, b, c, d, e, f, g)
+-    int val;
+-    char *a, *b, *c, *d, *e, *f, *g;
+-{
+-    fprintf(stderr, a, b, c, d, e, f, g);
++Debug(int val, const char *format, ...)
++{
++    va_list args;
++    va_start(args, format);
++    vfprintf(stderr, format, args);
++    va_end(args);
+ }
+ #else
+ static void
+-Debug(val, a, b, c, d, e, f, g)
+-    int val;
+-    char *a, *b, *c, *d, *e, *f, *g;
++Debug(int val, const char *format, ...)
+ {
+ }
+ #endif

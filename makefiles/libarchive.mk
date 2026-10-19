@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS        += libarchive
 LIBARCHIVE_VERSION := 3.7.2
-DEB_LIBARCHIVE_V   ?= $(LIBARCHIVE_VERSION)
+DEB_LIBARCHIVE_V   ?= $(LIBARCHIVE_VERSION)-1
 
 libarchive-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://www.libarchive.org/downloads/libarchive-$(LIBARCHIVE_VERSION).tar.xz)
@@ -28,6 +28,9 @@ libarchive: libarchive-setup lz4 liblzo2 zstd xz nettle
 	+$(MAKE) -C $(BUILD_WORK)/libarchive
 	+$(MAKE) -C $(BUILD_WORK)/libarchive install \
 		DESTDIR="$(BUILD_STAGE)/libarchive"
+	sed -i -E 's@-Wl,-needed_library,$(BUILD_BASE)[^ ,]*/liblzma[.]dylib@-llzma@g; s@-L$(BUILD_BASE)[^ ]*/usr/lib@@g' $(BUILD_STAGE)/libarchive/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/pkgconfig/libarchive.pc
+	sed -i -E '/^Requires.private:/ { s/(^| )iconv( |$$)/\2/g; /liblzma/! s/$$/ liblzma/; }' $(BUILD_STAGE)/libarchive/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/pkgconfig/libarchive.pc
+	sed -i -E '/^Libs.private:/ { /(^| )-liconv( |$$)/! s/$$/ -liconv/; }' $(BUILD_STAGE)/libarchive/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/pkgconfig/libarchive.pc
 	$(call AFTER_BUILD,copy)
 endif
 

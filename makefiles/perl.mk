@@ -7,7 +7,7 @@ PERL_MAJOR   := 5.32
 PERL_VERSION := $(PERL_MAJOR).1
 PERL_API_V   := $(PERL_MAJOR).0
 PERL_CROSS_V := 1.3.5
-DEB_PERL_V   ?= $(PERL_VERSION)-1
+DEB_PERL_V   ?= $(PERL_VERSION)-2
 
 export PERL_MAJOR
 
@@ -26,7 +26,7 @@ perl-setup: setup
 	sed -i '/try_link/ s/$$/ -Wno-error=implicit-function-declaration/' $(BUILD_WORK)/perl/cnf/configure_func.sh
 	sed -i '/-Wl,-E/ s/^/#/' $(BUILD_WORK)/perl/cnf/configure_tool.sh
 	sed -i '/-Wl,-E/ s/^/#/' $(BUILD_WORK)/perl/Makefile
-	sed -i 's/$$(CC) $$(LDDLFLAGS)/$$(CC) $$(LDDLFLAGS) -compatibility_version $(PERL_API_V) -current_version $(PERL_VERSION) -install_name $$(archlib)\/CORE\/$$@/g' $(BUILD_WORK)/perl/Makefile
+	sed -i 's|$$(CC) $$(LDDLFLAGS)|$$(CC) $$(LDDLFLAGS) -Wl,-not_for_dyld_shared_cache -compatibility_version $(PERL_API_V) -current_version $(PERL_VERSION) -install_name $(MEMO_LINK_PREFIX)$(MEMO_SUB_PREFIX)/lib/perl5/$(PERL_MAJOR)/CORE/$$@|g' $(BUILD_WORK)/perl/Makefile
 	sed -i 's/| $$Is{Android}/| $$Is{Darwin}/g' $(BUILD_WORK)/perl/cpan/ExtUtils-MakeMaker/lib/ExtUtils/MM_Unix.pm
 	sed -i 's/$$Is{Android} )/$$Is{Darwin} )/g' $(BUILD_WORK)/perl/cpan/ExtUtils-MakeMaker/lib/ExtUtils/MM_Unix.pm
 	sed -i '/$$Is{Solaris} =/a \ \ \ \ $$Is{Darwin}  = $$^O eq '\''darwin'\'';' $(BUILD_WORK)/perl/cpan/ExtUtils-MakeMaker/lib/ExtUtils/MM_Unix.pm
@@ -76,6 +76,13 @@ perl: perl-setup
 		DESTDIR=$(BUILD_STAGE)/perl
 	$(LN_S) $(PERL_MAJOR) $(BUILD_STAGE)/perl/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/perl5/$(PERL_VERSION)
 	chmod -R u+w $(BUILD_STAGE)/perl/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/perl5/$(PERL_MAJOR)
+	# Config.pm is used by installed extension builds; strip host compiler/SDK/build-root paths.
+	sed -i -e "s|$(CC)|cc|g" -e "s|$(CXX)|c++|g" \
+		-e 's|-isysroot $(TARGET_SYSROOT)||g' -e "s|$(BUILD_BASE)||g" \
+		-e "s|^sysroot='.*'|sysroot=''|" \
+		$(BUILD_STAGE)/perl/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/perl5/$(PERL_MAJOR)/Config.pm \
+		$(BUILD_STAGE)/perl/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/perl5/$(PERL_MAJOR)/Config_heavy.pl \
+		$(BUILD_STAGE)/perl/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/perl5/$(PERL_MAJOR)/CORE/config.h
 	$(call AFTER_BUILD,,,$(MEMO_LINK_PREFIX)$(MEMO_SUB_PREFIX)/lib/perl5/$(PERL_MAJOR)/CORE)
 endif
 
