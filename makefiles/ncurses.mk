@@ -8,7 +8,7 @@ else # ($(MEMO_TARGET),darwin-\*)
 SUBPROJECTS     += ncurses
 endif # ($(MEMO_TARGET),darwin-\*)
 NCURSES_VERSION := 6.4
-DEB_NCURSES_V   ?= $(NCURSES_VERSION)
+DEB_NCURSES_V   ?= $(NCURSES_VERSION)-1
 
 ncurses-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://salsa.debian.org/debian/ncurses/-/archive/upstream/$(NCURSES_VERSION)/ncurses-upstream-$(NCURSES_VERSION).tar.gz)
@@ -99,6 +99,10 @@ ncurses-package: ncurses-stage
 
 	# ncurses.mk Prep libncurses-dev
 	cp -a $(BUILD_STAGE)/ncurses/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/ncurses*-config $(BUILD_DIST)/libncurses-dev/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin
+	# Keep only target ncurses link flags; configure's embedded host flags leak the SDK and build tree.
+	for config in $(BUILD_DIST)/libncurses-dev/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/ncurses*-config; do \
+		sed -i 's|^for opt in .*|for opt in -L$$libdir $(filter -liosexec,$(LDFLAGS)) $$LIBS|' "$$config"; \
+	done
 	cp -a $(BUILD_STAGE)/ncurses/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share/man/man1/ncurses*-config.1$(MEMO_MANPAGE_SUFFIX) $(BUILD_DIST)/libncurses-dev/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share/man/man1
 	cp -a $(BUILD_STAGE)/ncurses/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include $(BUILD_DIST)/libncurses-dev/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)
 	cp -a $(BUILD_STAGE)/ncurses/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/!(*.6.*|*.5.*|terminfo) $(BUILD_DIST)/libncurses-dev/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib
