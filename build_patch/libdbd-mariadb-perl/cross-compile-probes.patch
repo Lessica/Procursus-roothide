@@ -1,0 +1,111 @@
+--- a/Makefile.PL
++++ b/Makefile.PL
+@@ -51,11 +51,30 @@
+     "testsocket:s",
+     "cflags:s",
+     "libs:s",
++    "cross-compile",
++    "dbi-instarch-dir=s",
++    "cross-embedded=i",
++    "cross-openssl-deinit=i",
+     "mysql_config:s",
+     "mariadb_config:s",
+     ) || die Usage();
+ 
+ $opt->{mysql_config} = delete $opt->{mariadb_config} if exists $opt->{mariadb_config};
++
++# Target executables cannot run on the build host. Require explicit answers
++# only for the two behavioral probes; API availability still links real code.
++if ($opt->{'cross-compile'}) {
++  die "--dbi-instarch-dir must contain the target DBI headers\n"
++    unless defined $opt->{'dbi-instarch-dir'}
++      && -f File::Spec->catfile($opt->{'dbi-instarch-dir'}, 'Driver.xst')
++      && -f File::Spec->catfile($opt->{'dbi-instarch-dir'}, 'Driver_xst.h')
++      && -f File::Spec->catfile($opt->{'dbi-instarch-dir'}, 'DBIXS.h');
++  for my $key (qw(cross-embedded cross-openssl-deinit)) {
++    die "--$key must be 0 or 1 when cross compiling\n"
++      unless defined $opt->{$key} && $opt->{$key} =~ /^[01]$/;
++  }
++}
++
+ 
+ my $source = {};
+ 
+@@ -240,7 +259,8 @@
+   ccflags => $opt->{cflags},
+   ldflags => (join ' ', @libdirs, @libs, @ldflags),
+   header => \@mysql_headers,
+-  function => "\n#ifndef MYSQL_VERSION_ID\n#include <mysql_version.h>\n#endif\nreturn (MYSQL_VERSION_ID >= 40108) ? 0 : 1;\n",
++  not_execute => $opt->{'cross-compile'} ? 1 : 0,
++  function => "\n#ifndef MYSQL_VERSION_ID\n#include <mysql_version.h>\n#endif\n\n#if MYSQL_VERSION_ID < 40108\n#error MariaDB_or_MySQL_client_4_1_8_required\n#endif\nreturn 0;\n",
+ ) or die <<"MSG";
+ 
+ ERROR: Wrong version or unable to check version of MariaDB/MySQL include files.
+@@ -250,11 +270,12 @@
+ 
+ print "Looks good.\n\n";
+ 
+-my $have_embedded = check_lib(
++my $have_embedded = $opt->{'cross-compile'} ? $opt->{'cross-embedded'} : check_lib(
+   LIBS => (join ' ', @libdirs, $main_lib),
+   ccflags => $opt->{cflags},
+   ldflags => (join ' ', @libdirs, @libs, @ldflags),
+   header => \@mysql_headers,
++  not_execute => $opt->{'cross-compile'} ? 1 : 0,
+   function => 'return mysql_embedded() ? 0 : 1;',
+ );
+ 
+@@ -265,6 +286,7 @@
+   ccflags => $opt->{cflags},
+   ldflags => (join ' ', @libdirs, @libs, @ldflags),
+   header => \@mysql_headers,
++  not_execute => $opt->{'cross-compile'} ? 1 : 0,
+   function => 'unsigned int get_charset_number(const char *cs_name, unsigned int cs_flags); mysql_server_init(-1, 0, 0); get_charset_number("utf8", 32); return 0;',
+ );
+ 
+@@ -273,6 +295,7 @@
+   ccflags => $opt->{cflags},
+   ldflags => (join ' ', @libdirs, @libs, @ldflags),
+   header => \@mysql_headers,
++  not_execute => $opt->{'cross-compile'} ? 1 : 0,
+   function => 'MYSQL mysql; char buf[1024]; mysql_server_init(-1, 0, 0); mysql_init(&mysql); mysql_get_option(&mysql, 0, &buf); return 0;',
+ );
+ 
+@@ -281,16 +304,18 @@
+   ccflags => $opt->{cflags},
+   ldflags => (join ' ', @libdirs, @libs, @ldflags),
+   header => \@mysql_headers,
++  not_execute => $opt->{'cross-compile'} ? 1 : 0,
+   function => 'mariadb_deinitialize_ssl = 0; return 0;',
+ );
+ 
+ # Check if mysql_server_end() deinitialize OpenSSL library functions
+ # See: https://github.com/gooddata/DBD-MariaDB/issues/119
+-my $have_problem_with_openssl = !check_lib(
++my $have_problem_with_openssl = $opt->{'cross-compile'} ? $opt->{'cross-openssl-deinit'} : !check_lib(
+   LIBS => (join ' ', @libdirs, $main_lib),
+   ccflags => $opt->{cflags},
+   ldflags => (join ' ', @libdirs, @libs, @ldflags, $Config{perllibs}),
+   header => \@mysql_headers,
++  not_execute => $opt->{'cross-compile'} ? 1 : 0,
+   function => << 'EOF'
+ 
+ #ifndef _WIN32
+@@ -896,7 +921,16 @@
+ }
+ 
+ package MY;
+-sub postamble { return DBI::DBD::dbd_postamble(@_); }
++sub postamble {
++  if ($opt->{'cross-compile'}) {
++    # DBI itself is already loaded for the host. Only the generated target
++    # header/template dependencies must come from the target DBI package.
++    no warnings 'redefine';
++    local *DBI::DBD::dbd_dbi_arch_dir = sub { $opt->{'dbi-instarch-dir'} };
++    return DBI::DBD::dbd_postamble(@_);
++  }
++  return DBI::DBD::dbd_postamble(@_);
++}
+ 
+ package main;
+ 

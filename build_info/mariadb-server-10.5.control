@@ -1,0 +1,10 @@
+Package: mariadb-server-10.5
+Version: @DEB_MARIADB_V@
+Architecture: @DEB_ARCH@
+Maintainer: @DEB_MAINTAINER@
+Depends: mariadb-server-core-10.5 (= @DEB_MARIADB_V@), mariadb-client-10.5 (= @DEB_MARIADB_V@), perl, libdbi-perl, libdbd-mariadb-perl, libpam2
+Section: Data_Storage
+Priority: optional
+Homepage: https://mariadb.org/
+Description: MariaDB database server utilities and plugins
+ Server administration tools, support scripts and standard dynamic plugins.

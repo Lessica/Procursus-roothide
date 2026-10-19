@@ -1,0 +1,24 @@
+--- a/cmake/pcre.cmake
++++ b/cmake/pcre.cmake
+@@ -36,7 +36,7 @@
+   ExternalProject_Add(
+     pcre2
+     PREFIX   "${dir}"
+-    URL      "http://ftp.pcre.org/pub/pcre/pcre2-10.36.zip"
++    URL      "https://github.com/PCRE2Project/pcre2/releases/download/pcre2-10.36/pcre2-10.36.zip"
+     URL_MD5  ba9e743af42aac5642f7504b12af4116
+     INSTALL_COMMAND ""
+     CMAKE_ARGS
+@@ -44,6 +44,12 @@
+       "-DPCRE2_BUILD_PCRE2GREP=OFF"
+       "-DBUILD_SHARED_LIBS=OFF"
+       "-DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}"
++      "-DCMAKE_POLICY_VERSION_MINIMUM=3.5"
++      "-DCMAKE_SYSTEM_NAME=${CMAKE_SYSTEM_NAME}"
++      "-DCMAKE_SYSTEM_PROCESSOR=${CMAKE_SYSTEM_PROCESSOR}"
++      "-DCMAKE_OSX_SYSROOT=${CMAKE_OSX_SYSROOT}"
++      "-DCMAKE_OSX_ARCHITECTURES=${CMAKE_OSX_ARCHITECTURES}"
++      "-DCMAKE_OSX_DEPLOYMENT_TARGET=${CMAKE_OSX_DEPLOYMENT_TARGET}"
+       "-DCMAKE_C_FLAGS=${pcre2_flags} ${PIC_FLAG}"
+       "-DCMAKE_C_FLAGS_DEBUG=${pcre2_flags_DEBUG}"
+       "-DCMAKE_C_FLAGS_RELWITHDEBINFO=${pcre2_flags_RELWITHDEBINFO}"

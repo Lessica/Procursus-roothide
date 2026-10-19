@@ -1,0 +1,10 @@
+Package: mariadb-test
+Version: @DEB_MARIADB_V@
+Architecture: @DEB_ARCH@
+Maintainer: @DEB_MAINTAINER@
+Depends: mariadb-test-data (= @DEB_MARIADB_V@), mariadb-server-10.5 (= @DEB_MARIADB_V@), perl
+Section: Development
+Priority: optional
+Homepage: https://mariadb.org/
+Description: MariaDB database test programs
+ Client and embedded test programs, test drivers and test plugins.

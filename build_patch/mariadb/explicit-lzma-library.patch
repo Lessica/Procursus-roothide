@@ -1,0 +1,22 @@
+--- a/storage/innobase/lzma.cmake
++++ b/storage/innobase/lzma.cmake
+@@ -17,13 +17,16 @@
+ 
+ MACRO (MYSQL_CHECK_LZMA)
+   IF (WITH_INNODB_LZMA STREQUAL "ON" OR WITH_INNODB_LZMA STREQUAL "AUTO")
++    IF(NOT LZMA_LIBRARY)
++      SET(LZMA_LIBRARY lzma)
++    ENDIF()
+     CHECK_INCLUDE_FILES(lzma.h HAVE_LZMA_H)
+-    CHECK_LIBRARY_EXISTS(lzma lzma_stream_buffer_decode "" HAVE_LZMA_DECODE)
+-    CHECK_LIBRARY_EXISTS(lzma lzma_easy_buffer_encode "" HAVE_LZMA_ENCODE)
++    CHECK_LIBRARY_EXISTS("${LZMA_LIBRARY}" lzma_stream_buffer_decode "" HAVE_LZMA_DECODE)
++    CHECK_LIBRARY_EXISTS("${LZMA_LIBRARY}" lzma_easy_buffer_encode "" HAVE_LZMA_ENCODE)
+ 
+     IF (HAVE_LZMA_DECODE AND HAVE_LZMA_ENCODE AND HAVE_LZMA_H)
+       ADD_DEFINITIONS(-DHAVE_LZMA=1)
+-      LINK_LIBRARIES(lzma) 
++      LINK_LIBRARIES("${LZMA_LIBRARY}") 
+     ELSE()
+       IF (WITH_INNODB_LZMA STREQUAL "ON")
+ 	MESSAGE(FATAL_ERROR "Required lzma library is not found")

@@ -1,0 +1,41 @@
+--- a/storage/maria/libmarias3/configure.ac
++++ b/storage/maria/libmarias3/configure.ac
+@@ -18,7 +18,7 @@
+ 
+ # NOTE: Major version should be < 100 and minor/patch < 256 or bad things will
+ # happen in src/asql/utility.cc
+-AC_INIT([libmarias3],m4_esyscmd_s([tr -d '\n' < VERSION]),[linuxjedi@mariadb.com],[libmarias3],[https://mariadb.com])
++AC_INIT([libmarias3],m4_esyscmd_s([tr -d '\n' < S3_VERSION]),[linuxjedi@mariadb.com],[libmarias3],[https://mariadb.com])
+ m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
+ 
+ # Must come before AM_INIT_AUTOMAKE.
+--- a/storage/maria/libmarias3/Makefile.am
++++ b/storage/maria/libmarias3/Makefile.am
+@@ -32,7 +32,7 @@
+ 
+ EXTRA_DIST+= README.rst
+ EXTRA_DIST+= LICENSE
+-EXTRA_DIST+= VERSION
++EXTRA_DIST+= S3_VERSION
+ 
+ aclocaldir= $(datadir)/aclocal
+ dist_aclocal_DATA=
+--- a/storage/maria/libmarias3/docs/conf.py
++++ b/storage/maria/libmarias3/docs/conf.py
+@@ -55,7 +55,7 @@
+ # built documents.
+ #
+ # The short X.Y version.
+-version_file = open("../VERSION", "r")
++version_file = open("../S3_VERSION", "r")
+ version = version_file.read().strip()
+ # The full version, including alpha/beta/rc tags.
+ get_rev= Popen("git rev-parse --short HEAD", shell=True, stdout=PIPE).stdout.read().strip()
+--- a/storage/maria/libmarias3/VERSION
++++ /dev/null
+@@ -1 +0,0 @@
+-3.1.2
+--- /dev/null
++++ b/storage/maria/libmarias3/S3_VERSION
+@@ -0,0 +1 @@
++3.1.2

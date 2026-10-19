@@ -1,0 +1,10 @@
+Package: mariadb-plugin-s3
+Version: @DEB_MARIADB_V@
+Architecture: @DEB_ARCH@
+Maintainer: @DEB_MAINTAINER@
+Depends: mariadb-server-core-10.5 (= @DEB_MARIADB_V@), libcurl4
+Section: Data_Storage
+Priority: optional
+Homepage: https://mariadb.org/
+Description: MariaDB S3 storage engine
+ The S3 storage engine plugin and its installed support files.

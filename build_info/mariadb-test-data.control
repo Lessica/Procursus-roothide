@@ -1,0 +1,9 @@
+Package: mariadb-test-data
+Version: @DEB_MARIADB_V@
+Architecture: all
+Maintainer: @DEB_MAINTAINER@
+Section: Development
+Priority: optional
+Homepage: https://mariadb.org/
+Description: MariaDB database test data
+ The complete installed MariaDB test suites and fixture data.

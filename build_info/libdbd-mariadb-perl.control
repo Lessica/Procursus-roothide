@@ -1,0 +1,10 @@
+Package: libdbd-mariadb-perl
+Version: @DEB_LIBDBD_MARIADB_PERL_V@
+Architecture: @DEB_ARCH@
+Maintainer: @DEB_MAINTAINER@
+Depends: perl (>= 5.32.1), libdbi-perl (>= 1.608), libmariadb3
+Section: Development
+Priority: optional
+Homepage: https://metacpan.org/release/DBD-MariaDB
+Description: MariaDB and MySQL database driver for Perl DBI
+ DBI driver using the MariaDB Connector/C client library.
