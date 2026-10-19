@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS       += automake
 AUTOMAKE_VERSION  := 1.16.5
-DEB_AUTOMAKE_V    ?= $(AUTOMAKE_VERSION)-1
+DEB_AUTOMAKE_V    ?= $(AUTOMAKE_VERSION)-2
 
 automake-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://ftpmirror.gnu.org/automake/automake-$(AUTOMAKE_VERSION).tar.gz{$(comma).sig})

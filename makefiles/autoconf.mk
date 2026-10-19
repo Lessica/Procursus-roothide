@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS       += autoconf
 AUTOCONF_VERSION  := 2.71
-DEB_AUTOCONF_V    ?= $(AUTOCONF_VERSION)-1
+DEB_AUTOCONF_V    ?= $(AUTOCONF_VERSION)-2
 
 autoconf-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://ftpmirror.gnu.org/autoconf/autoconf-$(AUTOCONF_VERSION).tar.gz{$(comma).sig})

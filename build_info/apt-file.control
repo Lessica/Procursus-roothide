@@ -2,7 +2,7 @@ Package: apt-file
 Version: @DEB_APT-FILE_V@
 Architecture: all
 Maintainer: @DEB_MAINTAINER@
-Depends: perl, libapt-pkg-perl
+Depends: perl, libapt-pkg-perl, apt
 Section: Packaging
 Priority: optional
 Description: search for files within Debian packages (command-line interface)
