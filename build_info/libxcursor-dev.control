@@ -12,4 +12,4 @@ Description: X cursor management library
  <URL:http://www.X.org>
  .
  This module can be found at
- git://anongit.freedesktop.org/git/xorg/lib/libXau
+ git://anongit.freedesktop.org/git/xorg/lib/libXcursor

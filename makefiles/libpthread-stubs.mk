@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS              += libpthread-stubs
 LIBPTHREAD-STUBS_VERSION := 0.4
-DEB_LIBPTHREAD-STUBS_V   ?= $(LIBPTHREAD-STUBS_VERSION)
+DEB_LIBPTHREAD-STUBS_V   ?= $(LIBPTHREAD-STUBS_VERSION)-1
 
 libpthread-stubs-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://xorg.freedesktop.org/archive/individual/xcb/libpthread-stubs-$(LIBPTHREAD-STUBS_VERSION).tar.gz)
@@ -29,7 +29,7 @@ libpthread-stubs-package: libpthread-stubs-stage
 	mkdir -p $(BUILD_DIST)/libpthread-stubs0-dev
 
 	# libpthread-stubs.mk Prep libpthread-stubs0-dev
-	cp -a $(BUILD_STAGE)/libpthread-stubs $(BUILD_DIST)/libpthread-stubs0-dev
+	cp -a $(BUILD_STAGE)/libpthread-stubs/. $(BUILD_DIST)/libpthread-stubs0-dev
 
 	# libpthread-stubs.mk Make .debs
 	$(call PACK,libpthread-stubs0-dev,DEB_LIBPTHREAD-STUBS_V)
