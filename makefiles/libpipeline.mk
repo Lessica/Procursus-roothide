@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS         += libpipeline
 LIBPIPELINE_VERSION := 1.5.7
-DEB_LIBPIPELINE_V   ?= $(LIBPIPELINE_VERSION)
+DEB_LIBPIPELINE_V   ?= $(LIBPIPELINE_VERSION)-1
 
 libpipeline-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://download.savannah.gnu.org/releases/libpipeline/libpipeline-$(LIBPIPELINE_VERSION).tar.gz{$(comma).asc})

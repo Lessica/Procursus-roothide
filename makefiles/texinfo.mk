@@ -4,7 +4,9 @@ endif
 
 SUBPROJECTS     += texinfo
 TEXINFO_VERSION := 6.7
-DEB_TEXINFO_V   ?= $(TEXINFO_VERSION)
+DEB_TEXINFO_V   ?= $(TEXINFO_VERSION)-2
+PERL_HOST       ?= /usr/bin/perl
+PERL_TARGET_CORE = $(BUILD_BASE)/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/perl5/$(PERL_MAJOR)/CORE
 
 ## This is super broken, someone should fix it
 
@@ -17,16 +19,20 @@ ifneq ($(wildcard $(BUILD_WORK)/texinfo/.build_complete),)
 texinfo:
 	@echo "Using previously built texinfo."
 else
-texinfo: texinfo-setup
+texinfo: texinfo-setup perl
+	$(call DO_PATCH,texinfo,texinfo,-p1)
 	cd $(BUILD_WORK)/texinfo && ./configure -C \
 		$(DEFAULT_CONFIGURE_FLAGS) \
+		--enable-perl-xs \
+		PERL=$(PERL_HOST) \
 		PERL_EXT_CFLAGS="$(CFLAGS)" \
 		PERL_EXT_CPPFLAGS="$(CPPFLAGS)" \
 		PERL_EXT_LDFLAGS="$(LDFLAGS)" \
 		PERL_EXT_CC="$(CC)"
-	+$(MAKE) -C $(BUILD_WORK)/texinfo
+	+$(MAKE) -C $(BUILD_WORK)/texinfo PERL_INC=$(PERL_TARGET_CORE)
 	+$(MAKE) -C $(BUILD_WORK)/texinfo install \
-		DESTDIR=$(BUILD_STAGE)/texinfo
+		DESTDIR=$(BUILD_STAGE)/texinfo \
+		PERL_INC=$(PERL_TARGET_CORE)
 	$(call AFTER_BUILD)
 endif
 

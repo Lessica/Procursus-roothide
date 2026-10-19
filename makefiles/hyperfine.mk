@@ -15,8 +15,19 @@ hyperfine:
 	@echo "Using previously built hyperfine."
 else
 hyperfine: hyperfine-setup
-	cd $(BUILD_WORK)/hyperfine && $(DEFAULT_RUST_FLAGS) cargo build \
+	printf '%s\n' '#!/bin/sh' 'exec "$(CC)" -isysroot "$(TARGET_SYSROOT)" "$$@"' > $(BUILD_WORK)/hyperfine/target-cc-wrapper
+	printf '%s\n' '#!/bin/sh' 'exec "$(CXX)" -isysroot "$(TARGET_SYSROOT)" "$$@"' > $(BUILD_WORK)/hyperfine/target-cxx-wrapper
+	chmod 755 $(BUILD_WORK)/hyperfine/target-cc-wrapper $(BUILD_WORK)/hyperfine/target-cxx-wrapper
+	cd $(BUILD_WORK)/hyperfine && $(DEFAULT_RUST_FLAGS) \
+		SDKROOT="$(MACOSX_SYSROOT)" \
+		CC="$(CC_FOR_BUILD)" CXX="$(CXX_FOR_BUILD)" \
+		CC_$(subst -,_,$(RUST_TARGET))="$(BUILD_WORK)/hyperfine/target-cc-wrapper" \
+		CXX_$(subst -,_,$(RUST_TARGET))="$(BUILD_WORK)/hyperfine/target-cxx-wrapper" \
+		CFLAGS_$(subst -,_,$(RUST_TARGET))="$(CFLAGS)" CXXFLAGS_$(subst -,_,$(RUST_TARGET))="$(CXXFLAGS)" \
+		CARGO_TARGET_$(subst -,_,$(shell echo $(RUST_TARGET) | tr '[:lower:]' '[:upper:]'))_LINKER="$(BUILD_WORK)/hyperfine/target-cc-wrapper" \
+		CFLAGS= CXXFLAGS= cargo build \
 		--release \
+		--locked \
 		--all-features \
 		--target=$(RUST_TARGET)
 	$(INSTALL) -Dm755 $(BUILD_WORK)/hyperfine/target/$(RUST_TARGET)/release/hyperfine $(BUILD_STAGE)/hyperfine/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/hyperfine

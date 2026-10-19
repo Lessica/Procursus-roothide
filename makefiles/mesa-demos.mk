@@ -10,6 +10,7 @@ mesa-demos-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://archive.mesa3d.org//demos/mesa-demos-$(MESA_DEMOS_VERSION).tar.gz)
 	$(call EXTRACT_TAR,mesa-demos-$(MESA_DEMOS_VERSION).tar.gz,mesa-demos-$(MESA_DEMOS_VERSION),mesa-demos)
 	sed -i s/OpenGL/GL/ $(BUILD_WORK)/mesa-demos/src/util/gl_wrap.h
+	$(call DO_PATCH,mesa-demos,mesa-demos,-p1)
 
 ifneq ($(wildcard $(BUILD_WORK)/mesa-demos/.build_complete),)
 mesa-demos:
@@ -31,6 +32,12 @@ mesa-demos-package: mesa-demos-stage
 
 	# mesa-demos.mk Prep mesa-demos
 	cp -a $(BUILD_STAGE)/mesa-demos $(BUILD_DIST)
+	# Fix the build-base path emitted by GLEW's installed dylib ID before signing.
+	find $(BUILD_DIST)/mesa-demos/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin -type f -print | while IFS= read -r binary; do \
+		if file -b "$$binary" | grep -q 'Mach-O' && $(OTOOL) -L "$$binary" | grep -Fq '$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/libGLEW.2.2.dylib'; then \
+			$(I_N_T) -change $(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/libGLEW.2.2.dylib @rpath/libGLEW.2.2.dylib "$$binary" || exit 1; \
+		fi; \
+	done
 
 	# mesa-demos.mk Sign
 	$(call SIGN,mesa-demos,general.xml)

@@ -18,14 +18,28 @@ bat:
 	@echo "Using previously built bat."
 else
 bat: bat-setup libgit2
-	cd $(BUILD_WORK)/bat && cargo update
-	cd $(BUILD_WORK)/bat && $(DEFAULT_RUST_FLAGS) cargo build \
+	printf '%s\n' '#!/bin/sh' 'exec "$(CC)" -isysroot "$(TARGET_SYSROOT)" "$$@"' > $(BUILD_WORK)/bat/target-cc-wrapper
+	printf '%s\n' '#!/bin/sh' 'exec "$(CXX)" -isysroot "$(TARGET_SYSROOT)" "$$@"' > $(BUILD_WORK)/bat/target-cxx-wrapper
+	chmod 755 $(BUILD_WORK)/bat/target-cc-wrapper $(BUILD_WORK)/bat/target-cxx-wrapper
+	cd $(BUILD_WORK)/bat && $(DEFAULT_RUST_FLAGS) \
+		SDKROOT="$(MACOSX_SYSROOT)" \
+		CC="$(CC_FOR_BUILD)" CXX="$(CXX_FOR_BUILD)" \
+		CC_$(subst -,_,$(RUST_TARGET))="$(BUILD_WORK)/bat/target-cc-wrapper" \
+		CXX_$(subst -,_,$(RUST_TARGET))="$(BUILD_WORK)/bat/target-cxx-wrapper" \
+		CFLAGS_$(subst -,_,$(RUST_TARGET))="$(CFLAGS) -include stdio.h" CXXFLAGS_$(subst -,_,$(RUST_TARGET))="$(CXXFLAGS)" \
+		CARGO_TARGET_$(subst -,_,$(shell echo $(RUST_TARGET) | tr '[:lower:]' '[:upper:]'))_LINKER="$(BUILD_WORK)/bat/target-cc-wrapper" \
+		CFLAGS= CXXFLAGS= RUSTFLAGS="-L $(BUILD_BASE)/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib -C link-arg=-liosexec" cargo build \
 		--release \
+		--locked \
 		--target=$(RUST_TARGET)
 	$(INSTALL) -Dm755 $(BUILD_WORK)/bat/target/$(RUST_TARGET)/release/bat $(BUILD_STAGE)/bat/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/bat
-	$(INSTALL) -Dm644 $(BUILD_WORK)/bat/target/$(RUST_TARGET)/release/build/bat-*/out/assets/manual/bat.1 \
+	sed -e 's/{{PROJECT_NAME}}/bat/g' -e 's/{{PROJECT_EXECUTABLE}}/bat/g' -e 's/{{PROJECT_EXECUTABLE_UPPERCASE}}/BAT/g' -e 's/{{PROJECT_VERSION}}/$(BAT_VERSION)/g' \
+		$(BUILD_WORK)/bat/assets/manual/bat.1.in > $(BUILD_WORK)/bat/generated-bat.1
+	$(INSTALL) -Dm644 $(BUILD_WORK)/bat/generated-bat.1 \
 		$(BUILD_STAGE)/bat/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share/man/man1/bat.1
-	$(INSTALL) -Dm644 $(BUILD_WORK)/bat/target/$(RUST_TARGET)/release/build/bat-*/out/assets/completions/bat.zsh \
+	sed -e 's/{{PROJECT_NAME}}/bat/g' -e 's/{{PROJECT_EXECUTABLE}}/bat/g' -e 's/{{PROJECT_EXECUTABLE_UPPERCASE}}/BAT/g' -e 's/{{PROJECT_VERSION}}/$(BAT_VERSION)/g' \
+		$(BUILD_WORK)/bat/assets/completions/bat.zsh.in > $(BUILD_WORK)/bat/generated-bat.zsh
+	$(INSTALL) -Dm644 $(BUILD_WORK)/bat/generated-bat.zsh \
 		$(BUILD_STAGE)/bat/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share/zsh/site-functions/_bat
 	$(call AFTER_BUILD)
 endif

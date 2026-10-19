@@ -57,7 +57,7 @@ mesa: mesa-setup libx11 libxext libxcb libxdamage libxxf86vm gettext expat zstd
 	$(call AFTER_BUILD,copy)
 endif
 
-mesa-package: mesa-stage
+mesa-package: mesa-stage mesa-osmesa-package
 	# mesa.mk Package Structure
 	rm -rf $(BUILD_DIST)/libgl1-mesa-{glx,dri,dev} $(BUILD_DIST)/libgles2-mesa{,-dev} \
 		$(BUILD_DIST)/libglapi-mesa $(BUILD_DIST)/mesa-common-dev
@@ -114,4 +114,21 @@ mesa-package: mesa-stage
 	rm -rf $(BUILD_DIST)/libgl1-mesa-{glx,dri,dev} $(BUILD_DIST)/libgles2-mesa{,-dev} \
 		$(BUILD_DIST)/libglapi-mesa $(BUILD_DIST)/mesa-common-dev
 
-.PHONY: mesa mesa-package
+# OSMesa is enabled in the Mesa build and is required by osdemo16/osdemo32.
+# Keep its independently packageable payload separate from the legacy package set.
+mesa-osmesa-package: mesa-stage
+	rm -rf $(BUILD_DIST)/libosmesa8 $(BUILD_DIST)/libosmesa-dev
+	mkdir -p $(BUILD_DIST)/libosmesa8/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib \
+		$(BUILD_DIST)/libosmesa-dev/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/pkgconfig
+	cp -a $(BUILD_STAGE)/mesa/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/libOSMesa.8.dylib \
+		$(BUILD_DIST)/libosmesa8/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib
+	cp -a $(BUILD_STAGE)/mesa/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/libOSMesa.dylib \
+		$(BUILD_DIST)/libosmesa-dev/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib
+	cp -a $(BUILD_STAGE)/mesa/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/pkgconfig/osmesa.pc \
+		$(BUILD_DIST)/libosmesa-dev/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/pkgconfig
+	$(call SIGN,libosmesa8,general.xml)
+	$(call PACK,libosmesa8,DEB_MESA_V)
+	$(call PACK,libosmesa-dev,DEB_MESA_V)
+	rm -rf $(BUILD_DIST)/libosmesa8 $(BUILD_DIST)/libosmesa-dev
+
+.PHONY: mesa mesa-package mesa-osmesa-package

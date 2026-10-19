@@ -2,7 +2,7 @@ Package: libmagickcore-7.q16hdri-8
 Maintainer: @DEB_MAINTAINER@
 Architecture: @DEB_ARCH@
 Version: @DEB_IMAGEMAGICK_V@
-Depends: imagemagick-7-common (= @DEB_IMAGEMAGICK_V@), libilmbase25, libopenexr25, libomp1, liblcms2-2, liblqr-1-0, libglib2.0-0, libgs9, libintl8, libjbig0, libfontconfig1, libfreetype6, liblzma5, libopenjp2-7, libpng16-16, libtiff5, libwebp7, libwebpdemux2, libwebpmux3, libzip5, libjemalloc2, libltdl7
+Depends: imagemagick-7-common (= @DEB_IMAGEMAGICK_V@), libilmbase25, libopenexr25, libomp1, liblcms2-2, liblqr-1-0, libglib2.0-0, libgs9, libintl8, libjbig0, libfontconfig1, libfreetype6, liblzma5, libopenjp2-7, libpng16-16, libtiff5, libwebp7, libwebpdemux2, libwebpmux3, libzip5, libjemalloc2, libltdl7, libice6, libsm6, libx11-6, libxext6, libxt6, libheif1
 Section: Libraries
 Priority: optional
 Description: low-level image manipulation library -- quantum depth Q16HDRI

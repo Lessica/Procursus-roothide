@@ -18,6 +18,7 @@ else
 libheif: libheif-setup x265 libde265 aom rav1e dav1d
 	cd $(BUILD_WORK)/libheif && ./configure -C \
 		$(DEFAULT_CONFIGURE_FLAGS) \
+		CXX="$(CXX) $(CXXFLAGS)" \
 		--disable-tests \
 		--disable-examples
 	+$(MAKE) -C $(BUILD_WORK)/libheif

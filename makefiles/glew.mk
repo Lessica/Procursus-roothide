@@ -33,7 +33,7 @@ glew: glew-setup mesa libx11
 		LDFLAGS.EXTRA="$(LDFLAGS)" \
 		LN="$(LN_S)" \
 		GLEW_APPLE_GLX=yes
-	$(call AFTER_BUILD)
+	$(call AFTER_BUILD,copy)
 endif
 
 glew-package: glew-stage
@@ -47,6 +47,7 @@ glew-package: glew-stage
 	# glew.mk Prep libglew-dev
 	cp -a $(BUILD_STAGE)/glew/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/!(libGLEW.2.2*.dylib) $(BUILD_DIST)/libglew-dev/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib
 	cp -a $(BUILD_STAGE)/glew/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include $(BUILD_DIST)/libglew-dev/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)
+	sed -i -e 's|^libdir=.*|libdir=$${exec_prefix}/lib|' -e 's|-L/usr/X11R6/lib ||' $(BUILD_DIST)/libglew-dev/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/pkgconfig/glew.pc
 
 	# glew.mk Sign
 	$(call SIGN,libglew2.2,general.xml)

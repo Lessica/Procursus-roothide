@@ -1,0 +1,23 @@
+--- a/Makefile
++++ b/Makefile
+@@ -13,16 +13,16 @@
+ all: $(TARGET)
+ 
+ ttyrec: ttyrec.o io.o
+-	$(CC) $(CFLAGS) -o ttyrec ttyrec.o io.o
++	$(CC) $(CFLAGS) -o ttyrec ttyrec.o io.o $(LDFLAGS)
+ 
+ ttyplay: ttyplay.o io.o
+-	$(CC) $(CFLAGS) -o ttyplay ttyplay.o io.o
++	$(CC) $(CFLAGS) -o ttyplay ttyplay.o io.o $(LDFLAGS)
+ 
+ ttytime: ttytime.o io.o
+-	$(CC) $(CFLAGS) -o ttytime ttytime.o io.o
++	$(CC) $(CFLAGS) -o ttytime ttytime.o io.o $(LDFLAGS)
+ 
+ install:
+-	install ttyrec ttyplay ttytime $(DESTDIR)/usr/bin
++	install ttyrec ttyplay ttytime $(DESTDIR)$(PREFIX)/bin
+ 
+ clean:
+ 	rm -f *.o $(TARGET) ttyrecord *~

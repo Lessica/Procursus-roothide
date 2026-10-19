@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS         += imagemagick
 IMAGEMAGICK_VERSION := 7.0.10-60
-DEB_IMAGEMAGICK_V   ?= $(shell echo $(IMAGEMAGICK_VERSION) | sed s/-/./)
+DEB_IMAGEMAGICK_V   ?= $(shell echo $(IMAGEMAGICK_VERSION) | sed s/-/./)-1
 
 ###
 #
@@ -13,16 +13,17 @@ DEB_IMAGEMAGICK_V   ?= $(shell echo $(IMAGEMAGICK_VERSION) | sed s/-/./)
 ###
 
 imagemagick-setup: setup
-	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://www.imagemagick.org/download/releases/ImageMagick-$(IMAGEMAGICK_VERSION).tar.xz)
+	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://download.imagemagick.org/archive/releases/ImageMagick-$(IMAGEMAGICK_VERSION).tar.xz)
 	$(call EXTRACT_TAR,ImageMagick-$(IMAGEMAGICK_VERSION).tar.xz,ImageMagick-$(IMAGEMAGICK_VERSION),imagemagick)
 
 ifneq ($(wildcard $(BUILD_WORK)/imagemagick/.build_complete),)
 imagemagick:
 	@echo "Using previously built imagemagick."
 else
-imagemagick: imagemagick-setup openexr fontconfig freetype glib2.0 ghostscript libheif gettext jbigkit libjemalloc lcms2 liblqr xz openmp openjpeg libpng16 libtiff libwebp libzip libtool
+imagemagick: imagemagick-setup openexr fontconfig freetype glib2.0 ghostscript libheif gettext jbigkit libjemalloc lcms2 liblqr xz openmp openjpeg libpng16 libtiff libwebp libzip libtool libxt libxext
 	cd $(BUILD_WORK)/imagemagick && ./configure -C \
 		$(DEFAULT_CONFIGURE_FLAGS) \
+		CXX="$(CXX) $(CXXFLAGS)" \
 		--enable-osx-universal-binary=no \
 		--disable-dependency-tracking \
 		--disable-silent-rules \
@@ -31,6 +32,7 @@ imagemagick: imagemagick-setup openexr fontconfig freetype glib2.0 ghostscript l
 		--with-jemalloc \
 		--disable-opencl \
 		--with-modules \
+		--with-x=yes \
 		--with-freetype=yes \
 		--with-openjp2 \
 		--with-openexr \
@@ -45,7 +47,7 @@ imagemagick: imagemagick-setup openexr fontconfig freetype glib2.0 ghostscript l
 		--enable-openmp \
 		ac_cv_prog_c_openmp=-Xpreprocessor\ -fopenmp \
 		ac_cv_prog_cxx_openmp=-Xpreprocessor\ -fopenmp \
-		LDFLAGS="$(LDFLAGS) -lomp -lz"
+		LDFLAGS="-L$(BUILD_BASE)/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)$(MEMO_ALT_PREFIX)/lib $(LDFLAGS) -lomp -lz"
 	sed -i 's/|-fopenmp//' $(BUILD_WORK)/imagemagick/libtool
 	+$(MAKE) -C $(BUILD_WORK)/imagemagick
 	+$(MAKE) -C $(BUILD_WORK)/imagemagick install \
@@ -109,6 +111,14 @@ imagemagick-package: imagemagick-stage
 
 	# imagemagick.mk Prep libmagickwand-7-headers
 	cp -a $(BUILD_STAGE)/imagemagick/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include/ImageMagick-7/MagickWand $(BUILD_DIST)/libmagickwand-7-headers/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include/ImageMagick-7
+
+	# Remove repeated compression output from resumed stage processing and make
+	# installed development metadata relocatable outside this build checkout.
+	find $(BUILD_DIST)/imagemagick $(BUILD_DIST)/imagemagick-7-common $(BUILD_DIST)/libmagick++-7.q16hdri-4 $(BUILD_DIST)/libmagick++-7.q16hdri-dev $(BUILD_DIST)/libmagick++-7-headers $(BUILD_DIST)/libmagickcore-7.q16hdri-8 $(BUILD_DIST)/libmagickcore-7.q16hdri-dev $(BUILD_DIST)/libmagickcore-7-headers $(BUILD_DIST)/libmagickwand-7.q16hdri-8 $(BUILD_DIST)/libmagickwand-7.q16hdri-dev $(BUILD_DIST)/libmagickwand-7-headers -type f -name '*.zst.zst*' -delete
+	find $(BUILD_DIST)/imagemagick $(BUILD_DIST)/imagemagick-7-common $(BUILD_DIST)/libmagick++-7.q16hdri-4 $(BUILD_DIST)/libmagick++-7.q16hdri-dev $(BUILD_DIST)/libmagick++-7-headers $(BUILD_DIST)/libmagickcore-7.q16hdri-8 $(BUILD_DIST)/libmagickcore-7.q16hdri-dev $(BUILD_DIST)/libmagickcore-7-headers $(BUILD_DIST)/libmagickwand-7.q16hdri-8 $(BUILD_DIST)/libmagickwand-7.q16hdri-dev $(BUILD_DIST)/libmagickwand-7-headers -type f -name '*.1' -exec sh -c 'for page do if [ -f "$$page.zst" ]; then rm -f "$$page"; fi; done' sh {} +
+	find $(BUILD_DIST)/imagemagick $(BUILD_DIST)/imagemagick-7-common $(BUILD_DIST)/libmagick++-7.q16hdri-4 $(BUILD_DIST)/libmagick++-7.q16hdri-dev $(BUILD_DIST)/libmagick++-7-headers $(BUILD_DIST)/libmagickcore-7.q16hdri-8 $(BUILD_DIST)/libmagickcore-7.q16hdri-dev $(BUILD_DIST)/libmagickcore-7-headers $(BUILD_DIST)/libmagickwand-7.q16hdri-8 $(BUILD_DIST)/libmagickwand-7.q16hdri-dev $(BUILD_DIST)/libmagickwand-7-headers -type f \( -name '*.pc' -o -name '*.la' -o -name '*-config' \) -exec sed -i \
+		-e 's|$(BUILD_BASE)||g' \
+		-e 's|$(BUILD_TOOLS)/cross-pkg-config|pkg-config|g' {} +
 
 	# imagemagick.mk Sign
 	$(call SIGN,imagemagick,general.xml)

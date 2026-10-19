@@ -15,6 +15,7 @@ itstool:
 	@echo "Using previously built itstool."
 else
 itstool: itstool-setup
+	$(call DO_PATCH,itstool,itstool,-p1)
 	cd $(BUILD_WORK)/itstool && ./autogen.sh -C \
 		$(DEFAULT_CONFIGURE_FLAGS) \
 		PYTHON=python3

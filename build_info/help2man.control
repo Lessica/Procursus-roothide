@@ -2,7 +2,7 @@ Package: help2man
 Version: @DEB_HELP2MAN_V@
 Architecture: @DEB_ARCH@
 Maintainer: @DEB_MAINTAINER@
-Depends: libintl8
+Depends: perl, libintl8, liblocale-gettext-perl
 Section: Development
 Priority: optional
 Description: Automatic manpage generator

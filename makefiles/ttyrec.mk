@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS 	 += ttyrec
 TTYREC_VERSION := 1.0.8
-DEB_TTYREC_V   ?= $(TTYREC_VERSION)
+DEB_TTYREC_V   ?= $(TTYREC_VERSION)-1
 
 ttyrec-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),http://0xcc.net/ttyrec/ttyrec-$(TTYREC_VERSION).tar.gz)
@@ -19,7 +19,8 @@ ttyrec: ttyrec-setup
 	+$(MAKE) -C $(BUILD_WORK)/ttyrec CC="$(CC)" CFLAGS="$(CFLAGS) -DHAVE_openpty"
 	mkdir -p $(BUILD_STAGE)/ttyrec/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/{bin,share/man/man1}
 	+$(MAKE) -C $(BUILD_WORK)/ttyrec install \
-		DESTDIR="$(BUILD_STAGE)/ttyrec"
+		DESTDIR="$(BUILD_STAGE)/ttyrec" \
+		PREFIX="$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)"
 	cp $(BUILD_WORK)/ttyrec/tty{play,rec,time}.1 $(BUILD_STAGE)/ttyrec/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share/man/man1
 	$(call AFTER_BUILD)
 endif

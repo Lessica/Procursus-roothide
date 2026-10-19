@@ -4,7 +4,11 @@ endif
 
 SUBPROJECTS       += help2man
 HELP2MAN_VERSION  := 1.48.3
-DEB_HELP2MAN_V    ?= $(HELP2MAN_VERSION)
+DEB_HELP2MAN_V    ?= $(HELP2MAN_VERSION)-1
+
+ifneq ($(filter iphoneos-%,$(MEMO_TARGET)),)
+HELP2MAN_CONFIGURE_ENV := ac_cv_module_Locale__gettext=yes ac_cv_search_bindtextdomain=-lintl
+endif
 
 help2man-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),http://mirrors.kernel.org/gnu/help2man/help2man-$(HELP2MAN_VERSION).tar.xz{$(comma).sig})
@@ -16,11 +20,14 @@ help2man:
 	@echo "Using previously built help2man."
 else
 help2man: help2man-setup gettext
-	cd $(BUILD_WORK)/help2man && ./configure -C \
-		$(DEFAULT_CONFIGURE_FLAGS)
+	cd $(BUILD_WORK)/help2man && $(HELP2MAN_CONFIGURE_ENV) ./configure -C \
+		$(DEFAULT_CONFIGURE_FLAGS) \
+		--enable-nls
 	+$(MAKE) -C $(BUILD_WORK)/help2man
 	+$(MAKE) -C $(BUILD_WORK)/help2man install \
 		DESTDIR=$(BUILD_STAGE)/help2man
+	sed -i '1s|^#!.*perl.*|#!$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/perl -w|' \
+		$(BUILD_STAGE)/help2man/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/help2man
 	$(call AFTER_BUILD,copy)
 endif
 

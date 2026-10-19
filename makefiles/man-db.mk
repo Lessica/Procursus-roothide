@@ -5,6 +5,7 @@ endif
 SUBPROJECTS    += man-db
 MAN-DB_VERSION := 2.9.4
 DEB_MAN-DB_V   ?= $(MAN-DB_VERSION)-4
+PO4A           ?= po4a
 
 man-db-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://download.savannah.gnu.org/releases/man-db/man-db-$(MAN-DB_VERSION).tar.xz{$(comma).asc})
@@ -26,6 +27,7 @@ man-db: man-db-setup libpipeline libgdbm gettext zstd
 		--disable-cache-owner \
 		--enable-nls \
 		--with-nroff=groff \
+		PO4A=$(PO4A) \
 		man_cv_prog_gnu_nroff=yes
 	+$(MAKE) -C $(BUILD_WORK)/man-db \
 		LDFLAGS="$(LDFLAGS) -lintl -Wl,-framework -Wl,CoreFoundation"

@@ -3,7 +3,7 @@ Version: @DEB_GLEW_V@
 Architecture: @DEB_ARCH@
 Maintainer: @DEB_MAINTAINER@
 Section: Development
-Depends: libglew2.2 (= @DEB_GLEW_V@), libgl-dev
+Depends: libglew2.2 (= @DEB_GLEW_V@), libgl-dev, libglu1-mesa-dev
 Priority: optional
 Description: OpenGL Extension Wrangler - development environment
  The OpenGL Extension Wrangler, GLEW for short, is a library that
