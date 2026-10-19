@@ -1,5 +1,5 @@
 Package: libxaw7-dev
-Version: @DEB_LIBXAW_V@
+Version: @DEB_LIBXAW_DEV_V@
 Architecture: @DEB_ARCH@
 Maintainer: @DEB_MAINTAINER@
 Depends: libxaw7, libx11-dev, libxmu-dev, libxpm-dev

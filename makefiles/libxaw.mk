@@ -5,6 +5,7 @@ endif
 SUBPROJECTS    += libxaw
 LIBXAW_VERSION := 1.0.13
 DEB_LIBXAW_V  ?= $(LIBXAW_VERSION)
+DEB_LIBXAW_DEV_V ?= $(DEB_LIBXAW_V)-1
 
 libxaw-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://www.x.org/archive/individual/lib/libXaw-$(LIBXAW_VERSION).tar.gz{$(comma).sig})
@@ -36,13 +37,14 @@ libxaw-package: libxaw-stage
 	# libxaw.mk Prep libxaw7-dev
 	cp -a $(BUILD_STAGE)/libxaw/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/libXaw7.{a,dylib} $(BUILD_DIST)/libxaw7-dev/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib
 	cp -a $(BUILD_STAGE)/libxaw/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/{include,share} $(BUILD_DIST)/libxaw7-dev/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)
+	cp -a $(BUILD_STAGE)/libxaw/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/pkgconfig $(BUILD_DIST)/libxaw7-dev/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib
 
 	# libxaw.mk Sign
 	$(call SIGN,libxaw7,general.xml)
 
 	# libxaw.mk Make .debs
 	$(call PACK,libxaw7,DEB_LIBXAW_V)
-	$(call PACK,libxaw7-dev,DEB_LIBXAW_V)
+	$(call PACK,libxaw7-dev,DEB_LIBXAW_DEV_V)
 
 	# libxaw.mk Build cleanup
 	rm -rf $(BUILD_DIST)/libxaw7 $(BUILD_DIST)/libxaw7-dev

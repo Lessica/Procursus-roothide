@@ -4,12 +4,13 @@ endif
 
 SUBPROJECTS    += libglu
 LIBGLU_VERSION := 9.0.1
-DEB_LIBGLU_V   ?= $(LIBGLU_VERSION)
+DEB_LIBGLU_V   ?= $(LIBGLU_VERSION)-1
 
 libglu-setup: setup
 	$(call DOWNLOAD_FILE,$(BUILD_SOURCE)/libglu-$(LIBGLU_VERSION).tar.xz, \
-		ftp://ftp.freedesktop.org/pub/mesa/glu/glu-$(LIBGLU_VERSION).tar.xz)
+		https://mesa.freedesktop.org/archive/glu/glu-$(LIBGLU_VERSION).tar.xz)
 	$(call EXTRACT_TAR,libglu-$(LIBGLU_VERSION).tar.xz,glu-$(LIBGLU_VERSION),libglu)
+	$(call DO_PATCH,libglu,libglu,-p1)
 
 ifneq ($(wildcard $(BUILD_WORK)/libglu/.build_complete),)
 libglu:
@@ -18,6 +19,9 @@ else
 libglu: libglu-setup mesa
 	cd $(BUILD_WORK)/libglu && ./configure -C \
 		$(DEFAULT_CONFIGURE_FLAGS)
+	# libtool's Darwin CXX archive path creates a master object with bare CC,
+	# dropping the target flags that configure recorded in CXXFLAGS.
+	sed -i 's|\$$CC -r -keep_private_externs -nostdlib|\$$CC \$$CXXFLAGS -r -keep_private_externs -nostdlib|g' $(BUILD_WORK)/libglu/libtool
 	+$(MAKE) -C $(BUILD_WORK)/libglu
 	+$(MAKE) -C $(BUILD_WORK)/libglu install \
 		DESTDIR=$(BUILD_STAGE)/libglu

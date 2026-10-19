@@ -4,7 +4,8 @@ endif
 
 SUBPROJECTS   += rav1e
 RAV1E_VERSION := 0.6.1
-DEB_RAV1E_V   ?= $(RAV1E_VERSION)
+DEB_RAV1E_V   ?= $(RAV1E_VERSION)-1
+RAV1E_CARGO_TARGET_DIR ?= $(BUILD_WORK)/rav1e/target
 
 rav1e-setup: setup
 	$(call GITHUB_ARCHIVE,xiph,rav1e,$(RAV1E_VERSION),v$(RAV1E_VERSION))
@@ -16,24 +17,42 @@ rav1e:
 	@echo "Using previously built rav1e."
 else
 rav1e: rav1e-setup aom dav1d
-	cd $(BUILD_WORK)/rav1e && $(DEFAULT_RUST_FLAGS) CFLAGS= cargo build \
+	printf '%s\n' '#!/bin/sh' 'exec "$(CC)" -isysroot "$(TARGET_SYSROOT)" "$$@"' > $(BUILD_WORK)/rav1e/target-cc-wrapper
+	printf '%s\n' '#!/bin/sh' 'exec "$(CXX)" -isysroot "$(TARGET_SYSROOT)" "$$@"' > $(BUILD_WORK)/rav1e/target-cxx-wrapper
+	chmod 755 $(BUILD_WORK)/rav1e/target-cc-wrapper $(BUILD_WORK)/rav1e/target-cxx-wrapper
+	cd $(BUILD_WORK)/rav1e && $(DEFAULT_RUST_FLAGS) \
+		SDKROOT="$(MACOSX_SYSROOT)" \
+		CC="$(CC_FOR_BUILD)" CXX="$(CXX_FOR_BUILD)" \
+		CC_$(subst -,_,$(RUST_TARGET))="$(BUILD_WORK)/rav1e/target-cc-wrapper" \
+		CXX_$(subst -,_,$(RUST_TARGET))="$(BUILD_WORK)/rav1e/target-cxx-wrapper" \
+		CFLAGS_$(subst -,_,$(RUST_TARGET))="$(CFLAGS)" CXXFLAGS_$(subst -,_,$(RUST_TARGET))="$(CXXFLAGS)" \
+		CARGO_TARGET_$(subst -,_,$(shell echo $(RUST_TARGET) | tr '[:lower:]' '[:upper:]'))_LINKER="$(BUILD_WORK)/rav1e/target-cc-wrapper" \
+		CARGO_TARGET_DIR="$(RAV1E_CARGO_TARGET_DIR)" CFLAGS= cargo build \
 		--release \
 		--target=$(RUST_TARGET)
-	cd $(BUILD_WORK)/rav1e && $(DEFAULT_RUST_FLAGS) CFLAGS= cargo cbuild \
+	cd $(BUILD_WORK)/rav1e && $(DEFAULT_RUST_FLAGS) \
+		SDKROOT="$(MACOSX_SYSROOT)" \
+		CC="$(CC_FOR_BUILD)" CXX="$(CXX_FOR_BUILD)" \
+		CC_$(subst -,_,$(RUST_TARGET))="$(BUILD_WORK)/rav1e/target-cc-wrapper" \
+		CXX_$(subst -,_,$(RUST_TARGET))="$(BUILD_WORK)/rav1e/target-cxx-wrapper" \
+		CFLAGS_$(subst -,_,$(RUST_TARGET))="$(CFLAGS)" CXXFLAGS_$(subst -,_,$(RUST_TARGET))="$(CXXFLAGS)" \
+		CARGO_TARGET_$(subst -,_,$(shell echo $(RUST_TARGET) | tr '[:lower:]' '[:upper:]'))_LINKER="$(BUILD_WORK)/rav1e/target-cc-wrapper" \
+		CARGO_TARGET_DIR="$(RAV1E_CARGO_TARGET_DIR)" CFLAGS= cargo cbuild \
 		--release \
 		--prefix=$(MEMO_PREFIX)$(MEMO_SUB_PREFIX) \
 		--target=$(RUST_TARGET) \
 		--library-type staticlib
 
-	$(INSTALL) -Dm755 $(BUILD_WORK)/rav1e/target/$(RUST_TARGET)/release/rav1e $(BUILD_STAGE)/rav1e/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/rav1e
+	$(INSTALL) -Dm755 $(RAV1E_CARGO_TARGET_DIR)/$(RUST_TARGET)/release/rav1e $(BUILD_STAGE)/rav1e/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/rav1e
 
-	$(CC) $(CFLAGS) -fPIC -install_name $(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/librav1e.0.dylib -shared -o $(BUILD_WORK)/rav1e/target/$(RUST_TARGET)/release/librav1e.0.dylib $(LDFLAGS) -Wl,-force_load $(BUILD_WORK)/rav1e/target/$(RUST_TARGET)/release/librav1e.a -framework Security -lobjc
+	$(CC) $(CFLAGS) -fPIC -install_name $(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/librav1e.0.dylib -shared -o $(RAV1E_CARGO_TARGET_DIR)/$(RUST_TARGET)/release/librav1e.0.dylib $(LDFLAGS) -Wl,-force_load $(RAV1E_CARGO_TARGET_DIR)/$(RUST_TARGET)/release/librav1e.a -framework Security -lobjc
 
-	$(INSTALL) -Dm644 $(BUILD_WORK)/rav1e/target/$(RUST_TARGET)/release/librav1e.0.dylib $(BUILD_STAGE)/rav1e/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/librav1e.0.dylib
+	$(INSTALL) -Dm644 $(RAV1E_CARGO_TARGET_DIR)/$(RUST_TARGET)/release/librav1e.0.dylib $(BUILD_STAGE)/rav1e/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/librav1e.0.dylib
 
-	$(INSTALL) -Dm644 $(BUILD_WORK)/rav1e/target/$(RUST_TARGET)/release/librav1e.a $(BUILD_STAGE)/rav1e/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/librav1e.a
-	$(INSTALL) -Dm644 $(BUILD_WORK)/rav1e/target/$(RUST_TARGET)/release/rav1e.pc $(BUILD_STAGE)/rav1e/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/pkgconfig/rav1e.pc
-	$(INSTALL) -Dm644 $(BUILD_WORK)/rav1e/target/$(RUST_TARGET)/release/rav1e.h $(BUILD_STAGE)/rav1e/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include/rav1e.h
+	$(INSTALL) -Dm644 $(RAV1E_CARGO_TARGET_DIR)/$(RUST_TARGET)/release/librav1e.a $(BUILD_STAGE)/rav1e/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/librav1e.a
+	$(INSTALL) -Dm644 $(RAV1E_CARGO_TARGET_DIR)/$(RUST_TARGET)/release/rav1e.pc $(BUILD_STAGE)/rav1e/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/pkgconfig/rav1e.pc
+	$(SED) -i 's@^Cflags: -I$${includedir}/rav1e$$@Cflags: -I$${includedir}@' $(BUILD_STAGE)/rav1e/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/pkgconfig/rav1e.pc
+	$(INSTALL) -Dm644 $(RAV1E_CARGO_TARGET_DIR)/$(RUST_TARGET)/release/rav1e.h $(BUILD_STAGE)/rav1e/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include/rav1e.h
 
 	$(LN_S) librav1e.0.dylib $(BUILD_STAGE)/rav1e/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/librav1e.dylib
 

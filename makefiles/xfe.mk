@@ -16,6 +16,7 @@ xfe:
 	@echo "Using previously built xfe."
 else
 xfe: xfe-setup fox1.6 gettext fontconfig freetype libpng16 libxft libxrandr libx11
+	rm -f $(BUILD_WORK)/xfe/config.cache
 	cd $(BUILD_WORK)/xfe && ./configure -C \
 		$(DEFAULT_CONFIGURE_FLAGS) \
 		--enable-release \

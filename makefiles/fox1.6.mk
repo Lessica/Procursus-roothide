@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS    += fox1.6
 FOX1.6_VERSION := 1.6.56
-DEB_FOX1.6_V   ?= $(FOX1.6_VERSION)
+DEB_FOX1.6_V   ?= $(FOX1.6_VERSION)-1
 
 fox1.6-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),http://fox-toolkit.org/ftp/fox-1.6.56.tar.gz)
@@ -30,6 +30,8 @@ fox1.6: fox1.6-setup libxft mesa libglu libx11 libxcursor libxext libxrender lib
 		--with-xim \
 		--with-xinput \
 		--with-xfixes
+	# Keep the platform flags on libtool's Darwin C++ archive intermediate.
+	sed -i 's|\$$CC -r -keep_private_externs -nostdlib|\$$CC \$$CXXFLAGS -r -keep_private_externs -nostdlib|g' $(BUILD_WORK)/fox1.6/libtool
 	+$(MAKE) -C $(BUILD_WORK)/fox1.6 \
 		CXXFLAGS+=\ -I$(BUILD_BASE)/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include/freetype2
 	+$(MAKE) -C $(BUILD_WORK)/fox1.6 install \

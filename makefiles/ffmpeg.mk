@@ -13,6 +13,7 @@ endif
 ffmpeg-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://ffmpeg.org/releases/ffmpeg-$(FFMPEG_VERSION).tar.xz)
 	$(call EXTRACT_TAR,ffmpeg-$(FFMPEG_VERSION).tar.xz,ffmpeg-$(FFMPEG_VERSION),ffmpeg)
+	$(call DO_PATCH,ffmpeg,ffmpeg,-p1)
 
 ifneq ($(wildcard $(BUILD_WORK)/ffmpeg/.build_complete),)
 ffmpeg:
@@ -21,6 +22,7 @@ else
 ffmpeg: ffmpeg-setup aom dav1d fontconfig freetype frei0r gnutls lame libass libsoxr libvidstab libvorbis libvpx libopencore-amr openjpeg libopus rav1e rtmpdump rubberband sdl2 libsnappy libspeex libsrt tesseract libtheora libwebp x264 x265 libxvidcore xz libzmq libxcb
 	cd $(BUILD_WORK)/ffmpeg && ./configure \
 		--cross-prefix="$(GNU_HOST_TRIPLE)-" \
+		--pkg-config="$(BUILD_TOOLS)/cross-pkg-config" \
 		--prefix=$(MEMO_PREFIX)$(MEMO_SUB_PREFIX) \
 		--enable-shared \
 		--enable-pthreads \
@@ -190,6 +192,15 @@ ffmpeg-package: ffmpeg-stage
 	cp -a $(BUILD_STAGE)/ffmpeg/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include/libswscale $(BUILD_DIST)/libswscale-dev/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include
 	cp -a $(BUILD_STAGE)/ffmpeg/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/pkgconfig/libswscale.pc $(BUILD_DIST)/libswscale-dev/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/pkgconfig
 	cp -a $(BUILD_STAGE)/ffmpeg/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share/man/man3/libswscale.3$(MEMO_MANPAGE_SUFFIX) $(BUILD_DIST)/libswscale-dev/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share/man/man3
+
+	# Keep pkg-config search paths target-relative in development packages.
+	for file in \
+		$(BUILD_DIST)/libavcodec-dev/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/pkgconfig/libavcodec.pc \
+		$(BUILD_DIST)/libavdevice-dev/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/pkgconfig/libavdevice.pc \
+		$(BUILD_DIST)/libavfilter-dev/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/pkgconfig/libavfilter.pc \
+		$(BUILD_DIST)/libavformat-dev/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/pkgconfig/libavformat.pc; do \
+		sed -E -i 's@-L$(BUILD_BASE)$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib@-L$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib@g' $$file; \
+	done
 
 	# ffmpeg.mk Sign
 	$(call SIGN,ffmpeg,ffmpeg.xml)

@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS     += libopus
 LIBOPUS_VERSION := 1.3.1
-DEB_LIBOPUS_V   ?= $(LIBOPUS_VERSION)
+DEB_LIBOPUS_V   ?= $(LIBOPUS_VERSION)-1
 
 libopus-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://archive.mozilla.org/pub/opus/opus-$(LIBOPUS_VERSION).tar.gz)
@@ -36,6 +36,7 @@ libopus-package: libopus-stage
 	# libopus.mk Prep libopus-dev
 	cp -a $(BUILD_STAGE)/libopus/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/libopus.{a,dylib} $(BUILD_DIST)/libopus-dev/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib
 	cp -a $(BUILD_STAGE)/libopus/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include $(BUILD_DIST)/libopus-dev/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)
+	$(INSTALL) -Dm644 $(BUILD_WORK)/libopus/opus.pc $(BUILD_DIST)/libopus-dev/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/pkgconfig/opus.pc
 
 	# libopus.mk Sign
 	$(call SIGN,libopus0,general.xml)

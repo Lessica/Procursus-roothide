@@ -1,0 +1,20 @@
+--- a/doc/Makefile
++++ b/doc/Makefile
+@@ -65,13 +65,13 @@
+ doc/%-all.html: TAG = HTML
+ 
+ ifdef HAVE_MAKEINFO_HTML
+-doc/%.html: doc/%.texi $(SRC_PATH)/doc/t2h.pm $(GENTEXI)
++doc/%.html: doc/%.texi $(GENTEXI)
+ 	$(Q)$(TEXIDEP)
+-	$(M)makeinfo --html -I doc --no-split -D config-not-all --init-file=$(SRC_PATH)/doc/t2h.pm --output $@ $<
++	$(M)makeinfo --html -I doc --no-split -D config-not-all --output $@ $<
+ 
+-doc/%-all.html: doc/%.texi $(SRC_PATH)/doc/t2h.pm $(GENTEXI)
++doc/%-all.html: doc/%.texi $(GENTEXI)
+ 	$(Q)$(TEXIDEP)
+-	$(M)makeinfo --html -I doc --no-split -D config-all --init-file=$(SRC_PATH)/doc/t2h.pm --output $@ $<
++	$(M)makeinfo --html -I doc --no-split -D config-all --output $@ $<
+ else
+ doc/%.html: doc/%.texi $(SRC_PATH)/doc/t2h.init $(GENTEXI)
+ 	$(Q)$(TEXIDEP)
