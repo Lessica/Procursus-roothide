@@ -12,7 +12,7 @@ DEB_OPENJDK_V    ?= $(OPENJDK_VERSION)
 
 # Change "ea" to nothing on general availability...
 
-OPENJDK_VENDOR_ARGS := --with-version-pre=ea \
+OPENJDK_VENDOR_ARGS := --with-version-pre= \
 		--without-version-opt \
 		--with-vendor-bug-url="https://github.com/ProcursusTeam/Procursus/issues" \
 		--with-vendor-name=Procursus \
@@ -47,19 +47,14 @@ openjdk-setup: setup
 	$(call EXTRACT_TAR,openjdk-17_macos-aarch64_bin.tar.gz,jdk-17.jdk,boot-jdk.jdk) # Change this to use the Linux one on Linux
 ifeq (,$(findstring darwin,$(MEMO_TARGET)))
 	$(call DO_PATCH,openjdk-ios,openjdk,-p1)
+	sed -i '/^#include <CFNetwork\/CFNetwork.h>$$/d' $(BUILD_WORK)/openjdk/src/java.base/macosx/native/libnet/DefaultProxySelector.c
 	sed -i '/<CoreServices\/CoreServices.h>/a #include <CFNetwork/CFNetwork.h>' $(BUILD_WORK)/openjdk/src/java.base/macosx/native/libnet/DefaultProxySelector.c
 	for file in $(BUILD_WORK)/openjdk/src/java.base/macosx/native/libjli/java_md_macosx.m \
-	$(BUILD_WORK)/openjdk/src/java.desktop/macosx/native/libawt_lwawt/awt/LWCToolkit.h \
-	$(BUILD_WORK)/openjdk/src/java.desktop/macosx/native/libawt_lwawt/awt/AWTWindow.m \
-	$(BUILD_WORK)/openjdk/src/java.desktop/macosx/native/libawt_lwawt/awt/ApplicationDelegate.h \
-	$(BUILD_WORK)/openjdk/src/java.desktop/macosx/native/libawt_lwawt/awt/CDataTransferer.h \
-	$(BUILD_WORK)/openjdk/src/java.desktop/macosx/native/libawt_lwawt/java2d/opengl/J2D_GL/cglext.h \
 	$(BUILD_WORK)/openjdk/src/java.security.jgss/macosx/native/libosxkrb5/SCDynamicStoreConfig.m \
 	$(BUILD_WORK)/openjdk/src/java.base/macosx/native/libosxsecurity/KeystoreImpl.m; do \
-		sed -i 's|<Cocoa/Cocoa.h>|<Foundation/Foundation.h>|' $$file; \
+		sed -i 's|<Cocoa/Cocoa.h>|<Foundation/Foundation.h>|' $$file || exit 1; \
 	done
-	for file in $(BUILD_WORK)/openjdk/src/java.desktop/share/native/libfontmanager/hb-jdk-font.c \
-	$(BUILD_WORK)/openjdk/src/java.desktop/share/native/libfontmanager/HBShaper.c \
+	for file in $(BUILD_WORK)/openjdk/src/java.desktop/share/native/libfontmanager/HBShaper.c \
 	$(BUILD_WORK)/openjdk/src/java.desktop/share/native/common/java2d/opengl/OGLFuncs.h \
 	$(BUILD_WORK)/openjdk/src/java.desktop/share/native/libmlib_image/mlib_image.h \
 	$(BUILD_WORK)/openjdk/src/java.desktop/share/native/libmlib_image/mlib_types.h \
@@ -72,7 +67,7 @@ ifeq (,$(findstring darwin,$(MEMO_TARGET)))
 	$(BUILD_WORK)/openjdk/src/java.desktop/unix/native/common/awt/img_util_md.h \
 	$(BUILD_WORK)/openjdk/src/java.desktop/unix/native/libawt/java2d/j2d_md.h \
 	$(BUILD_WORK)/openjdk/src/java.desktop/unix/native/common/java2d/opengl/OGLFuncs_md.h; do \
-		sed -i 's|MACOSX|MACOSXXXXXX|' $$file; \
+		sed -i 's|\bMACOSX\b|MACOSXXXXXX|' $$file || exit 1; \
 	done
 	cp $(BUILD_WORK)/openjdk/make/data/charsetmapping/stdcs-linux $(BUILD_WORK)/openjdk/make/data/charsetmapping/stdcs-macosx
 	rm -rf $(BUILD_WORK)/openjdk/src/java.desktop/macosx/
@@ -82,11 +77,13 @@ ifneq ($(wildcard $(BUILD_WORK)/openjdk/.build_complete),)
 openjdk:
 	@echo "Using previously built openjdk."
 else
-openjdk: openjdk-setup libx11 libxext libxi libxrender libxrandr libxtst freetype libgif harfbuzz lcms2 libpng16 xorgproto
+openjdk: openjdk-setup libx11 libxext libxi libxrender libxrandr libxtst freetype libgif harfbuzz lcms2 libpng16 xorgproto fontconfig libjpeg-turbo
 	rm -rf $(BUILD_STAGE)/openjdk
 	mkdir -p $(BUILD_STAGE)/openjdk/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/jvm
 	chmod 0755 $(BUILD_WORK)/openjdk/configure
 	cd $(BUILD_WORK)/openjdk && bash ./configure \
+		BUILD_CC="$(CC_FOR_BUILD)" BUILD_CXX="$(CXX_FOR_BUILD)" \
+		PKG_CONFIG="$(BUILD_TOOLS)/cross-pkg-config" \
 		--disable-warnings-as-errors \
 		--prefix=$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib \
 		--openjdk-target=$(GNU_HOST_TRIPLE) \
@@ -99,7 +96,7 @@ openjdk: openjdk-setup libx11 libxext libxi libxrender libxrandr libxtst freetyp
 		--with-debug-level=release \
 		--with-native-debug-symbols=none \
 		--with-jvm-variants=server \
-		--with-x=system \
+		--with-x=$(BUILD_BASE)$(MEMO_PREFIX)$(MEMO_SUB_PREFIX) \
 		--with-cups-include="$(BUILD_WORK)/apple-cups" \
 		--with-fontconfig=$(BUILD_BASE)$(MEMO_PREFIX)$(MEMO_SUB_PREFIX) \
 		$(OPENJDK_CONFIG_ARGS) \
@@ -109,7 +106,7 @@ openjdk: openjdk-setup libx11 libxext libxi libxrender libxrandr libxtst freetyp
 		--with-zlib=system \
 		--with-lcms=system \
 		--with-harfbuzz=system
-	make -C $(BUILD_WORK)/openjdk images \
+	env -u MAKEFLAGS -u MFLAGS -u MAKEOVERRIDES $(MAKE) -C $(BUILD_WORK)/openjdk images \
 			JOBS=$(CORE_COUNT)
 	cp -a $(BUILD_WORK)/openjdk/build/*/images/jdk $(BUILD_STAGE)/openjdk/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/jvm/java-$(OPENJDK_MAJOR_V)-openjdk
 	for dylib in $(BUILD_STAGE)/openjdk/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/jvm/java-$(OPENJDK_MAJOR_V)-openjdk/lib/{,*/}*.dylib; do \
@@ -122,7 +119,7 @@ openjdk-package: openjdk-stage
 	# openjdk.mk Package Structure
 	rm -rf $(BUILD_DIST)/openjdk*-{jre,jdk}
 	mkdir -p $(BUILD_DIST)/openjdk-$(OPENJDK_MAJOR_V)-{jre,jdk}/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/jvm/java-$(OPENJDK_MAJOR_V)-openjdk/{bin,lib,man/man1} \
-		mkdir -p $(BUILD_DIST)/openjdk-{jre,jdk}/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/{bin,share/man/man1}
+		$(BUILD_DIST)/openjdk-{jre,jdk}/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/{bin,share/man/man1}
 
 	# openjdk.mk Prep openjdk-$(OPENJDK_MAJOR_V)-jre
 	cp -a $(BUILD_STAGE)/openjdk/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/jvm/java-$(OPENJDK_MAJOR_V)-openjdk/bin/{java,jfr,keytool,rmiregistry} \
@@ -132,7 +129,7 @@ openjdk-package: openjdk-stage
 	done
 	cp -a $(BUILD_STAGE)/openjdk/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/jvm/java-$(OPENJDK_MAJOR_V)-openjdk/man/man1/{java,jfr,keytool,rmiregistry}.1 \
 		$(BUILD_DIST)/openjdk-$(OPENJDK_MAJOR_V)-jre/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/jvm/java-$(OPENJDK_MAJOR_V)-openjdk/man/man1
-	cp -a $(BUILD_STAGE)/openjdk/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/jvm/java-$(OPENJDK_MAJOR_V)-openjdk/{conf,legal} \
+	cp -a $(BUILD_STAGE)/openjdk/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/jvm/java-$(OPENJDK_MAJOR_V)-openjdk/{conf,legal,release} \
 		$(BUILD_DIST)/openjdk-$(OPENJDK_MAJOR_V)-jre/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/jvm/java-$(OPENJDK_MAJOR_V)-openjdk
 	cp -a $(BUILD_STAGE)/openjdk/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/jvm/java-$(OPENJDK_MAJOR_V)-openjdk/lib/!(src.zip) \
 		$(BUILD_DIST)/openjdk-$(OPENJDK_MAJOR_V)-jre/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/jvm/java-$(OPENJDK_MAJOR_V)-openjdk/lib
@@ -146,7 +143,9 @@ openjdk-package: openjdk-stage
 	# openjdk.mk Prep openjdk-jdk
 	for bin in jar jarsigner javac javadoc javap jcmd jconsole jdb jdeprscan jdeps jhsdb jimage jinfo jlink jmap jmod jpackage jps jrunscript jshell jstack jstat jstatd serialver; do \
 		$(LN_S) $(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/jvm/java-$(OPENJDK_MAJOR_V)-openjdk/bin/$${bin} $(BUILD_DIST)/openjdk-jdk/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/$${bin}; \
-		$(LN_S) $(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/jvm/java-$(OPENJDK_MAJOR_V)-openjdk/man/man1/$${bin}.1 $(BUILD_DIST)/openjdk-jdk/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share/man/man1/$${bin}.1; \
+		if [ -f $(BUILD_STAGE)/openjdk/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/jvm/java-$(OPENJDK_MAJOR_V)-openjdk/man/man1/$${bin}.1 ]; then \
+			$(LN_S) $(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/jvm/java-$(OPENJDK_MAJOR_V)-openjdk/man/man1/$${bin}.1 $(BUILD_DIST)/openjdk-jdk/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share/man/man1/$${bin}.1; \
+		fi; \
 	done
 
 	# openjdk.mk Prep openjdk-$(OPENJDK_MAJOR_V)-jdk
@@ -155,7 +154,7 @@ openjdk-package: openjdk-stage
 	for bin in $(BUILD_DIST)/openjdk-$(OPENJDK_MAJOR_V)-jdk/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/jvm/java-$(OPENJDK_MAJOR_V)-openjdk/bin/*; do \
 		$(I_N_T) -add_rpath $(MEMO_LINK_PREFIX)$(MEMO_SUB_PREFIX)/lib/jvm/java-$(OPENJDK_MAJOR_V)-openjdk/lib $$bin; \
 	done
-	cp -a $(BUILD_STAGE)/openjdk/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/jvm/java-$(OPENJDK_MAJOR_V)-openjdk/{include,jmods} \
+	cp -a $(BUILD_STAGE)/openjdk/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/jvm/java-$(OPENJDK_MAJOR_V)-openjdk/{demo,include,jmods} \
 		$(BUILD_DIST)/openjdk-$(OPENJDK_MAJOR_V)-jdk/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/jvm/java-$(OPENJDK_MAJOR_V)-openjdk
 	cp -a $(BUILD_STAGE)/openjdk/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/jvm/java-$(OPENJDK_MAJOR_V)-openjdk/lib/src.zip \
 		$(BUILD_DIST)/openjdk-$(OPENJDK_MAJOR_V)-jdk/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/jvm/java-$(OPENJDK_MAJOR_V)-openjdk/lib

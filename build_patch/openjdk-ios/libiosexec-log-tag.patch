@@ -1,0 +1,15 @@
+--- a/src/hotspot/share/logging/logTag.hpp
++++ b/src/hotspot/share/logging/logTag.hpp
+@@ -231,6 +231,12 @@
+     Count
+   };
+ 
++#ifdef system
++  // libiosexec redirects system calls, but this token is a logging tag.
++  // Keep its original index/name without disabling process redirection.
++  static const type _ie_system = _system;
++#endif
++
+   static const char* name(LogTag::type tag) {
+     return _name[tag];
+   }

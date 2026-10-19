@@ -6,12 +6,15 @@ ifeq (,$(findstring darwin,$(MEMO_TARGET)))
 
 SUBPROJECTS         += snaprestore
 SNAPRESTORE_VERSION := 0.3
+SNAPRESTORE_COMMIT  := bd76a8431a0ad66d8b8345ab9237c411cea41887
 DEB_SNAPRESTORE_V   ?= $(SNAPRESTORE_VERSION)
 
 snaprestore-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE), \
-		https://git.cameronkatri.com/snaprestore/snapshot/snaprestore-$(SNAPRESTORE_VERSION).tar.zst)
-	$(call EXTRACT_TAR,snaprestore-$(SNAPRESTORE_VERSION).tar.zst,snaprestore-$(SNAPRESTORE_VERSION),snaprestore)
+		https://github.com/CRKatri/snaprestore/archive/$(SNAPRESTORE_COMMIT).tar.gz)
+	@echo "601d86ce0b0f6b9ba556a10f6437b7eb0d148047907874bbb4dcab5b945e8310  $(BUILD_SOURCE)/$(SNAPRESTORE_COMMIT).tar.gz" | shasum -a 256 -c -
+	$(call EXTRACT_TAR,$(SNAPRESTORE_COMMIT).tar.gz,snaprestore-$(SNAPRESTORE_COMMIT),snaprestore)
+	$(call DO_PATCH,snaprestore,snaprestore,-p1)
 
 ifneq ($(wildcard $(BUILD_WORK)/snaprestore/.build_complete),)
 snaprestore:
