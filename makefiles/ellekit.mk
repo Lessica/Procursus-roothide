@@ -18,15 +18,25 @@ ELLEKIT_COMMIT  := 5fe185d0f83da32570d4b89ba1c3cde6062e8c33
 ELLEKIT_VERSION := 0.1+git20221221.$(shell echo $(ELLEKIT_COMMIT) | cut -c -7)
 DEB_ELLEKIT_V   ?= $(ELLEKIT_VERSION)
 
-ELLEKIT_COMMON_XCB := -sdk $(PLATFORM) -configuration Release \
+ELLEKIT_COMMON_XCB := -jobs $(CORE_COUNT) -sdk "$(TARGET_SYSROOT)" SWIFT_WHOLE_MODULE_OPTIMIZATION_THREADS=$(CORE_COUNT) \
+	CLANG_MODULE_CACHE_PATH="$(BUILD_WORK)/ellekit/build/ModuleCache" -configuration Release \
 			CODE_SIGN_IDENTITY='' CODE_SIGNING_ALLOWED=NO \
 			BUILD_LIBRARIES_FOR_DISTRIBUTION=YES LD="$(CC)" ARCHS="$(MEMO_ARCH)" \
 			$(MEMO_DEPLOYMENT)
 
+ifeq ($(MEMO_TARGET),iphoneos-arm64-roothide)
+ELLEKIT_COMMON_XCB += LIBRARY_SEARCH_PATHS="$(BUILD_BASE)/usr/lib" \
+	GCC_PREPROCESSOR_DEFINITIONS="ROOT_HIDE=1" \
+	SWIFT_ACTIVE_COMPILATION_CONDITIONS="ROOTHIDE" \
+	OTHER_LDFLAGS="-lroothide"
+endif
+
 ellekit-setup: setup
 	$(call GITHUB_ARCHIVE,evelyneee,ellekit,$(ELLEKIT_COMMIT),$(ELLEKIT_COMMIT))
 	$(call EXTRACT_TAR,ellekit-$(ELLEKIT_COMMIT).tar.gz,ellekit-$(ELLEKIT_COMMIT),ellekit)
-#	$(call DO_PATCH,ellekit,ellekit,-p1)
+ifeq ($(MEMO_TARGET),iphoneos-arm64-roothide)
+	$(call DO_PATCH,ellekit/roothide,ellekit,-p1)
+endif
 
 ifneq ($(wildcard $(BUILD_WORK)/ellekit/.build_complete),)
 ellekit:
@@ -37,13 +47,13 @@ ifeq ($(PLATFORM),iphoneos)
 	for target in launchd ellekit; do \
 		cd $(BUILD_WORK)/ellekit && xcodebuild \
 			-target $$target \
-			$(ELLEKIT_COMMON_XCB) ARCHS="arm64 arm64e"; \
+			$(ELLEKIT_COMMON_XCB) ARCHS="arm64 arm64e" || exit $$?; \
 	done
 else ifeq ($(PLATFORM),macosx)
 	for target in launchd ellekit; do \
 		cd $(BUILD_WORK)/ellekit && xcodebuild \
 			-target $$target \
-			$(ELLEKIT_COMMON_XCB) ARCHS="arm64 arm64e x86_64"; \
+			$(ELLEKIT_COMMON_XCB) ARCHS="arm64 arm64e x86_64" || exit $$?; \
 	done
 else
 	@echo "### MEMO: Platform not currently supported for ellekit build"

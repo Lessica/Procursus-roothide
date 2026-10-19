@@ -1,0 +1,59 @@
+--- a/ellekitc/include/ellekit.h
++++ b/ellekitc/include/ellekit.h
+@@ -1,3 +1,7 @@
++#ifdef ROOT_HIDE
++/* RootHide C ABI; keep unrelated bootstrap headers out of SDK modules. */
++extern const char *jbroot(const char *path);
++#endif
+ 
+ #include <mach/mach.h>
+ 
+--- a/loader/pac.h
++++ b/loader/pac.h
+@@ -1,3 +1,7 @@
++#ifdef ROOT_HIDE
++/* RootHide C ABI; keep unrelated bootstrap headers out of SDK modules. */
++extern const char *jbroot(const char *path);
++#endif
+ 
+ #include <mach/arm/thread_status.h>
+ #include <mach/mach.h>
+--- a/loader/main.swift
++++ b/loader/main.swift
+@@ -28,7 +28,9 @@
+ class retain {
+     
+     static func getPath() -> String {
+-        #if os(macOS)
++        #if ROOTHIDE
++        return String(cString: jbroot("/usr/lib/ellekit/pspawn.dylib"))
++        #elseif os(macOS)
+         return "/Library/TweakInject/pspawn.dylib"
+         #else
+         if access("/usr/lib/ellekit/pspawn.dylib", F_OK) == 0 {
+--- a/launchd/Tweak.swift
++++ b/launchd/Tweak.swift
+@@ -32,7 +32,9 @@
+ }
+ 
+ func getTweaksPath() -> String {
+-    #if os(macOS)
++    #if ROOTHIDE
++    return String(cString: jbroot("/usr/lib/TweakInject/"))
++    #elseif os(macOS)
+     return "/Library/TweakInject/"
+     #else
+     if access("/usr/lib/TweakInject/", F_OK) == 0 {
+--- a/launchd/entry.swift
++++ b/launchd/entry.swift
+@@ -6,7 +6,9 @@
+         selfPath = path
+         return
+     }
+-    #if os(macOS)
++    #if ROOTHIDE
++    selfPath = String(cString: jbroot("/usr/lib/ellekit/pspawn.dylib"))
++    #elseif os(macOS)
+     selfPath = "/Library/TweakInject/pspawn.dylib"
+     #else
+     if access("/usr/lib/ellekit/pspawn.dylib", F_OK) == 0 {
