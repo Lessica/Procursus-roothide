@@ -29,6 +29,30 @@ Here are a few changes over other existing build-systems
 ## Contributing
 Contributions (Issues or Pull Requests) are welcome with open arms. Check out the [contribution guidelines](./CONTRIBUTING.md) before helping out.
 
+## RootHide host tools
+
+RootHide builds require patched host `ldid` and `symredirect` on `PATH`. Restore their sources from the versions in [ldid.mk](makefiles/ldid.mk) and [roothide.mk](makefiles/roothide.mk), applying the checked-in patches before compiling for the host. The following prepares sources only; set `CHECKOUT` to this checkout's absolute path and use a fresh directory beneath it:
+
+```sh
+: "${CHECKOUT:?Set CHECKOUT to the absolute checkout path}"
+HOST_TOOL_ROOT="$CHECKOUT/build_work/host-tools"
+(
+set -e
+test ! -e "$HOST_TOOL_ROOT"
+mkdir -p "$HOST_TOOL_ROOT/src" "$HOST_TOOL_ROOT/bin"
+git clone --depth 1 --branch v2.1.5-procursus7 https://github.com/ProcursusTeam/ldid.git "$HOST_TOOL_ROOT/src/ldid"
+for patch in bundle-code-signing-flags.patch entitlement-memory.patch preserve-linkedit-extent.patch; do
+    patch -d "$HOST_TOOL_ROOT/src/ldid" -p1 < "$CHECKOUT/build_patch/ldid/$patch" || exit 1
+done
+git init "$HOST_TOOL_ROOT/src/libroothide"
+git -C "$HOST_TOOL_ROOT/src/libroothide" fetch --depth 1 https://github.com/roothide/libroothide.git 7764c54759009272b4f2f23c18c62b21794fe6dd
+git -C "$HOST_TOOL_ROOT/src/libroothide" checkout --detach FETCH_HEAD
+patch -d "$HOST_TOOL_ROOT/src/libroothide" -p1 < "$CHECKOUT/build_patch/roothide/symredirect-universal.diff"
+)
+```
+
+Host compilation needs a host C++ toolchain and, for `ldid`, host OpenSSL/libcrypto and libplist headers and libraries. Select the compiler, macOS SDK and dependency prefixes explicitly; keep the login `HOME` and place generated tools in `$HOST_TOOL_ROOT/bin`, then prepend that directory to `PATH`. Do not use the iOS libraries or package-install targets to prepare host tools. These instructions prepare the patched sources; host dependency installation and compilation remain manual. The Linux setup script still clones `ldid` HEAD and does not supply these pinned, patched tools.
+
 ## Credits
 Build system created by [Diatrus](https://twitter.com/Diatrus) and [Kirb](https://twitter.com/hbkirb). Built better by all our wonderful contributors. Made worth it by people like you!
 
