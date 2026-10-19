@@ -5,7 +5,7 @@ endif
 SUBPROJECTS    += xtrans
 XTRANS_VERSION := 1.4.0
 XTRANS_EPOCH   := 1.5.0
-DEB_XTRANS_V   ?= $(XTRANS_EPOCH)+really$(XTRANS_VERSION)-1
+DEB_XTRANS_V   ?= $(XTRANS_EPOCH)+really$(XTRANS_VERSION)-2
 
 xtrans-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://www.x.org/archive/individual/lib/xtrans-$(XTRANS_VERSION).tar.bz2{$(comma).sig})
@@ -33,7 +33,7 @@ xtrans-package: xtrans-stage
 	mkdir -p $(BUILD_DIST)/xtrans-dev/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)
 
 	# xtrans.mk Prep xtrans-dev
-	cp -a $(BUILD_STAGE)/xtrans/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/ $(BUILD_DIST)/xtrans-dev/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)
+	cp -a $(BUILD_STAGE)/xtrans/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/. $(BUILD_DIST)/xtrans-dev/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)
 
 	# xtrans.mk Make .debs
 	$(call PACK,xtrans-dev,DEB_XTRANS_V)

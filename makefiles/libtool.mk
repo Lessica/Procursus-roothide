@@ -4,7 +4,9 @@ endif
 
 SUBPROJECTS     += libtool
 LIBTOOL_VERSION := 2.4.7
-DEB_LIBTOOL_V   ?= $(LIBTOOL_VERSION)
+DEB_LIBTOOL_V   ?= $(LIBTOOL_VERSION)-1
+LIBTOOL_SYS_LIB_SEARCH_PATHS := $(sort $(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib $(MEMO_PREFIX)$(MEMO_SUB_PREFIX)$(MEMO_ALT_PREFIX)/lib /usr/lib /usr/local/lib)
+LIBTOOL_SYS_LIB_DLSEARCH_PATHS := $(sort $(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib $(MEMO_PREFIX)$(MEMO_SUB_PREFIX)$(MEMO_ALT_PREFIX)/lib /usr/local/lib /lib /usr/lib)
 
 libtool-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://ftpmirror.gnu.org/libtool/libtool-$(LIBTOOL_VERSION).tar.gz{$(comma).sig})
@@ -32,6 +34,16 @@ endif
 libtool-package: libtool-stage
 	# libtool.mk Package Structure
 	rm -rf $(BUILD_DIST)/libtool{,-bin} $(BUILD_DIST)/libltdl{7,-dev}
+	# Remove host-only compiler and SDK paths from the installed runtime script.
+	sed -i -E \
+		-e 's#^LTCC=".*"$$#LTCC="clang"#' \
+		-e 's#^LTCFLAGS=".*"$$#LTCFLAGS="-arch $(MEMO_ARCH) $(PLATFORM_VERSION_MIN)"#' \
+		-e 's#^sys_lib_search_path_spec=".*"$$#sys_lib_search_path_spec="$(LIBTOOL_SYS_LIB_SEARCH_PATHS)"#' \
+		-e 's#^sys_lib_dlsearch_path_spec=".*"$$#sys_lib_dlsearch_path_spec="$(LIBTOOL_SYS_LIB_DLSEARCH_PATHS)"#' \
+		-e 's#^CC="([^\"]*/)?(cc|gcc|clang)"$$#CC="clang"#' \
+		-e 's#^CC="([^\"]*/)?(c\+\+|g\+\+|clang\+\+)"$$#CC="clang++"#' \
+		-e 's#^lt_truncate_bin=".*"$$#lt_truncate_bin="dd bs=4096 count=1"#' \
+		$(BUILD_STAGE)/libtool$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/glibtool
 	mkdir -p $(BUILD_DIST)/libtool/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/{bin,share/{man/man1,libtool,aclocal}} \
 		$(BUILD_DIST)/libtool-bin/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/{bin,share/man/man1} \
 		$(BUILD_DIST)/libltdl7/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib \
