@@ -12,7 +12,22 @@ DEB_NODEJS_LTS_V   ?= $(NODEJS_LTS_VERSION)
 
 ifeq ($(UNAME),Linux)
 NODEJS_HOST := linux
+else ifeq ($(UNAME),Darwin)
+NODEJS_HOST := mac
 endif
+
+NODEJS_PYTHON ?= python3
+NODEJS_HOST_ARCH := $(if $(filter x86_64,$(UNAME_M)),x64,$(if $(filter aarch64,$(UNAME_M)),arm64,$(UNAME_M)))
+NODEJS_MACOS_HOST_MIN := $(if $(filter Darwin,$(UNAME)),-mmacosx-version-min=$(MACOSX_DEPLOYMENT_TARGET))
+
+NODEJS_MAKE_FLAGS := \
+	PYTHON="$(NODEJS_PYTHON)" \
+	CFLAGS_host="$(CFLAGS_FOR_BUILD) $(NODEJS_MACOS_HOST_MIN) -Wreturn-type $(if $(filter Darwin,$(UNAME)),-Wno-error=deprecated-non-prototype)" \
+	CXXFLAGS_host="$(CXXFLAGS_FOR_BUILD) $(NODEJS_MACOS_HOST_MIN)" \
+	CPPFLAGS_host="$(CPPFLAGS_FOR_BUILD)" \
+	LDFLAGS_host="$(LDFLAGS_FOR_BUILD) $(NODEJS_MACOS_HOST_MIN)" \
+	CFLAGS="$(CFLAGS) -Wreturn-type -Wno-error=deprecated-non-prototype" \
+	LDFLAGS="$(LDFLAGS) -undefined dynamic_lookup"
 
 ifeq ($(PLATFORM),iphoneos)
 NODEJS_TARGET := ios
@@ -36,10 +51,12 @@ NODEJS_COMMON_FLAGS := \
 nodejs-setup: setup
 	$(call GITHUB_ARCHIVE,1Conan,node,v$(NODEJS_VERSION),v$(NODEJS_VERSION)-ios)
 	$(call EXTRACT_TAR,node-v$(NODEJS_VERSION).tar.gz,node-$(NODEJS_VERSION)-ios,nodejs)
+	$(call DO_PATCH,nodejs,nodejs,-p1)
 
 nodejs-lts-setup: setup
 	$(call GITHUB_ARCHIVE,1Conan,node,v$(NODEJS_LTS_VERSION),v$(NODEJS_LTS_VERSION)-ios)
 	$(call EXTRACT_TAR,node-v$(NODEJS_LTS_VERSION).tar.gz,node-$(NODEJS_LTS_VERSION)-ios,nodejs-lts)
+	$(call DO_PATCH,nodejs,nodejs-lts,-p1)
 
 ifeq (,$(NODEJS_HOST))
 nodejs:
@@ -53,25 +70,27 @@ nodejs:
 else
 nodejs: nodejs-setup nghttp2 openssl brotli libc-ares libuv1
 	cd $(BUILD_WORK)/nodejs;\
-	CC_host="$(CC_FOR_BUILD)" \
-	CXX_host="$(CXX_FOR_BUILD) -std=gnu++14" \
+	CC_host="$(CC_FOR_BUILD) $(NODEJS_MACOS_HOST_MIN)" \
+	CXX_host="$(CXX_FOR_BUILD) $(NODEJS_MACOS_HOST_MIN) -std=gnu++14" \
 	AR_host="$(AR_FOR_BUILD)" \
-	CFLAGS_host="$(CFLAGS_FOR_BUILD) -Wreturn-type" \
-	CXXFLAGS_host="$(CXXFLAGS_FOR_BUILD)" \
+	CFLAGS_host="$(CFLAGS_FOR_BUILD) $(NODEJS_MACOS_HOST_MIN) -Wreturn-type $(if $(filter Darwin,$(UNAME)),-Wno-error=deprecated-non-prototype)" \
+	CXXFLAGS_host="$(CXXFLAGS_FOR_BUILD) $(NODEJS_MACOS_HOST_MIN)" \
 	CPPFLAGS_host="$(CPPFLAGS_FOR_BUILD)" \
-	LDFLAGS_host="$(LDFLAGS_FOR_BUILD)" \
+	LDFLAGS_host="$(LDFLAGS_FOR_BUILD) $(NODEJS_MACOS_HOST_MIN)" \
 	SDKROOT="$(TARGET_SYSROOT)" \
 	CXX="$(CXX) -std=gnu++14" \
-	CFLAGS="$(CFLAGS) -Wreturn-type -DOPENSSLDIR=$(MEMO_PREFIX)/etc/ssl" \
+	CFLAGS="$(CFLAGS) -Wreturn-type" \
 	CXXFLAGS="$(CXXFLAGS)" \
 	LDFLAGS="$(LDFLAGS) -undefined dynamic_lookup" \
 	PKG_CONFIG_PATH="$(BUILD_BASE)$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/pkgconfig" \
-	GYP_DEFINES="target_arch=$(MEMO_ARCH) host_os=$(NODEJS_HOST) target_os=$(NODEJS_TARGET)" \
-	./configure \
+	GYP_DEFINES="target_arch=$(MEMO_ARCH) host_arch=$(NODEJS_HOST_ARCH) host_os=$(NODEJS_HOST) target_os=$(NODEJS_TARGET)" \
+	$(NODEJS_PYTHON) configure \
 		$(NODEJS_COMMON_FLAGS)
 
-	+$(MAKE) -C $(BUILD_WORK)/nodejs
-	+$(MAKE) -C $(BUILD_WORK)/nodejs install \
+	+$(MAKE) -C $(BUILD_WORK)/nodejs $(NODEJS_MAKE_FLAGS) PATH="$(BUILD_WORK)/nodejs/out/tools/bin:$(PATH)"
+	# AFTER_BUILD compresses staged manuals; discard the previous install's copies.
+	rm -f $(BUILD_STAGE)/nodejs/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share/man/man1/node.1.*
+	+$(MAKE) -C $(BUILD_WORK)/nodejs install $(NODEJS_MAKE_FLAGS) PATH="$(BUILD_WORK)/nodejs/out/tools/bin:$(PATH)" \
 		DESTDIR=$(BUILD_STAGE)/nodejs
 
 	mkdir -p $(BUILD_STAGE)/nodejs/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin
@@ -91,27 +110,28 @@ nodejs-lts:
 else
 nodejs-lts: nodejs-lts-setup nghttp2 openssl brotli libc-ares libuv1
 	cd $(BUILD_WORK)/nodejs-lts;\
-	CC_host="$(CC_FOR_BUILD)" \
-	CXX_host="$(CXX_FOR_BUILD) -std=gnu++14" \
+	CC_host="$(CC_FOR_BUILD) $(NODEJS_MACOS_HOST_MIN)" \
+	CXX_host="$(CXX_FOR_BUILD) $(NODEJS_MACOS_HOST_MIN) -std=gnu++14" \
 	AR_host="$(AR_FOR_BUILD)" \
-	CFLAGS_host="$(CFLAGS_FOR_BUILD) -Wreturn-type" \
-	CXXFLAGS_host="$(CXXFLAGS_FOR_BUILD)" \
+	CFLAGS_host="$(CFLAGS_FOR_BUILD) $(NODEJS_MACOS_HOST_MIN) -Wreturn-type $(if $(filter Darwin,$(UNAME)),-Wno-error=deprecated-non-prototype)" \
+	CXXFLAGS_host="$(CXXFLAGS_FOR_BUILD) $(NODEJS_MACOS_HOST_MIN)" \
 	CPPFLAGS_host="$(CPPFLAGS_FOR_BUILD)" \
-	LDFLAGS_host="$(LDFLAGS_FOR_BUILD)" \
+	LDFLAGS_host="$(LDFLAGS_FOR_BUILD) $(NODEJS_MACOS_HOST_MIN)" \
 	SDKROOT="$(TARGET_SYSROOT)" \
 	CXX="$(CXX) -std=gnu++14" \
 	CFLAGS="$(CFLAGS) -Wreturn-type" \
 	CXXFLAGS="$(CXXFLAGS)" \
 	LDFLAGS="$(LDFLAGS) -undefined dynamic_lookup" \
 	PKG_CONFIG_PATH="$(BUILD_BASE)$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/pkgconfig" \
-	GYP_DEFINES="target_arch=$(MEMO_ARCH) host_os=$(NODEJS_HOST) target_os=$(NODEJS_TARGET)" \
-	./configure \
+	GYP_DEFINES="target_arch=$(MEMO_ARCH) host_arch=$(NODEJS_HOST_ARCH) host_os=$(NODEJS_HOST) target_os=$(NODEJS_TARGET)" \
+	$(NODEJS_PYTHON) configure \
 		$(NODEJS_COMMON_FLAGS) \
 		--shared-openssl
 
-	+$(MAKE) -C $(BUILD_WORK)/nodejs-lts
-	+$(MAKE) -C $(BUILD_WORK)/nodejs-lts install \
-		DESTDIR=$(BUILD_STAGE)/nodejs
+	+$(MAKE) -C $(BUILD_WORK)/nodejs-lts $(NODEJS_MAKE_FLAGS) PATH="$(BUILD_WORK)/nodejs-lts/out/tools/bin:$(PATH)"
+	rm -f $(BUILD_STAGE)/nodejs-lts/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share/man/man1/node.1.*
+	+$(MAKE) -C $(BUILD_WORK)/nodejs-lts install $(NODEJS_MAKE_FLAGS) PATH="$(BUILD_WORK)/nodejs-lts/out/tools/bin:$(PATH)" \
+		DESTDIR=$(BUILD_STAGE)/nodejs-lts
 
 	mkdir -p $(BUILD_STAGE)/nodejs-lts/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin
 	cp -a $(BUILD_WORK)/nodejs-lts/out/Release/node $(BUILD_STAGE)/nodejs-lts/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin

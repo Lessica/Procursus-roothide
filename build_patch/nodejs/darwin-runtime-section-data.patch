@@ -1,0 +1,26 @@
+--- a/deps/v8/src/base/platform/platform-macos.cc
++++ b/deps/v8/src/base/platform/platform-macos.cc
+@@ -49,18 +49,18 @@
+   for (unsigned int i = 0; i < images_count; ++i) {
+     const mach_header* header = _dyld_get_image_header(i);
+     if (header == nullptr) continue;
++    unsigned long size;
+ #if V8_HOST_ARCH_I32
+-    unsigned int size;
+-    char* code_ptr = getsectdatafromheader(header, SEG_TEXT, SECT_TEXT, &size);
++    uint8_t* code_ptr = getsectiondata(header, SEG_TEXT, SECT_TEXT, &size);
+ #else
+-    uint64_t size;
+-    char* code_ptr = getsectdatafromheader_64(
++    uint8_t* code_ptr = getsectiondata(
+         reinterpret_cast<const mach_header_64*>(header), SEG_TEXT, SECT_TEXT,
+         &size);
+ #endif
+     if (code_ptr == nullptr) continue;
+     const intptr_t slide = _dyld_get_image_vmaddr_slide(i);
+-    const uintptr_t start = reinterpret_cast<uintptr_t>(code_ptr) + slide;
++    // getsectiondata returns a runtime pointer with the image slide applied.
++    const uintptr_t start = reinterpret_cast<uintptr_t>(code_ptr);
+     result.push_back(SharedLibraryAddress(_dyld_get_image_name(i), start,
+                                           start + size, slide));
+   }

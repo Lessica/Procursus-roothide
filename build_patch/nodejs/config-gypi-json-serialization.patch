@@ -1,0 +1,41 @@
+--- a/tools/js2c.py
++++ b/tools/js2c.py
+@@ -32,6 +32,8 @@
+ that are used for embedding JavaScript code into the Node.js binary.
+ """
+ import argparse
++import ast
++import json
+ import os
+ import re
+ import functools
+@@ -164,16 +166,19 @@
+ 
+ 
+ def jsonify(config):
+-  # 1. string comments
+-  config = re.sub(r'#.*?\n', '', config)
+-  # 2. join multiline strings
+-  config = re.sub(r"'$\s+'", '', config, flags=re.M)
+-  # 3. normalize string literals from ' into "
+-  config = re.sub('\'', '"', config)
+-  # 4. turn pseudo-booleans strings into Booleans
+-  config = re.sub('"true"', 'true', config)
+-  config = re.sub('"false"', 'false', config)
+-  return config
++  # GYP files are Python literals. Preserve quoted build conditions and strings.
++  def normalize(value):
++    if isinstance(value, dict):
++      return {key: normalize(item) for key, item in value.items()}
++    if isinstance(value, (list, tuple)):
++      return [normalize(item) for item in value]
++    if value == 'true':
++      return True
++    if value == 'false':
++      return False
++    return value
++
++  return json.dumps(normalize(ast.literal_eval(config)))
+ 
+ 
+ def write_if_chaged(content, target):
