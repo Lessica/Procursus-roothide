@@ -5,7 +5,7 @@ endif
 SUBPROJECTS               += liboffsetfinder64
 LIBOFFSETFINDER64_VERSION := 132
 LIBOFFSETFINDER64_COMMIT  := 35d3411bf675a83bdb768bc0ec26fe2344be16f3
-DEB_LIBOFFSETFINDER64_V   ?= $(LIBOFFSETFINDER64_VERSION)-1
+DEB_LIBOFFSETFINDER64_V   ?= $(LIBOFFSETFINDER64_VERSION)-2
 
 liboffsetfinder64-setup: setup
 	$(call GITHUB_ARCHIVE,tihmstar,libpatchfinder,$(LIBOFFSETFINDER64_COMMIT),$(LIBOFFSETFINDER64_COMMIT),liboffsetfinder64)
@@ -25,6 +25,17 @@ liboffsetfinder64: liboffsetfinder64-setup libgeneral libinsn img4tool openssl l
 	+$(MAKE) -C $(BUILD_WORK)/liboffsetfinder64
 	+$(MAKE) -C $(BUILD_WORK)/liboffsetfinder64 install \
 		DESTDIR="$(BUILD_STAGE)/liboffsetfinder64"
+ifneq ($(filter -flto%,$(CXXFLAGS)),)
+	# Keep normal installed LTO runtime; rebuild only the public archive.
+	find $(BUILD_WORK)/liboffsetfinder64/liboffsetfinder64 -name '*.lo' -type f -delete
+	rm -f $(BUILD_WORK)/liboffsetfinder64/liboffsetfinder64/liboffsetfinder64.la
+	+$(MAKE) -C $(BUILD_WORK)/liboffsetfinder64/liboffsetfinder64 liboffsetfinder64.la \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/liboffsetfinder64/liboffsetfinder64/Makefile) -fno-lto" \
+		CXXFLAGS="$$(sed -n 's/^CXXFLAGS = //p' $(BUILD_WORK)/liboffsetfinder64/liboffsetfinder64/Makefile) -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/liboffsetfinder64/liboffsetfinder64/Makefile) -fno-lto -static"
+	cp -a $(BUILD_WORK)/liboffsetfinder64/liboffsetfinder64/.libs/liboffsetfinder64.a \
+		$(BUILD_STAGE)/liboffsetfinder64/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	$(call AFTER_BUILD,copy)
 endif
 
