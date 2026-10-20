@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS       += libxrandr
 LIBXRANDR_VERSION := 1.5.2
-DEB_LIBXRANDR_V   ?= $(LIBXRANDR_VERSION)
+DEB_LIBXRANDR_V   ?= $(LIBXRANDR_VERSION)-1
 
 libxrandr-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://xorg.freedesktop.org/archive/individual/lib/libXrandr-$(LIBXRANDR_VERSION).tar.gz{$(comma).sig})
@@ -22,6 +22,14 @@ libxrandr: libxrandr-setup libx11 libxrender libxext xorgproto
 	+$(MAKE) -C $(BUILD_WORK)/libxrandr
 	+$(MAKE) -C $(BUILD_WORK)/libxrandr install \
 		DESTDIR=$(BUILD_STAGE)/libxrandr
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Preserve installed LTO outputs and configured static compiler flags.
+	+$(MAKE) -C $(BUILD_WORK)/libxrandr/src clean
+	+$(MAKE) -C $(BUILD_WORK)/libxrandr/src libXrandr.la \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/libxrandr/src/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/libxrandr/src/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -static"
+	cp -a $(BUILD_WORK)/libxrandr/src/.libs/libXrandr.a $(BUILD_STAGE)/libxrandr/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	$(call AFTER_BUILD,copy)
 endif
 

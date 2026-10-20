@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS         += libxinerama
 LIBXINERAMA_VERSION := 1.1.4
-DEB_LIBXINERAMA_V   ?= $(LIBXINERAMA_VERSION)
+DEB_LIBXINERAMA_V   ?= $(LIBXINERAMA_VERSION)-1
 
 libxinerama-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://www.x.org/archive/individual/lib/libXinerama-$(LIBXINERAMA_VERSION).tar.gz{$(comma).sig})
@@ -22,6 +22,14 @@ libxinerama: libxinerama-setup libx11 libxext xorgproto
 	+$(MAKE) -C $(BUILD_WORK)/libxinerama
 	+$(MAKE) -C $(BUILD_WORK)/libxinerama install \
 		DESTDIR=$(BUILD_STAGE)/libxinerama
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Preserve installed LTO outputs and configured static compiler flags.
+	+$(MAKE) -C $(BUILD_WORK)/libxinerama/src clean
+	+$(MAKE) -C $(BUILD_WORK)/libxinerama/src libXinerama.la \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/libxinerama/src/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/libxinerama/src/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -static"
+	cp -a $(BUILD_WORK)/libxinerama/src/.libs/libXinerama.a $(BUILD_STAGE)/libxinerama/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	$(call AFTER_BUILD,copy)
 endif
 
