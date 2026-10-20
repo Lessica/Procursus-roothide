@@ -7,10 +7,11 @@ LIBBOOST_VERSION  := 1.84.0
 DEB_LIBBOOST_V    ?= $(LIBBOOST_VERSION)-1
 
 ifneq (,$(findstring amd64,$(MEMO_TARGET)))
-LIBBOOST_CONFIGURE_ARGS := abi=sysv
+LIBBOOST_CONFIGURE_ARGS := abi=sysv architecture=x86
 else
-LIBBOOST_CONFIGURE_ARGS := abi=aapcs
+LIBBOOST_CONFIGURE_ARGS := abi=aapcs architecture=arm
 endif
+LIBBOOST_CONFIGURE_ARGS += target-os=darwin binary-format=mach-o address-model=64
 
 libboost-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://archives.boost.io/release/$(LIBBOOST_VERSION)/source/boost_$(shell echo $(LIBBOOST_VERSION) | sed 's/\./_/g').tar.bz2)
@@ -24,11 +25,11 @@ libboost: libboost-setup xz zstd icu4c python3
 	rm -rf $(BUILD_BASE)$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/libboost_*
 	$(BUILD_WORK)/libboost/tools/build/src/engine/build.sh --cxx="$(CXX_FOR_BUILD)" --cxxflags="-std=c++14 $(CXXFLAGS_FOR_BUILD)"
 ifneq (,$(findstring amd64,$(MEMO_TARGET)))
-	echo "using clang-darwin : x86 : $(CXX) : <compileflags>\"$(CPPFLAGS) -I$(BUILD_STAGE)/python3/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include/$$(ls $(BUILD_STAGE)/python3/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include)\" <cflags>\"$(CFLAGS) -I$(BUILD_STAGE)/python3/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include/$$(ls $(BUILD_STAGE)/python3/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include)\" <cxxflags>\"$(CXXFLAGS) -I$(BUILD_STAGE)/python3/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include/$$(ls $(BUILD_STAGE)/python3/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include)\" <linkflags>\"$(LDFLAGS)\" ;" > $(BUILD_WORK)/libboost/tools/build/src/user-config.jam
+	echo "using clang-darwin : x86 : $(CXX) : <archiver>$(AR) <ranlib>$(RANLIB) <compileflags>\"$(CPPFLAGS) -I$(BUILD_STAGE)/python3/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include/$$(ls $(BUILD_STAGE)/python3/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include)\" <cflags>\"$(CFLAGS) -I$(BUILD_STAGE)/python3/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include/$$(ls $(BUILD_STAGE)/python3/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include)\" <cxxflags>\"$(CXXFLAGS) -I$(BUILD_STAGE)/python3/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include/$$(ls $(BUILD_STAGE)/python3/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include)\" <linkflags>\"$(LDFLAGS)\" ;" > $(BUILD_WORK)/libboost/tools/build/src/user-config.jam
 else
-	echo "using clang-darwin : arm : $(CXX) : <compileflags>\"$(CPPFLAGS) -I$(BUILD_STAGE)/python3/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include/$$(ls $(BUILD_STAGE)/python3/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include)\" <cflags>\"$(CFLAGS) -I$(BUILD_STAGE)/python3/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include/$$(ls $(BUILD_STAGE)/python3/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include)\" <cxxflags>\"$(CXXFLAGS) -I$(BUILD_STAGE)/python3/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include/$$(ls $(BUILD_STAGE)/python3/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include)\" <linkflags>\"$(LDFLAGS) $(BUILD_BASE)$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)$(MEMO_ALT_PREFIX)/lib/liblzma.dylib\" ;" > $(BUILD_WORK)/libboost/tools/build/src/user-config.jam
+	echo "using clang-darwin : arm : $(CXX) : <archiver>$(AR) <ranlib>$(RANLIB) <compileflags>\"$(CPPFLAGS) -I$(BUILD_STAGE)/python3/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include/$$(ls $(BUILD_STAGE)/python3/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include)\" <cflags>\"$(CFLAGS) -I$(BUILD_STAGE)/python3/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include/$$(ls $(BUILD_STAGE)/python3/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include)\" <cxxflags>\"$(CXXFLAGS) -I$(BUILD_STAGE)/python3/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include/$$(ls $(BUILD_STAGE)/python3/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include)\" <linkflags>\"$(LDFLAGS) $(BUILD_BASE)$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)$(MEMO_ALT_PREFIX)/lib/liblzma.dylib\" ;" > $(BUILD_WORK)/libboost/tools/build/src/user-config.jam
 endif
-	echo "using python : $(PYTHON3_MAJOR_V) : /usr/bin/python3 : $(BUILD_STAGE)/python3/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include/python$(PYTHON3_MAJOR_V) : $(BUILD_STAGE)/python3/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib ;" >> $(BUILD_WORK)/libboost/tools/build/src/user-config.jam
+	echo "using python : $(PYTHON3_MAJOR_V) : $(shell command -v $(PYTHON_HOST)) : $(BUILD_STAGE)/python3/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include/python$(PYTHON3_MAJOR_V) : $(BUILD_STAGE)/python3/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib : <target-os>darwin ;" >> $(BUILD_WORK)/libboost/tools/build/src/user-config.jam
 	cd $(BUILD_WORK)/libboost && $(BUILD_WORK)/libboost/tools/build/src/engine/b2 \
 		-j$(CORE_COUNT) \
 		--prefix=$(BUILD_STAGE)/libboost/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX) \
@@ -56,7 +57,7 @@ endif
 	# F u boost!
 	for lib in $(BUILD_STAGE)/libboost/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/libboost_*.dylib; do \
 		$(I_N_T) -id @rpath/$$(basename $$lib .dylib).$(LIBBOOST_VERSION).dylib $$lib; \
-		for linked in $$(otool -L $$lib | grep @rpath | sed 's/\ .*$$//' | tr -d '\011\013\014\015\040' | grep "libboost"); do \
+		for linked in $$($(OTOOL) -L $$lib | grep @rpath | sed 's/\ .*$$//' | tr -d '\011\013\014\015\040' | grep "libboost"); do \
 			$(I_N_T) -change $$linked @rpath/$$(basename $$linked .dylib).$(LIBBOOST_VERSION).dylib $$lib; \
 		done; \
 		mv $$lib $$(dirname $$lib)/$$(basename $$lib .dylib).$(LIBBOOST_VERSION).dylib; \
