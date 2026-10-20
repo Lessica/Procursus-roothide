@@ -6,7 +6,7 @@ SUBPROJECTS    += x264
 X264_SOVERSION := 164
 X264_COMMIT    := baee400fa9ced6f5481a728138fed6e867b0ff7f
 X264_VERSION   := 0.$(X264_SOVERSION).3095+git$(shell echo $(X264_COMMIT) | cut -c -7)
-DEB_X264_V     ?= $(X264_VERSION)
+DEB_X264_V     ?= $(X264_VERSION)-1
 
 ifneq (,$(findstring arm64,$(MEMO_TARGET)))
 X264_CONFIGURE_ARGS += --extra-asflags='$(CFLAGS)'
@@ -33,6 +33,18 @@ x264: x264-setup
 	+$(MAKE) -C $(BUILD_WORK)/x264
 	+$(MAKE) -C $(BUILD_WORK)/x264 install \
 		DESTDIR=$(BUILD_STAGE)/x264
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Preserve installed LTO runtime and configured native assembly objects.
+	# Editing only config.mak CFLAGS keeps per-target PIC/export/bit-depth flags.
+	+$(MAKE) -C $(BUILD_WORK)/x264 --eval='procursus-static-clean:;rm -f $$(OBJS) $$(LIBX264)' procursus-static-clean
+	cp -p $(BUILD_WORK)/x264/config.mak $(BUILD_WORK)/x264/config.mak.lto
+	sed -E '/^CFLAGS=/ { s/(^|[[:space:]])-flto(=[^[:space:]]*)?//g; s/$$/ -fno-lto/; }' \
+		$(BUILD_WORK)/x264/config.mak.lto > $(BUILD_WORK)/x264/config.mak
+	touch -r $(BUILD_WORK)/x264/config.mak.lto $(BUILD_WORK)/x264/config.mak
+	+$(MAKE) -C $(BUILD_WORK)/x264 libx264.a
+	cp -a $(BUILD_WORK)/x264/libx264.a $(BUILD_STAGE)/x264/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+	mv $(BUILD_WORK)/x264/config.mak.lto $(BUILD_WORK)/x264/config.mak
+endif
 	$(call AFTER_BUILD,copy)
 endif
 
