@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS   += wget2
 WGET2_VERSION := 2.0.1
-DEB_WGET2_V   ?= $(WGET2_VERSION)-1
+DEB_WGET2_V   ?= $(WGET2_VERSION)-2
 
 wget2-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://ftpmirror.gnu.org/wget/wget2-$(WGET2_VERSION).tar.gz{$(comma).sig})
@@ -29,6 +29,17 @@ wget2: wget2-setup openssl pcre2 xz zstd nghttp2 libidn2 gettext brotli gpgme li
 	+$(MAKE) -C $(BUILD_WORK)/wget2
 	+$(MAKE) -C $(BUILD_WORK)/wget2 install \
 		DESTDIR="$(BUILD_STAGE)/wget2"
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Preserve installed LTO runtime; include both convenience libraries.
+	find $(BUILD_WORK)/wget2/{lib,libwget} -name '*.lo' -type f -delete
+	rm -f $(BUILD_WORK)/wget2/lib/libgnu.la $(BUILD_WORK)/wget2/libwget/{libcsstokenizer,libwget}.la
+	+$(MAKE) -C $(BUILD_WORK)/wget2/lib libgnu.la \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/wget2/lib/Makefile) -fno-lto"
+	+$(MAKE) -C $(BUILD_WORK)/wget2/libwget libcsstokenizer.la libwget.la \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/wget2/libwget/Makefile) -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/wget2/libwget/Makefile) -fno-lto -static"
+	cp -a $(BUILD_WORK)/wget2/libwget/.libs/libwget.a $(BUILD_STAGE)/wget2/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	$(call AFTER_BUILD,copy)
 endif
 
