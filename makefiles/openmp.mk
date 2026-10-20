@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS    += openmp
 OPENMP_VERSION := 12.0.0
-DEB_OPENMP_V   ?= $(OPENMP_VERSION)
+DEB_OPENMP_V   ?= $(OPENMP_VERSION)-1
 
 openmp-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://github.com/llvm/llvm-project/releases/download/llvmorg-$(OPENMP_VERSION)/openmp-$(OPENMP_VERSION).src.tar.xz)
@@ -30,6 +30,8 @@ openmp: openmp-setup
 	# Static lib
 	cd $(BUILD_WORK)/openmp && cmake . \
 		$(DEFAULT_CMAKE_FLAGS) \
+		-DCMAKE_C_FLAGS="$(filter-out -flto%,$(CFLAGS)) -fno-lto" \
+		-DCMAKE_CXX_FLAGS="$(filter-out -flto%,$(CXXFLAGS)) -fno-lto" \
 		-DLIBOMP_INSTALL_ALIASES=OFF \
 		-DLIBOMP_ENABLE_SHARED=OFF \
 		-DLIBOMP_LIB_NAME=libomp \
