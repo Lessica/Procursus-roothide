@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS    += xapian
 XAPIAN_VERSION := 1.4.17
-DEB_XAPIAN_V   ?= $(XAPIAN_VERSION)
+DEB_XAPIAN_V   ?= $(XAPIAN_VERSION)-1
 
 xapian-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://oligarchy.co.uk/xapian/$(XAPIAN_VERSION)/xapian-core-$(XAPIAN_VERSION).tar.xz)
@@ -23,6 +23,15 @@ xapian: xapian-setup uuid
 	+$(MAKE) -C $(BUILD_WORK)/xapian
 	+$(MAKE) -C $(BUILD_WORK)/xapian install \
 		DESTDIR=$(BUILD_STAGE)/xapian
+ifneq ($(filter -flto%,$(CXXFLAGS)),)
+	# Keep installed LTO programs/dylib; rebuild only the public archive.
+	find $(BUILD_WORK)/xapian -name '*.lo' -type f -delete
+	rm -f $(BUILD_WORK)/xapian/libxapian.la
+	+$(MAKE) -C $(BUILD_WORK)/xapian libxapian.la \
+		CXXFLAGS="$$(sed -n 's/^CXXFLAGS = //p' $(BUILD_WORK)/xapian/Makefile) -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/xapian/Makefile) -fno-lto -static"
+	cp -a $(BUILD_WORK)/xapian/.libs/libxapian.a $(BUILD_STAGE)/xapian/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	$(call AFTER_BUILD,copy)
 endif
 
