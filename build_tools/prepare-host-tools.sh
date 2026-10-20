@@ -52,7 +52,7 @@ if [[ $HOST_PLATFORM == auto ]]; then
     esac
 fi
 case $HOST_PLATFORM in
-    linux) deps=(apt-get install -y build-essential clang perl git curl ca-certificates patch pkg-config libssl-dev libplist-dev python3 python3-venv python3-dev ninja-build autoconf automake libtool bison flex cmake gettext autopoint fakeroot dpkg-dev zstd gnupg groff docbook-xsl docbook-xml xsltproc po4a unzip xz-utils lzip tcl) ;;
+    linux) deps=(apt-get install -y build-essential clang perl git curl ca-certificates patch pkg-config libssl-dev libplist-dev python3 python3-venv python3-dev ninja-build autoconf automake libtool bison flex cmake gettext autopoint fakeroot dpkg-dev zstd gnupg groff docbook-xsl docbook-xml xsltproc po4a unzip xz-utils lzip tcl ghc) ;;
     macos) deps=(brew install bash make gpatch file-formula ncurses gnu-sed grep gnu-tar findutils coreutils bison flex autoconf automake libtool cmake gettext fakeroot dpkg zstd gnupg groff docbook-xsl po4a openssl@3 libplist pkg-config python@3.12 ninja) ;;
     ios) deps=(apt-get install -y clang make perl ncurses-bin git curl ca-certificates patch pkg-config openssl libssl-dev libplist-dev python3 libpython3.9-dev ninja bash coreutils findutils sed grep tar bison flex autoconf automake libtool cmake gettext fakeroot dpkg zstd gnupg groff docbook-xsl po4a unzip xz-utils ldid) ;;
     *) fail 'HOST_PLATFORM must be macos, linux or ios' ;;
@@ -238,6 +238,9 @@ fi
     'Cython==0.29.37' 'meson==0.64.0'
 "$HOST_TOOL_ROOT/venv/bin/python" -c 'import Cython; assert Cython.__version__ == "0.29.37"'
 "$HOST_TOOL_ROOT/venv/bin/meson" --version
+"$HOST_TOOL_ROOT/venv/bin/python" -m pip install --disable-pip-version-check \
+    -r "$CHECKOUT/build_misc/ghc/requirements-sphinx.txt"
+"$HOST_TOOL_ROOT/venv/bin/sphinx-build" --version
 # Source from bash/zsh; retain caller PATH and real HOME.
 {
     printf 'umask 022\n'
