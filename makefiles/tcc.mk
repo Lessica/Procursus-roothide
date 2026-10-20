@@ -5,7 +5,7 @@ endif
 SUBPROJECTS += tcc
 TCC_COMMIT  := 605538f46d277fe0931f72f032a24a675417ee2a
 TCC_VERSION := 0.9.27+git20230222.$(shell echo $(TCC_COMMIT) | cut -c -7)
-DEB_TCC_V   ?= $(TCC_VERSION)-1
+DEB_TCC_V   ?= $(TCC_VERSION)-2
 
 ### Host-runnable compilers from this exact source commit build all runtime
 ### archives.  The installed compiler programs themselves target the device.
@@ -51,6 +51,17 @@ tcc: tcc-setup
 	+$(MAKE) -C $(BUILD_WORK)/tcc install \
 		PATH="$(BUILD_WORK)/tcc-host:$(PATH)" CC_FOR_BUILD="$(CC_FOR_BUILD)" \
 		DESTDIR=$(BUILD_STAGE)/tcc
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Keep installed compiler programs and all host-TCC-generated runtimes.
+	# Preserve config.mak and Makefile-added defines/includes in the archive pass.
+	+cd $(BUILD_WORK)/tcc && cp config.mak config.mak.lto && \
+		trap 'mv -f config.mak.lto config.mak' EXIT && \
+		printf '%s\n' 'CFLAGS += -fno-lto' >> config.mak && \
+		$(AR) t libtcc.a | while IFS= read -r object; do rm -f "$$object"; done && \
+		rm -f libtcc.a && \
+		$(MAKE) libtcc.a && \
+		cp -a libtcc.a $(BUILD_STAGE)/tcc/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	$(call AFTER_BUILD)
 endif
 
