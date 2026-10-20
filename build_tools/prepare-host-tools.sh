@@ -241,6 +241,23 @@ fi
 "$HOST_TOOL_ROOT/venv/bin/python" -m pip install --disable-pip-version-check \
     -r "$CHECKOUT/build_misc/ghc/requirements-sphinx.txt"
 "$HOST_TOOL_ROOT/venv/bin/sphinx-build" --version
+if [[ $HOST_PLATFORM == linux ]]; then
+    export CARGO_HOME="$HOST_TOOL_ROOT/cargo" RUSTUP_HOME="$HOST_TOOL_ROOT/rustup"
+    case $(uname -m) in
+        aarch64|arm64) rust_host=aarch64-unknown-linux-gnu; rustup_sha=1cffbf51e63e634c746f741de50649bbbcbd9dbe1de363c9ecef64e278dba2b2 ;;
+        x86_64) rust_host=x86_64-unknown-linux-gnu; rustup_sha=6aeece6993e902708983b209d04c0d1dbb14ebb405ddb87def578d41f920f56d ;;
+        *) fail 'unsupported Linux Rust host architecture' ;;
+    esac
+    if [[ ! -x $CARGO_HOME/bin/rustup ]]; then
+        rustup_init="$HOST_TOOL_ROOT/cache/rustup-init-1.27.1-$rust_host"
+        curl --fail --location --retry 3 -o "$rustup_init" "https://static.rust-lang.org/rustup/archive/1.27.1/$rust_host/rustup-init"
+        printf '%s  %s\n' "$rustup_sha" "$rustup_init" | sha256sum -c -
+        chmod 755 "$rustup_init"
+        "$rustup_init" -y --no-modify-path --profile minimal --default-toolchain none
+    fi
+    "$CARGO_HOME/bin/rustup" toolchain install 1.79.0 --profile minimal --target aarch64-apple-ios --no-self-update
+    "$CARGO_HOME/bin/rustup" default 1.79.0
+fi
 # Source from bash/zsh; retain caller PATH and real HOME.
 {
     printf 'umask 022\n'
@@ -250,7 +267,11 @@ fi
     fi
     if [[ -n ${DOCBOOK_XSL:-} ]]; then printf 'export DOCBOOK_XSL=%q\n' "$DOCBOOK_XSL"; fi
     if [[ $HOST_PLATFORM == macos ]]; then printf 'export LIBTOOLIZE=glibtoolize\n'; fi
+    if [[ $HOST_PLATFORM == linux ]]; then
+        printf 'export CARGO_HOME=%q\nexport RUSTUP_HOME=%q\n' "$CARGO_HOME" "$RUSTUP_HOME"
+    fi
     printf 'export PATH=%q:%q:' "$HOST_TOOL_ROOT/bin" "$HOST_TOOL_ROOT/venv/bin"
+    if [[ $HOST_PLATFORM == linux ]]; then printf '%q:' "$CARGO_HOME/bin"; fi
     if [[ $HOST_PLATFORM == macos && -n ${host_gnu_paths[*]:-} ]]; then
         for host_gnu_path in "${host_gnu_paths[@]}"; do printf '%q:' "$host_gnu_path"; done
     fi
