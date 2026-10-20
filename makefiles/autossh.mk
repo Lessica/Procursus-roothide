@@ -20,6 +20,7 @@ autossh: autossh-setup
 	cd $(BUILD_WORK)/autossh && autoreconf -fi
 	cd $(BUILD_WORK)/autossh && ./configure \
 		$(DEFAULT_CONFIGURE_FLAGS) \
+		--with-ssh="$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/ssh" \
 		CFLAGS="$(CFLAGS)"
 	+$(MAKE) -C $(BUILD_WORK)/autossh
 	+$(MAKE) -C $(BUILD_WORK)/autossh install \
