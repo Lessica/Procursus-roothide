@@ -54,6 +54,11 @@ endif
 		--with-libintl-prefix="$(BUILD_BASE)/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)"
 	+$(MAKE) -C $(BUILD_WORK)/xz install \
 		DESTDIR="$(BUILD_STAGE)/xz"
+ifneq ($(MEMO_ALT_PREFIX),)
+	# Do not expose the decoder-only private library ahead of the public one.
+	rm -f $(BUILD_STAGE)/xz/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/liblzma.{a,la} \
+		$(BUILD_STAGE)/xz/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/pkgconfig/liblzma.pc
+endif
 	$(call AFTER_BUILD,copy)
 endif
 

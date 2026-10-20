@@ -31,6 +31,8 @@ ifneq ($(filter -flto%,$(CFLAGS)),)
 		CFLAGS="$$(sed -n 's/^CFLAGS[[:space:]]*=[[:space:]]*//p' $(BUILD_WORK)/libxvidcore/build/generic/platform.inc | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -fno-lto"
 	cp -a $(BUILD_WORK)/libxvidcore/build/generic/=build/libxvidcore.a $(BUILD_STAGE)/libxvidcore/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
 endif
+	# Expose the same dynamic link alias to dependent builds as the dev package.
+	$(LN_S) libxvidcore.4.dylib $(BUILD_STAGE)/libxvidcore/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/libxvidcore.dylib
 	$(call AFTER_BUILD,copy)
 endif
 
