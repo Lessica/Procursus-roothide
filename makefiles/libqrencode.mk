@@ -5,7 +5,7 @@ endif
 SUBPROJECTS               += libqrencode
 LIBQRENCODE_VERSION       := 4.1.1
 LIBQRENCODE_MAJOR_VERSION := $(shell echo $(LIBQRENCODE_VERSION) | cut -d'.' -f1)
-DEB_LIBQRENCODE_V         ?= $(LIBQRENCODE_VERSION)
+DEB_LIBQRENCODE_V         ?= $(LIBQRENCODE_VERSION)-1
 
 libqrencode-setup: setup
 	$(call GITHUB_ARCHIVE,fukuchi,libqrencode,$(LIBQRENCODE_VERSION),v$(LIBQRENCODE_VERSION))
@@ -22,6 +22,14 @@ libqrencode: libqrencode-setup libpng16
 	+$(MAKE) -C $(BUILD_WORK)/libqrencode
 	+$(MAKE) -C $(BUILD_WORK)/libqrencode install \
 		DESTDIR=$(BUILD_STAGE)/libqrencode
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Preserve installed LTO outputs and all configured static compiler flags.
+	+$(MAKE) -C $(BUILD_WORK)/libqrencode clean
+	+$(MAKE) -C $(BUILD_WORK)/libqrencode libqrencode.la \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/libqrencode/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/libqrencode/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -static"
+	cp -a $(BUILD_WORK)/libqrencode/.libs/libqrencode.a $(BUILD_STAGE)/libqrencode/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	$(call AFTER_BUILD,copy)
 endif
 
