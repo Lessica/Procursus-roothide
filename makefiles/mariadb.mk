@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS  		+= mariadb
 MARIADB_VERSION := 10.5.9
-DEB_MARIADB_V   ?= $(MARIADB_VERSION)
+DEB_MARIADB_V   ?= $(MARIADB_VERSION)-1
 
 mariadb-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE), \
@@ -100,6 +100,31 @@ mariadb: mariadb-import-executables openssl ncurses readline libevent curl lz4 l
 	+$(MAKE) -C $(BUILD_WORK)/mariadb
 	+$(MAKE) -C $(BUILD_WORK)/mariadb install \
 		DESTDIR="$(BUILD_STAGE)/mariadb"
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Keep installed LTO server/plugins; rebuild only static targets and folded helpers.
+	: > $(BUILD_WORK)/mariadb/.native-static-flags
+	cd $(BUILD_WORK)/mariadb && find . -name link.txt -not -path './host/*' | while read link; do \
+		grep -qE '(^|[[:space:]])[^[:space:]]*ar qc ' "$$link" || continue; \
+		base=$$(dirname "$$(dirname "$$(dirname "$$link")")"); \
+		for obj in $$(tr -d '"' < "$$link" | grep -oE '[^[:space:]]+\.dir/[^[:space:]]+\.(c|cc|cpp|cxx|m|mm)\.o'); do \
+			flags="$$base/$${obj%%.dir/*}.dir/flags.make"; \
+			if test -f "$$flags" && ! test -f "$$flags.lto"; then \
+				cp -p "$$flags" "$$flags.lto"; \
+				sed -E -i '/^(C|CXX)_FLAGS[^[:space:]]* =/ { s/(^|[[:space:]])-flto(=[^[:space:]]+)?//g; s/$$/ -fno-lto/; }' "$$flags"; \
+				touch -r "$$flags.lto" "$$flags"; echo "$$flags" >> .native-static-flags; \
+			fi; \
+			rm -f "$$base/$$obj"; \
+		done; \
+	done
+	# PCRE2 is an existing external-project configuration, folded into embedded.
+	+$(MAKE) -C $(BUILD_WORK)/mariadb/extra/pcre2/src/pcre2-build pcre2-8
+	+$(MAKE) -C $(BUILD_WORK)/mariadb mariadbclient mysqlservices mysqlserver
+	cd $(BUILD_WORK)/mariadb && while read flags; do mv -f "$$flags.lto" "$$flags"; done < .native-static-flags
+	rm -f $(BUILD_WORK)/mariadb/.native-static-flags
+	cp -a $(BUILD_WORK)/mariadb/libmariadb/libmariadb/libmariadbclient.a $(BUILD_STAGE)/mariadb/usr/lib/
+	cp -a $(BUILD_WORK)/mariadb/libmysqld/libmariadbd.a $(BUILD_STAGE)/mariadb/usr/lib/
+	cp -a $(BUILD_WORK)/mariadb/libservices/libmysqlservices.a $(BUILD_STAGE)/mariadb/usr/lib/
+endif
 	$(call AFTER_BUILD,copy,mariadb)
 endif
 
@@ -118,7 +143,11 @@ mariadb-package: mariadb-stage
 		for pattern in "$$@"; do for path in $$pattern; do \
 			if [ -e "$$path" ] || [ -L "$$path" ]; then \
 				mkdir -p "$$dest/$$(dirname "$$path")"; \
-				mv "$$path" "$$dest/$$path"; \
+				if [ -d "$$path" ] && [ ! -L "$$path" ] && [ -d "$$dest/$$path" ] && [ ! -L "$$dest/$$path" ]; then \
+					cp -a "$$path/." "$$dest/$$path/"; rm -rf "$$path"; \
+				else \
+					mv "$$path" "$$dest/$$path"; \
+				fi; \
 			fi; \
 		done; done; }; \
 	move_to libmariadb-dev-compat 'usr/lib/libmysqlclient*.a' 'usr/lib/libmysqlclient*.dylib'; \
@@ -182,6 +211,10 @@ mariadb-package: mariadb-stage
 	ln -s libmariadbd.dylib $(BUILD_DIST)/libmariadbd-dev/usr/lib/libmysqld.dylib
 	# The SDK liblzma is decode-only; embedded development needs the complete XZ library.
 	sed -i 's| -llzma | $$pkglibdir/../local/lib/liblzma.dylib |' $(BUILD_DIST)/libmariadb-dev/usr/bin/mysql_config
+ifneq ($(filter iphoneos%,$(MEMO_TARGET)),)
+	# The embedded server exposes a C API backed by C++ static objects.
+	sed -i '/^embedded_libs=/s/"$$/ -lc++"/' $(BUILD_DIST)/libmariadb-dev/usr/bin/mysql_config
+endif
 	# Connector/C's LGPL license is distinct from the server license.
 	set -e; for package in libmariadb3 libmariadb-dev libmariadb-dev-compat; do \
 		$(INSTALL) -Dm644 $(BUILD_WORK)/mariadb/libmariadb/COPYING.LIB $(BUILD_DIST)/$$package/usr/share/doc/$$package/COPYING.LIB; \
