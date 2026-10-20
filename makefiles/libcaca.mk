@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS     += libcaca
 LIBCACA_VERSION := 0.99.beta19
-DEB_LIBCACA_V   ?= $(LIBCACA_VERSION)-1
+DEB_LIBCACA_V   ?= $(LIBCACA_VERSION)-2
 
 libcaca-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),http://caca.zoy.org/files/libcaca/libcaca-$(LIBCACA_VERSION).tar.gz)
@@ -28,6 +28,18 @@ libcaca: libcaca-setup imlib2 slang2 ncurses
 	+$(MAKE) -C $(BUILD_WORK)/libcaca
 	+$(MAKE) -C $(BUILD_WORK)/libcaca install \
 		DESTDIR=$(BUILD_STAGE)/libcaca
+ifneq ($(filter -flto%,$(CFLAGS) $(CXXFLAGS)),)
+	# Keep installed LTO libraries/plugins/tools; replace public archives only.
+	find $(BUILD_WORK)/libcaca/{caca,cxx} -name '*.lo' -type f -delete
+	rm -f $(BUILD_WORK)/libcaca/caca/libcaca.la $(BUILD_WORK)/libcaca/cxx/libcaca++.la
+	+$(MAKE) -C $(BUILD_WORK)/libcaca/caca libcaca.la \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/libcaca/caca/Makefile) -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/libcaca/caca/Makefile) -fno-lto -static"
+	+$(MAKE) -C $(BUILD_WORK)/libcaca/cxx libcaca++.la \
+		CXXFLAGS="$$(sed -n 's/^CXXFLAGS = //p' $(BUILD_WORK)/libcaca/cxx/Makefile) -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/libcaca/cxx/Makefile) -fno-lto -static"
+	cp -a $(BUILD_WORK)/libcaca/{caca/.libs/libcaca.a,cxx/.libs/libcaca++.a} $(BUILD_STAGE)/libcaca/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	$(call AFTER_BUILD,copy)
 endif
 
