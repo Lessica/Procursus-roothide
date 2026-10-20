@@ -7,7 +7,7 @@ LIBIPATCHER_VERSION := 81
 LIBIPATCHER_COMMIT  := ad44d0da23f5120c3c77a72062bd627c50f37e71
 LIBIPATCHER_IBOOT32PATCHER_COMMIT := 266f2383874b7242ec65ad4feb8b89a4b6ac7215
 LIBIPATCHER_JSSY_COMMIT           := 10ee9e17ab48cbeccc1038e5d7e72c5421719a51
-DEB_LIBIPATCHER_V   ?= $(LIBIPATCHER_VERSION)-3
+DEB_LIBIPATCHER_V   ?= $(LIBIPATCHER_VERSION)-4
 
 libipatcher-setup: setup
 	$(call GITHUB_ARCHIVE,tihmstar,libipatcher,$(LIBIPATCHER_VERSION),$(LIBIPATCHER_VERSION))
@@ -16,6 +16,7 @@ libipatcher-setup: setup
 	$(call GITHUB_ARCHIVE,tihmstar,iBoot32Patcher,$(LIBIPATCHER_IBOOT32PATCHER_COMMIT),$(LIBIPATCHER_IBOOT32PATCHER_COMMIT))
 	$(call GITHUB_ARCHIVE,tihmstar,jssy,$(LIBIPATCHER_JSSY_COMMIT),$(LIBIPATCHER_JSSY_COMMIT))
 	rm -rf $(BUILD_WORK)/libipatcher/external/{jssy,iBoot32Patcher}
+	rm -f $(BUILD_WORK)/libipatcher/arm64-address-type.patch.done
 	$(call EXTRACT_TAR,jssy-$(LIBIPATCHER_JSSY_COMMIT).tar.gz,jssy-$(LIBIPATCHER_JSSY_COMMIT),libipatcher/external/jssy)
 	$(call EXTRACT_TAR,iBoot32Patcher-$(LIBIPATCHER_IBOOT32PATCHER_COMMIT).tar.gz,iBoot32Patcher-$(LIBIPATCHER_IBOOT32PATCHER_COMMIT),libipatcher/external/iBoot32Patcher)
 	$(call DO_PATCH,libipatcher,libipatcher,-p1)
@@ -36,11 +37,24 @@ libipatcher: libipatcher-setup libpng16 openssl img4tool liboffsetfinder64 libge
 		$(DEFAULT_CONFIGURE_FLAGS) \
 		CFLAGS="$(CFLAGS) -I$(BUILD_BASE)$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include/xpwn" \
 		CPPFLAGS="$(CPPFLAGS) -I$(BUILD_BASE)$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include/xpwn" \
-		LDFLAGS="$(LDFLAGS) -L$(BUILD_BASE)$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/xpwn"
+		LDFLAGS="$(LDFLAGS) -L$(BUILD_WORK)/xpwn/common -L$(BUILD_WORK)/xpwn/ipsw-patch -L$(BUILD_BASE)$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/xpwn"
 	+$(MAKE) -C $(BUILD_WORK)/libipatcher \
 		LIBS="-lcurl"
 	+$(MAKE) -C $(BUILD_WORK)/libipatcher install \
 		DESTDIR="$(BUILD_STAGE)/libipatcher"
+ifneq ($(filter -flto%,$(CXXFLAGS)),)
+	# Preserve normal LTO runtime, including original xpwn static link input;
+	# rebuild both folded convenience libraries together with the public archive.
+	find $(BUILD_WORK)/libipatcher -name '*.lo' -type f -delete
+	rm -f $(BUILD_WORK)/libipatcher/libipatcher/{libiBoot32Patcher,libjssy,libipatcher}.la
+	+$(MAKE) -C $(BUILD_WORK)/libipatcher/libipatcher libiBoot32Patcher.la libjssy.la libipatcher.la \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/libipatcher/libipatcher/Makefile) -fno-lto" \
+		CXXFLAGS="$$(sed -n 's/^CXXFLAGS = //p' $(BUILD_WORK)/libipatcher/libipatcher/Makefile) -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/libipatcher/libipatcher/Makefile) -fno-lto -static" \
+		LIBS="-lcurl"
+	cp -a $(BUILD_WORK)/libipatcher/libipatcher/.libs/libipatcher.a \
+		$(BUILD_STAGE)/libipatcher/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	$(call AFTER_BUILD,copy)
 endif
 
