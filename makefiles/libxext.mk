@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS     += libxext
 LIBXEXT_VERSION := 1.3.4
-DEB_LIBXEXT_V   ?= $(LIBXEXT_VERSION)-1
+DEB_LIBXEXT_V   ?= $(LIBXEXT_VERSION)-2
 
 libxext-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://xorg.freedesktop.org/archive/individual/lib/libXext-$(LIBXEXT_VERSION).tar.gz{$(comma).sig})
@@ -25,6 +25,14 @@ libxext: libxext-setup libx11 xorgproto
 	+$(MAKE) -C $(BUILD_WORK)/libxext
 	+$(MAKE) -C $(BUILD_WORK)/libxext install \
 		DESTDIR=$(BUILD_STAGE)/libxext
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Preserve installed LTO outputs and configured static compiler flags.
+	+$(MAKE) -C $(BUILD_WORK)/libxext/src clean
+	+$(MAKE) -C $(BUILD_WORK)/libxext/src libXext.la \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/libxext/src/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/libxext/src/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -static"
+	cp -a $(BUILD_WORK)/libxext/src/.libs/libXext.a $(BUILD_STAGE)/libxext/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	$(call AFTER_BUILD,copy)
 endif
 

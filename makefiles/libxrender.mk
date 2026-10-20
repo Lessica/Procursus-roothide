@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS        += libxrender
 LIBXRENDER_VERSION := 0.9.10
-DEB_LIBXRENDER_V   ?= $(LIBXRENDER_VERSION)
+DEB_LIBXRENDER_V   ?= $(LIBXRENDER_VERSION)-1
 
 libxrender-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://xorg.freedesktop.org/archive/individual/lib/libXrender-$(LIBXRENDER_VERSION).tar.gz{$(comma).sig})
@@ -22,6 +22,14 @@ libxrender: libxrender-setup libx11 xorgproto
 	+$(MAKE) -C $(BUILD_WORK)/libxrender
 	+$(MAKE) -C $(BUILD_WORK)/libxrender install \
 		DESTDIR=$(BUILD_STAGE)/libxrender
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Preserve installed LTO outputs and configured static compiler flags.
+	+$(MAKE) -C $(BUILD_WORK)/libxrender/src clean
+	+$(MAKE) -C $(BUILD_WORK)/libxrender/src libXrender.la \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/libxrender/src/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/libxrender/src/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -static"
+	cp -a $(BUILD_WORK)/libxrender/src/.libs/libXrender.a $(BUILD_STAGE)/libxrender/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	$(call AFTER_BUILD,copy)
 endif
 
