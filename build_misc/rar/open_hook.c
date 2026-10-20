@@ -54,6 +54,7 @@ static int open_hook(const char* path, int oflag, ...) {
 #include <signal.h>
 #include <sys/wait.h>
 #include <stdlib.h>
+#include <sys/types.h>
 #include <sys/ptrace.h>
 #include "litehook.h"
 

@@ -62,7 +62,10 @@ for name in clang clang++; do
  printf '#!/usr/bin/env bash\nexec %q --target=aarch64-apple-darwin -B%q -resource-dir=%q %s "$@"\n' "$compiler" "$toolbin" "$resource_dir" "$stdlib_flag" > "$HOST_TOOL_ROOT/bin/aarch64-apple-darwin-$name"
  chmod +x "$HOST_TOOL_ROOT/bin/aarch64-apple-darwin-$name"
 done
-ln -sf "$toolbin/tapi" "$HOST_TOOL_ROOT/bin/tapi"
+for name in tapi vtool; do
+ test -x "$toolbin/$name"
+ ln -sf "$toolbin/$name" "$HOST_TOOL_ROOT/bin/$name"
+done
 if [[ -z ${TARGET_SYSROOT:-} ]]; then
  archive="$HOST_TOOL_ROOT/downloads/iPhoneOS16.5.sdk.tar.xz"
  fetch 'https://github.com/theos/sdks/releases/download/master-146e41f/iPhoneOS16.5.sdk.tar.xz' "$archive"
