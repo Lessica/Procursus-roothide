@@ -8,7 +8,7 @@ else # ($(MEMO_TARGET),darwin-\*)
 SUBPROJECTS   += sudo
 endif # ($(MEMO_TARGET),darwin-\*)
 SUDO_VERSION  := 1.9.15p5
-DEB_SUDO_V    ?= $(SUDO_VERSION)
+DEB_SUDO_V    ?= $(SUDO_VERSION)-1
 
 sudo-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://www.sudo.ws/dist/sudo-$(SUDO_VERSION).tar.gz{$(comma).sig})
@@ -53,6 +53,15 @@ endif
 	+$(MAKE) -C $(BUILD_WORK)/sudo install \
 		DESTDIR=$(BUILD_STAGE)/sudo \
 		INSTALL_OWNER=''
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Keep installed programs and plugins; replace only the public util archive.
+	find $(BUILD_WORK)/sudo/lib/util -maxdepth 1 -name '*.lo' -type f -delete
+	rm -f $(BUILD_WORK)/sudo/lib/util/libsudo_util.la
+	+$(MAKE) -C $(BUILD_WORK)/sudo/lib/util libsudo_util.la \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/sudo/lib/util/Makefile) -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/sudo/lib/util/Makefile) -fno-lto -static"
+	cp -a $(BUILD_WORK)/sudo/lib/util/.libs/libsudo_util.a $(BUILD_STAGE)/sudo/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/libexec/sudo/
+endif
 ifeq (,$(findstring darwin,$(MEMO_TARGET)))
 	mkdir -p $(BUILD_STAGE)/sudo/$(MEMO_PREFIX)/etc/pam.d
 	cp -a $(BUILD_MISC)/pam/sudo $(BUILD_STAGE)/sudo/$(MEMO_PREFIX)/etc/pam.d
