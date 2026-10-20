@@ -4,7 +4,7 @@ endif
 
 STRAPPROJECTS += xz
 XZ_VERSION    := 5.4.4
-DEB_XZ_V      ?= $(XZ_VERSION)
+DEB_XZ_V      ?= $(XZ_VERSION)-1
 
 xz-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://web.archive.org/web/20230930004231id_/https://tukaani.org/xz/xz-5.4.4.tar.xz{.sig$(comma)})
@@ -26,6 +26,20 @@ xz: xz-setup gettext
 		--with-libintl-prefix="$(BUILD_BASE)/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)"
 	+$(MAKE) -C $(BUILD_WORK)/xz install \
 		DESTDIR="$(BUILD_STAGE)/xz"
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Keep the installed full-feature LTO dylib/tools; only its public static
+	# archive gets native objects with the same full-feature configuration.
+	+$(MAKE) -C $(BUILD_WORK)/xz/src/liblzma clean
+	+$(MAKE) -C $(BUILD_WORK)/xz/src/liblzma liblzma.la \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/xz/src/liblzma/Makefile) -fno-lto" \
+		CCASFLAGS="$$(sed -n 's/^CCASFLAGS = //p' $(BUILD_WORK)/xz/src/liblzma/Makefile) -fno-lto" \
+		LDFLAGS="$(filter-out -flto%,$(LDFLAGS)) -static"
+	cp -a $(BUILD_WORK)/xz/src/liblzma/.libs/liblzma.a \
+		$(BUILD_STAGE)/xz/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)$(MEMO_ALT_PREFIX)/lib/
+	# The pre-existing decoder-only pass below must compile its original LTO
+	# objects, rather than reuse this static-only native pass.
+	+$(MAKE) -C $(BUILD_WORK)/xz/src/liblzma clean
+endif
 	cd $(BUILD_WORK)/xz && ./configure -C \
 		$(DEFAULT_CONFIGURE_FLAGS) \
 		--disable-shared \
