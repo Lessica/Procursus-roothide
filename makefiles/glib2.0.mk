@@ -35,7 +35,7 @@ glib2.0:
 	@echo "Using previously built glib2.0."
 else
 glib2.0: glib2.0-setup gettext pcre2 libffi
-	cd $(BUILD_WORK)/glib2.0/build && PATH="$(DEVELOPER_DIR)/usr/bin:$$PATH" meson \
+	cd $(BUILD_WORK)/glib2.0/build && meson \
 		--cross-file cross.txt \
 		-Ddtrace=false \
 		-Dbsymbolic_functions=false \
