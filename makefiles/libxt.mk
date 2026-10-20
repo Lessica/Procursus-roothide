@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS   += libxt
 LIBXT_VERSION := 1.2.1
-DEB_LIBXT_V   ?= $(LIBXT_VERSION)
+DEB_LIBXT_V   ?= $(LIBXT_VERSION)-1
 
 libxt-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://xorg.freedesktop.org/archive/individual/lib/libXt-$(LIBXT_VERSION).tar.gz{$(comma).sig})
@@ -24,6 +24,14 @@ libxt: libxt-setup libx11 libice libsm
 	+$(MAKE) -C $(BUILD_WORK)/libxt
 	+$(MAKE) -C $(BUILD_WORK)/libxt install \
 		DESTDIR=$(BUILD_STAGE)/libxt
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Preserve generated StringDefs inputs/headers and the host makestrs helper.
+	+$(MAKE) -C $(BUILD_WORK)/libxt/src mostlyclean-compile mostlyclean-libtool clean-libtool clean-libLTLIBRARIES
+	+$(MAKE) -C $(BUILD_WORK)/libxt/src libXt.la \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/libxt/src/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/libxt/src/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -static"
+	cp -a $(BUILD_WORK)/libxt/src/.libs/libXt.a $(BUILD_STAGE)/libxt/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	$(call AFTER_BUILD,copy)
 endif
 
