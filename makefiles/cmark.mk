@@ -6,11 +6,12 @@ endif
 
 SUBPROJECTS   += cmark
 CMARK_VERSION := 0.29.0
-DEB_CMARK_V   ?= $(CMARK_VERSION)
+DEB_CMARK_V   ?= $(CMARK_VERSION)-1
 
 cmark-setup: setup
 	$(call GITHUB_ARCHIVE,commonmark,cmark,$(CMARK_VERSION),$(CMARK_VERSION))
 	$(call EXTRACT_TAR,cmark-$(CMARK_VERSION).tar.gz,cmark-$(CMARK_VERSION),cmark)
+	$(call DO_PATCH,cmark,cmark,-p1)
 
 ifneq ($(wildcard $(BUILD_WORK)/cmark/.build_complete),)
 cmark:

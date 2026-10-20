@@ -1,0 +1,11 @@
+--- a/src/CMakeLists.txt
++++ b/src/CMakeLists.txt
+@@ -100,6 +100,9 @@
+ if (CMARK_STATIC)
+   add_library(${STATICLIBRARY} STATIC ${LIBRARY_SOURCES})
++  # Public archives must work with consumers using a different LLVM version.
++  set_property(TARGET ${STATICLIBRARY} PROPERTY INTERPROCEDURAL_OPTIMIZATION FALSE)
++  target_compile_options(${STATICLIBRARY} PRIVATE -fno-lto)
+   set_target_properties(${STATICLIBRARY} PROPERTIES
+     COMPILE_FLAGS -DCMARK_STATIC_DEFINE
+     POSITION_INDEPENDENT_CODE ON)
