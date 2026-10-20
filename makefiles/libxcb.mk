@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS    += libxcb
 LIBXCB_VERSION := 1.14
-DEB_LIBXCB_V   ?= $(LIBXCB_VERSION)
+DEB_LIBXCB_V   ?= $(LIBXCB_VERSION)-1
 
 libxcb-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://xorg.freedesktop.org/archive/individual/lib/libxcb-$(LIBXCB_VERSION).tar.gz{$(comma).sig})
@@ -28,6 +28,16 @@ libxcb: libxcb-setup xcb-proto libxau libxdmcp libpthread-stubs
 		DESTDIR=$(BUILD_STAGE)/libxcb \
 		XCBPROTO_XCBPYTHONDIR="$(BUILD_BASE)$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/python3/dist-packages" \
 		XCBPROTO_XCBINCLUDEDIR="$(BUILD_BASE)$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share/xcb"
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Rebuild only public library sources, retaining configured flags and generated inputs.
+	+$(MAKE) -C $(BUILD_WORK)/libxcb/src mostlyclean-compile mostlyclean-libtool clean-libtool clean-libLTLIBRARIES
+	+$(MAKE) -C $(BUILD_WORK)/libxcb/src all \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/libxcb/src/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/libxcb/src/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -static" \
+		XCBPROTO_XCBPYTHONDIR="$(BUILD_BASE)$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/python3/dist-packages" \
+		XCBPROTO_XCBINCLUDEDIR="$(BUILD_BASE)$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share/xcb"
+	cp -a $(BUILD_WORK)/libxcb/src/.libs/libxcb*.a $(BUILD_STAGE)/libxcb/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	$(call AFTER_BUILD,copy)
 endif
 
