@@ -52,7 +52,7 @@ if [[ $HOST_PLATFORM == auto ]]; then
     esac
 fi
 case $HOST_PLATFORM in
-    linux) deps=(apt-get install -y build-essential clang perl git curl ca-certificates patch pkg-config libssl-dev libplist-dev python3 python3-venv python3-dev ninja-build autoconf automake libtool bison flex cmake gettext gawk autopoint fakeroot dpkg-dev zstd gnupg groff docbook-xsl docbook-xml libxml2-utils itstool xsltproc po4a unzip xz-utils lzip tcl ghc protobuf-compiler neovim luajit lua-lpeg lua-mpack bsdextrautils nodejs libmodule-build-perl) ;;
+    linux) deps=(apt-get install -y build-essential clang perl git curl ca-certificates patch pkg-config libssl-dev zlib1g-dev libbz2-dev liblzma-dev libffi-dev libplist-dev python3 python3-venv python3-dev ninja-build autoconf automake libtool bison flex cmake gettext gawk autopoint fakeroot dpkg-dev zstd gnupg groff docbook-xsl docbook-xml libxml2-utils itstool xsltproc po4a unzip xz-utils lzip tcl ghc protobuf-compiler neovim luajit lua-lpeg lua-mpack bsdextrautils nodejs libmodule-build-perl) ;;
     macos) deps=(brew install bash make gpatch file-formula ncurses gnu-sed gawk grep gnu-tar findutils coreutils bison flex autoconf automake libtool cmake gettext fakeroot dpkg zstd gnupg groff docbook-xsl po4a openssl@3 libplist pkg-config python@3.12 ninja) ;;
     ios) deps=(apt-get install -y clang make perl ncurses-bin git curl ca-certificates patch pkg-config openssl libssl-dev libplist-dev python3 libpython3.9-dev ninja bash coreutils findutils sed gawk grep tar bison flex autoconf automake libtool cmake gettext fakeroot dpkg zstd gnupg groff docbook-xsl po4a unzip xz-utils ldid) ;;
     *) fail 'HOST_PLATFORM must be macos, linux or ios' ;;
@@ -241,6 +241,32 @@ fi
 "$HOST_TOOL_ROOT/venv/bin/python" -m pip install --disable-pip-version-check \
     -r "$CHECKOUT/build_misc/ghc/requirements-sphinx.txt"
 "$HOST_TOOL_ROOT/venv/bin/sphinx-build" --version
+if [[ $HOST_PLATFORM == linux ]]; then
+    # Python package recipes use the target's 3.9 ABI, independently of Meson.
+    host_python_prefix="$HOST_TOOL_ROOT/python3.9"
+    host_python_archive="$HOST_TOOL_ROOT/cache/Python-3.9.9.tar.xz"
+    if [[ ! -x $host_python_prefix/bin/python3.9 ]]; then
+        if [[ ! -f $host_python_archive ]]; then
+            curl --fail --location --retry 3 -o "$host_python_archive.part" \
+                https://www.python.org/ftp/python/3.9.9/Python-3.9.9.tar.xz
+            mv "$host_python_archive.part" "$host_python_archive"
+        fi
+        printf '%s  %s\n' 06828c04a573c073a4e51c4292a27c1be4ae26621c3edc7cf9318418ce3b6d27 "$host_python_archive" | sha256sum -c -
+        mkdir -p "$HOST_TOOL_ROOT/src/host-python3.9"
+        tar -xf "$host_python_archive" --strip-components=1 -C "$HOST_TOOL_ROOT/src/host-python3.9"
+        (
+            unset CC CXX CPP CFLAGS CXXFLAGS CPPFLAGS LDFLAGS LDSHARED AR RANLIB LD NM CONFIG_SITE MACOSX_DEPLOYMENT_TARGET
+            cd "$HOST_TOOL_ROOT/src/host-python3.9"
+            CC="$HOST_CC" CXX="$HOST_CXX" ./configure --prefix="$host_python_prefix" --with-ensurepip=install
+            "$HOST_MAKE" -j "$HOST_JOBS"
+            "$HOST_MAKE" altinstall
+        )
+    fi
+    "$host_python_prefix/bin/python3.9" -c 'import sys, ssl, zlib, bz2, lzma, ctypes; assert sys.version_info[:3] == (3, 9, 9)'
+    "$host_python_prefix/bin/python3.9" -m pip install --disable-pip-version-check \
+        'pip==24.3.1' 'setuptools==75.3.2' 'wheel==0.45.1' 'Cython==0.29.37'
+    ln -sfn "$host_python_prefix/bin/python3.9" "$HOST_TOOL_ROOT/bin/python3.9"
+fi
 if [[ $HOST_PLATFORM == linux ]]; then
     export CARGO_HOME="$HOST_TOOL_ROOT/cargo" RUSTUP_HOME="$HOST_TOOL_ROOT/rustup"
     case $(uname -m) in
