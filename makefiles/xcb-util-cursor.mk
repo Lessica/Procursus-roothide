@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS             += xcb-util-cursor
 XCB-UTIL-CURSOR_VERSION := 0.1.3
-DEB_XCB-UTIL-CURSOR_V   ?= $(XCB-UTIL-CURSOR_VERSION)
+DEB_XCB-UTIL-CURSOR_V   ?= $(XCB-UTIL-CURSOR_VERSION)-1
 
 xcb-util-cursor-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://www.x.org/archive/individual/xcb/xcb-util-cursor-$(XCB-UTIL-CURSOR_VERSION).tar.gz)
@@ -21,6 +21,14 @@ xcb-util-cursor: xcb-util-cursor-setup libxcb xcb-util xcb-util-renderutil xcb-u
 	+$(MAKE) -C $(BUILD_WORK)/xcb-util-cursor
 	+$(MAKE) -C $(BUILD_WORK)/xcb-util-cursor install \
 		DESTDIR=$(BUILD_STAGE)/xcb-util-cursor
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Preserve installed LTO outputs and configured flags, including OSBYTEORDER.
+	+$(MAKE) -C $(BUILD_WORK)/xcb-util-cursor/cursor clean
+	+$(MAKE) -C $(BUILD_WORK)/xcb-util-cursor/cursor libxcb-cursor.la \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/xcb-util-cursor/cursor/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/xcb-util-cursor/cursor/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -static"
+	cp -a $(BUILD_WORK)/xcb-util-cursor/cursor/.libs/libxcb-cursor.a $(BUILD_STAGE)/xcb-util-cursor/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	$(call AFTER_BUILD,copy)
 endif
 

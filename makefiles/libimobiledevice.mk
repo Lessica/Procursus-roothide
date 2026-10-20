@@ -5,7 +5,7 @@ endif
 SUBPROJECTS              += libimobiledevice
 LIBIMOBILEDEVICE_COMMIT  := 2eec1b9a172354c8521123a767d998b17bd2ac18
 LIBIMOBILEDEVICE_VERSION := 1.3.0+git20220702.$(shell echo $(LIBIMOBILEDEVICE_COMMIT) | cut -c -7)
-DEB_LIBIMOBILEDEVICE_V   ?= $(LIBIMOBILEDEVICE_VERSION)-1
+DEB_LIBIMOBILEDEVICE_V   ?= $(LIBIMOBILEDEVICE_VERSION)-2
 
 libimobiledevice-setup: setup
 	$(call GITHUB_ARCHIVE,libimobiledevice,libimobiledevice,$(LIBIMOBILEDEVICE_COMMIT),$(LIBIMOBILEDEVICE_COMMIT))
@@ -23,6 +23,22 @@ libimobiledevice: libimobiledevice-setup libusbmuxd libplist libimobiledevice-gl
 	+$(MAKE) -C $(BUILD_WORK)/libimobiledevice
 	+$(MAKE) -C $(BUILD_WORK)/libimobiledevice install \
 		DESTDIR="$(BUILD_STAGE)/libimobiledevice"
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Rebuild every convenience library folded into the public archive, after
+	# preserving the original LTO runtime and command-line tools in stage.
+	+set -e; for entry in common:libinternalcommon.la 3rd_party/ed25519:libed25519.la 3rd_party/libsrp6a-sha512:libsrp6a-sha512.la src:libimobiledevice-1.0.la; do \
+		sub=$${entry%:*}; target=$${entry##*:}; \
+		if [ -f $(BUILD_WORK)/libimobiledevice/$$sub/$$target ]; then \
+			find $(BUILD_WORK)/libimobiledevice/$$sub -name '*.lo' -type f -delete; \
+			rm -f $(BUILD_WORK)/libimobiledevice/$$sub/$$target; \
+			$(MAKE) -C $(BUILD_WORK)/libimobiledevice/$$sub $$target \
+				CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/libimobiledevice/$$sub/Makefile) -fno-lto" \
+				LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/libimobiledevice/$$sub/Makefile) -fno-lto -static"; \
+		fi; \
+	done
+	cp -a $(BUILD_WORK)/libimobiledevice/src/.libs/libimobiledevice-1.0.a \
+		$(BUILD_STAGE)/libimobiledevice/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	$(call AFTER_BUILD,copy)
 endif
 
