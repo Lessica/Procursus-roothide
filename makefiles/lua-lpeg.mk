@@ -29,11 +29,11 @@ lua-lpeg:
 	@echo "Using previously built lua-lpeg."
 else
 lua-lpeg: lua-lpeg-setup libuv1 lua5.1 lua5.2 lua5.3 luajit
-	for ver in {1..3}; do \
-		$(MAKE) -C $(BUILD_WORK)/lua-lpeg/build5$$ver linux \
+	set -e; for ver in {1..3}; do \
+		$(MAKE) -C $(BUILD_WORK)/lua-lpeg/build5$$ver linux CC="$(CC)" \
 			LUADIR="$(BUILD_BASE)$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include/lua5.$$ver" \
 			LIBS="$(BUILD_BASE)$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/liblua5.$$ver.dylib"; \
-		$(MAKE) -C $(BUILD_WORK)/lua-lpeg/build5$$ver/bundle macosx \
+		$(MAKE) -C $(BUILD_WORK)/lua-lpeg/build5$$ver/bundle macosx CC="$(CC)" \
 			LUADIR="$(BUILD_BASE)$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include/lua5.$$ver"; \
 		$(I_N_T) -id $(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/liblua5.$$ver-lpeg.2.dylib $(BUILD_WORK)/lua-lpeg/build5$$ver/liblua5.$$ver-lpeg.2.dylib; \
 		$(LN_S) liblua5.$$ver-lpeg.2.dylib $(BUILD_WORK)/lua-lpeg/build5$$ver/liblua5.$$ver-lpeg.dylib; \
@@ -42,13 +42,13 @@ lua-lpeg: lua-lpeg-setup libuv1 lua5.1 lua5.2 lua5.3 luajit
 		mkdir -p $(BUILD_STAGE)/lua-lpeg/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/lua/5.$$ver/; \
 		cp -a $(BUILD_WORK)/lua-lpeg/build5$$ver/bundle/lpeg.so $(BUILD_STAGE)/lua-lpeg/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/lua/5.$$ver/; \
 	done
-	$(MAKE) -C $(BUILD_WORK)/lua-lpeg/buildjit linux \
+	$(MAKE) -C $(BUILD_WORK)/lua-lpeg/buildjit linux CC="$(CC)" \
 		LUADIR="$(BUILD_BASE)$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include/luajit-2.1" \
 		LIBS="$(BUILD_BASE)$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/libluajit-5.1.dylib"
-	$(MAKE) -C $(BUILD_WORK)/lua-lpeg/buildjit/bundle macosx \
+	$(MAKE) -C $(BUILD_WORK)/lua-lpeg/buildjit/bundle macosx CC="$(CC)" \
 		LUADIR="$(BUILD_BASE)$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include/luajit-2.1"
 	$(I_N_T) -id $(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/libluajit-5.1-lpeg.2.dylib $(BUILD_WORK)/lua-lpeg/buildjit/libluajit-5.1-lpeg.2.dylib
-	$(LN_S) liblua5.1-lpeg.2.dylib $(BUILD_WORK)/lua-lpeg/buildjit/libluajit-5.1-lpeg.dylib
+	$(LN_S) libluajit-5.1-lpeg.2.dylib $(BUILD_WORK)/lua-lpeg/buildjit/libluajit-5.1-lpeg.dylib
 	cp -a $(BUILD_WORK)/lua-lpeg/buildjit/libluajit-5.1-lpeg*.dylib $(BUILD_BASE)$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib
 	cp -a $(BUILD_WORK)/lua-lpeg/buildjit/libluajit-5.1-lpeg*.dylib $(BUILD_STAGE)/lua-lpeg/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib
 	mkdir -p $(BUILD_STAGE)/lua-lpeg/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/lua/5.1/
