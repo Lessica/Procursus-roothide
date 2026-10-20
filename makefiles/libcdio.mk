@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS     += libcdio
 LIBCDIO_VERSION := 2.1.0
-DEB_LIBCDIO_V   ?= $(LIBCDIO_VERSION)
+DEB_LIBCDIO_V   ?= $(LIBCDIO_VERSION)-1
 
 libcdio-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://ftpmirror.gnu.org/gnu/libcdio/libcdio-$(LIBCDIO_VERSION).tar.bz2{$(comma).sig})
@@ -22,6 +22,15 @@ libcdio: libcdio-setup ncurses libcddb
 	+$(MAKE) -C $(BUILD_WORK)/libcdio
 	+$(MAKE) -C $(BUILD_WORK)/libcdio install \
 		DESTDIR=$(BUILD_STAGE)/libcdio
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Rebuild only the five public libraries after retaining the LTO install.
+	+$(MAKE) -C $(BUILD_WORK)/libcdio/lib clean
+	+$(MAKE) -C $(BUILD_WORK)/libcdio/lib \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/libcdio/lib/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -fno-lto" \
+		CXXFLAGS="$$(sed -n 's/^CXXFLAGS = //p' $(BUILD_WORK)/libcdio/lib/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/libcdio/lib/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -static"
+	find $(BUILD_WORK)/libcdio/lib -path '*/.libs/*.a' -exec cp -a {} $(BUILD_STAGE)/libcdio/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/ \;
+endif
 	$(call AFTER_BUILD,copy)
 endif
 
