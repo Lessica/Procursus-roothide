@@ -1,0 +1,14 @@
+--- a/Makefile.in
++++ b/Makefile.in
+@@ -545,6 +545,11 @@
+ 
+ build_lib_shared: $(DSOS)
+ build_lib_static: $(STATIC_LIBS)
++
++.PHONY: native-static-clean
++native-static-clean:
++	rm -f $(C_OBJS) $(CPP_OBJS) $(C_PIC_OBJS) $(CPP_PIC_OBJS) $(STATIC_LIBS)
++
+ ifeq ($(enable_shared), 1)
+ build_lib: build_lib_shared
+ endif

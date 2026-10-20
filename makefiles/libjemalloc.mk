@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS         += libjemalloc
 LIBJEMALLOC_VERSION := 5.3.0
-DEB_LIBJEMALLOC_V   ?= $(LIBJEMALLOC_VERSION)
+DEB_LIBJEMALLOC_V   ?= $(LIBJEMALLOC_VERSION)-1
 
 libjemalloc-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://github.com/jemalloc/jemalloc/releases/download/$(LIBJEMALLOC_VERSION)/jemalloc-$(LIBJEMALLOC_VERSION).tar.bz2)
@@ -21,12 +21,21 @@ libjemalloc: libjemalloc-setup
 		$(DEFAULT_CONFIGURE_FLAGS) \
 		--with-lg-page=14 \
 		--with-jemalloc-prefix= \
-		--with-version=$(DEB_LIBJEMALLOC_V)-0-g54eaed1d8b56b1aa528be3bdd1877e59c56fa90c
+		--with-version=$(LIBJEMALLOC_VERSION)-0-g54eaed1d8b56b1aa528be3bdd1877e59c56fa90c
 		# The above system page size is specified because
 		# iOS arm64 devices have a 16KB page size.
 	+$(MAKE) -C $(BUILD_WORK)/libjemalloc
 	+$(MAKE) -C $(BUILD_WORK)/libjemalloc install \
 		DESTDIR=$(BUILD_STAGE)/libjemalloc
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Preserve installed LTO runtime and generated namespace headers; rebuild two static forms only.
+	+$(MAKE) -C $(BUILD_WORK)/libjemalloc native-static-clean
+	+$(MAKE) -C $(BUILD_WORK)/libjemalloc build_lib_static \
+		EXTRA_CFLAGS="$$(sed -n 's/^EXTRA_CFLAGS := //p' $(BUILD_WORK)/libjemalloc/Makefile) -fno-lto" \
+		EXTRA_CXXFLAGS="$$(sed -n 's/^EXTRA_CXXFLAGS := //p' $(BUILD_WORK)/libjemalloc/Makefile) -fno-lto"
+	cp -a $(BUILD_WORK)/libjemalloc/lib/libjemalloc{,_pic}.a \
+		$(BUILD_STAGE)/libjemalloc/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	$(call AFTER_BUILD,copy)
 endif
 
