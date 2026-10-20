@@ -4,7 +4,7 @@ endif
 
 STRAPPROJECTS += libmd
 LIBMD_VERSION := 1.1.0
-DEB_LIBMD_V   ?= $(LIBMD_VERSION)
+DEB_LIBMD_V   ?= $(LIBMD_VERSION)-1
 
 libmd-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://archive.hadrons.org/software/libmd/libmd-$(LIBMD_VERSION).tar.xz)
@@ -21,6 +21,15 @@ libmd: libmd-setup
 	+$(MAKE) -C $(BUILD_WORK)/libmd
 	+$(MAKE) -C $(BUILD_WORK)/libmd install \
 		DESTDIR=$(BUILD_STAGE)/libmd
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Preserve the installed LTO dylib; rebuild only its public static target.
+	+$(MAKE) -C $(BUILD_WORK)/libmd/src clean
+	+$(MAKE) -C $(BUILD_WORK)/libmd/src libmd.la \
+		CFLAGS="$(filter-out -flto%,$(CFLAGS)) -fno-lto" \
+		LDFLAGS="$(filter-out -flto%,$(LDFLAGS)) -static"
+	cp -a $(BUILD_WORK)/libmd/src/.libs/libmd.a \
+		$(BUILD_STAGE)/libmd/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	$(call AFTER_BUILD,copy)
 endif
 

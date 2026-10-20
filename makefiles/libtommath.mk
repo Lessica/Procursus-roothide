@@ -4,7 +4,7 @@ endif
 
 SUBPPROJECTS       += libtommath
 LIBTOMMATH_VERSION := 1.2.0
-DEB_LIBTOMMATH_V   ?= $(LIBTOMMATH_VERSION)-1
+DEB_LIBTOMMATH_V   ?= $(LIBTOMMATH_VERSION)-2
 
 libtommath-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://github.com/libtom/libtommath/releases/download/v$(LIBTOMMATH_VERSION)/ltm-$(LIBTOMMATH_VERSION).tar.xz)
@@ -31,6 +31,17 @@ libtommath: libtommath-setup
 		LIBTOOL="$(BUILD_WORK)/libtommath/libtool/libtool" \
 		PREFIX="$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)" \
 		DESTDIR="$(BUILD_STAGE)/libtommath"
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Keep the installed LTO dylib; rebuild only the public static target.
+	+$(MAKE) -C $(BUILD_WORK)/libtommath -f makefile.shared clean
+	+$(MAKE) -C $(BUILD_WORK)/libtommath -f makefile.shared libtommath.la \
+		PREFIX="$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)" \
+		LIBTOOL="$(BUILD_WORK)/libtommath/libtool/libtool" \
+		CFLAGS="$(filter-out -flto%,$(CFLAGS)) -fno-lto" \
+		LDFLAGS="$(filter-out -flto%,$(LDFLAGS)) -static"
+	cp -a $(BUILD_WORK)/libtommath/.libs/libtommath.a \
+		$(BUILD_STAGE)/libtommath/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	$(call AFTER_BUILD,copy)
 endif
 

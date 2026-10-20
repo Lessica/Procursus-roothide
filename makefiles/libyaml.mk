@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS     += libyaml
 LIBYAML_VERSION := 0.2.5
-DEB_LIBYAML_V   ?= $(LIBYAML_VERSION)
+DEB_LIBYAML_V   ?= $(LIBYAML_VERSION)-1
 
 libyaml-setup: setup
 	$(call GITHUB_ARCHIVE,yaml,libyaml,$(LIBYAML_VERSION),$(LIBYAML_VERSION))
@@ -20,6 +20,15 @@ libyaml: libyaml-setup
 	+$(MAKE) -C $(BUILD_WORK)/libyaml
 	+$(MAKE) -C $(BUILD_WORK)/libyaml install \
 		DESTDIR=$(BUILD_STAGE)/libyaml
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Preserve the installed LTO dylib; rebuild only its public static target.
+	+$(MAKE) -C $(BUILD_WORK)/libyaml/src clean
+	+$(MAKE) -C $(BUILD_WORK)/libyaml/src libyaml.la \
+		CFLAGS="$(filter-out -flto%,$(CFLAGS)) -fno-lto" \
+		LDFLAGS="$(filter-out -flto%,$(LDFLAGS)) -static"
+	cp -a $(BUILD_WORK)/libyaml/src/.libs/libyaml.a \
+		$(BUILD_STAGE)/libyaml/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	$(call AFTER_BUILD,copy)
 endif
 
