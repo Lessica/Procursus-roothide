@@ -18,7 +18,7 @@ if [[ ${1:-} != --skip-system-deps ]]; then
  SUDO=(); [[ $(id -u) == 0 ]] || SUDO=(sudo)
  "${SUDO[@]}" apt-get update
  "${SUDO[@]}" env DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
-  ca-certificates build-essential clang clang-18 llvm llvm-18-dev lld make coreutils findutils sed tar patch bash \
+  ca-certificates build-essential clang clang-18 llvm llvm-18-dev lld make coreutils findutils sed gawk tar patch bash \
   openssl gnupg libtool libtool-bin automake autoconf bison flex groff fakeroot dpkg-dev zstd \
   xz-utils lzip libncurses-dev wget cmake docbook-xsl docbook-xml libxml2-utils itstool xsltproc python3 python3-dev python3-venv git pkg-config \
   autopoint po4a unzip triehash ninja-build curl libssl-dev libplist-dev libplist++-dev \

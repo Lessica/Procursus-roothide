@@ -15,6 +15,7 @@ txt2man:
 	@echo "Using previously built txt2man."
 else
 txt2man: txt2man-setup gawk
+	command -v gawk >/dev/null
 	+$(MAKE) -C $(BUILD_WORK)/txt2man
 	+$(MAKE) -C $(BUILD_WORK)/txt2man install \
 		prefix=$(BUILD_STAGE)/txt2man/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)
