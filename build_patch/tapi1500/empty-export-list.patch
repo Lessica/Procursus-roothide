@@ -1,0 +1,12 @@
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -160,7 +160,8 @@
+ macro(add_tapi_executable name)
+   add_llvm_executable(${name} ${ARGN})
+   set_target_properties(${name} PROPERTIES FOLDER "Tapi executables")
+-  target_link_options(${name} PRIVATE "-Wl,-no_exported_symbols")
++  file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/${name}.exports" "")
++  target_link_options(${name} PRIVATE "-Wl,-exported_symbols_list,${CMAKE_CURRENT_BINARY_DIR}/${name}.exports")
+ endmacro(add_tapi_executable)
+ 
+ function(tapi_clang_tablegen)

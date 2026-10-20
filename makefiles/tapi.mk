@@ -12,6 +12,7 @@ tapi-setup: setup
 	$(call GITHUB_ARCHIVE,apple,llvm-project,$(TAPI_LLVM_TAG),$(TAPI_LLVM_TAG),llvm-project-tapi)
 	$(call EXTRACT_TAR,llvm-project-tapi-$(TAPI_LLVM_TAG).tar.gz,llvm-project-$(TAPI_LLVM_TAG),tapi)
 	$(call EXTRACT_TAR,tapi-$(TAPI_VERSION).tar.gz,tapi-tapi-$(TAPI_VERSION),tapi/tapi)
+	$(call DO_PATCH,tapi1500,tapi/tapi,-p1)
 	mkdir -p $(BUILD_WORK)/tapi/build
 	sed -i 's| -allowable_client ld||' $(BUILD_WORK)/tapi/tapi/tools/libtapi/CMakeLists.txt
 
