@@ -4,7 +4,7 @@ endif
 
 STRAPPROJECTS     += libgcrypt
 LIBGCRYPT_VERSION := 1.10.3
-DEB_LIBGCRYPT_V   ?= $(LIBGCRYPT_VERSION)-1
+DEB_LIBGCRYPT_V   ?= $(LIBGCRYPT_VERSION)-2
 
 libgcrypt-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://gnupg.org/ftp/gcrypt/libgcrypt/libgcrypt-$(LIBGCRYPT_VERSION).tar.bz2{$(comma).sig})
@@ -30,6 +30,20 @@ libgcrypt: libgcrypt-setup libgpg-error
 	+$(MAKE) -C $(BUILD_WORK)/libgcrypt
 	+$(MAKE) -C $(BUILD_WORK)/libgcrypt install \
 		DESTDIR=$(BUILD_STAGE)/libgcrypt
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Keep staged LTO tools/dylib. Rebuild every embedded convenience library,
+	# including the original target assembly, without replacing generated headers.
+	+set -e; for entry in compat:libcompat.la mpi:libmpi.la cipher:libcipher.la random:librandom.la src:libgcrypt.la; do \
+		sub=$${entry%:*}; target=$${entry##*:}; \
+		rm -f $(BUILD_WORK)/libgcrypt/$$sub/*.lo $(BUILD_WORK)/libgcrypt/$$sub/$$target; \
+		$(MAKE) -C $(BUILD_WORK)/libgcrypt/$$sub $$target \
+			CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/libgcrypt/$$sub/Makefile) -fno-lto" \
+			CCASFLAGS="$$(sed -n 's/^CCASFLAGS = //p' $(BUILD_WORK)/libgcrypt/$$sub/Makefile) -fno-lto" \
+			LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/libgcrypt/$$sub/Makefile) -fno-lto -static"; \
+	done
+	cp -a $(BUILD_WORK)/libgcrypt/src/.libs/libgcrypt.a \
+		$(BUILD_STAGE)/libgcrypt/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	$(call AFTER_BUILD,copy)
 endif
 

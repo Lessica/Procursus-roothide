@@ -4,7 +4,7 @@ endif
 
 STRAPPROJECTS += libksba
 KSBA_VERSION  := 1.6.6
-DEB_KSBA_V    ?= $(KSBA_VERSION)
+DEB_KSBA_V    ?= $(KSBA_VERSION)-1
 
 libksba-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://gnupg.org/ftp/gcrypt/libksba/libksba-$(KSBA_VERSION).tar.bz2{$(comma).sig})
@@ -22,6 +22,15 @@ libksba: libksba-setup libgpg-error
 	+$(MAKE) -C $(BUILD_WORK)/libksba
 	+$(MAKE) -C $(BUILD_WORK)/libksba install \
 		DESTDIR=$(BUILD_STAGE)/libksba
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Preserve the installed LTO output and generated ASN.1 tables/host tools.
+	rm -f $(BUILD_WORK)/libksba/src/*.lo $(BUILD_WORK)/libksba/src/libksba.la
+	+$(MAKE) -C $(BUILD_WORK)/libksba/src libksba.la \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/libksba/src/Makefile) -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/libksba/src/Makefile) -fno-lto -static"
+	cp -a $(BUILD_WORK)/libksba/src/.libs/libksba.a \
+		$(BUILD_STAGE)/libksba/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	$(call AFTER_BUILD,copy)
 endif
 

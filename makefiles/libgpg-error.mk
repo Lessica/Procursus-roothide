@@ -4,7 +4,7 @@ endif
 
 STRAPPROJECTS        += libgpg-error
 LIBGPG-ERROR_VERSION := 1.48
-DEB_LIBGPG-ERROR_V   ?= $(LIBGPG-ERROR_VERSION)
+DEB_LIBGPG-ERROR_V   ?= $(LIBGPG-ERROR_VERSION)-1
 
 ifneq (,$(findstring aarch64,$(GNU_HOST_TRIPLE)))
 	GPG_SCHEME := aarch64-apple-darwin
@@ -32,6 +32,18 @@ libgpg-error: libgpg-error-setup gettext
 	+$(MAKE) -C $(BUILD_WORK)/libgpg-error install \
 		DESTDIR=$(BUILD_STAGE)/libgpg-error \
 		TESTS=""
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Keep installed LTO tools/dylib; rebuild only the public static target.
+	# Retain generated headers and native host generators from the normal pass.
+	rm -f $(BUILD_WORK)/libgpg-error/src/libgpg_error_la-*.{o,lo} \
+		$(BUILD_WORK)/libgpg-error/src/.libs/libgpg_error_la-*.o \
+		$(BUILD_WORK)/libgpg-error/src/libgpg-error.la
+	+$(MAKE) -C $(BUILD_WORK)/libgpg-error/src libgpg-error.la \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/libgpg-error/src/Makefile) -fno-lto" \
+		LDFLAGS="$(filter-out -flto%,$(LDFLAGS)) -static"
+	cp -a $(BUILD_WORK)/libgpg-error/src/.libs/libgpg-error.a \
+		$(BUILD_STAGE)/libgpg-error/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	$(call AFTER_BUILD,copy)
 endif
 

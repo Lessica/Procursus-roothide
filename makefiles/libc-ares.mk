@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS       += libc-ares
 LIBC-ARES_VERSION := 1.31.0
-DEB_LIBC-ARES_V   ?= $(LIBC-ARES_VERSION)
+DEB_LIBC-ARES_V   ?= $(LIBC-ARES_VERSION)-1
 
 libc-ares-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://github.com/c-ares/c-ares/releases/download/v$(LIBC-ARES_VERSION)/c-ares-$(LIBC-ARES_VERSION).tar.gz{$(comma).asc})
@@ -24,6 +24,15 @@ libc-ares: libc-ares-setup
 	+$(MAKE) -C $(BUILD_WORK)/libc-ares
 	+$(MAKE) -C $(BUILD_WORK)/libc-ares install \
 		DESTDIR="$(BUILD_STAGE)/libc-ares"
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Keep the installed LTO dylib and all configured/target-specific flags.
+	+$(MAKE) -C $(BUILD_WORK)/libc-ares/src/lib clean
+	+$(MAKE) -C $(BUILD_WORK)/libc-ares/src/lib libcares.la \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/libc-ares/src/lib/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/libc-ares/src/lib/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -static"
+	cp -a $(BUILD_WORK)/libc-ares/src/lib/.libs/libcares.a \
+		$(BUILD_STAGE)/libc-ares/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	$(call AFTER_BUILD,copy)
 endif
 

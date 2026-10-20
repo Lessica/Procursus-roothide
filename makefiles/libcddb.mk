@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS     += libcddb
 LIBCDDB_VERSION := 1.3.2
-DEB_LIBCDDB_V   ?= $(LIBCDDB_VERSION)
+DEB_LIBCDDB_V   ?= $(LIBCDDB_VERSION)-1
 
 libcddb-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://deb.debian.org/debian/pool/main/libc/libcddb/libcddb_$(LIBCDDB_VERSION).orig.tar.gz)
@@ -22,6 +22,15 @@ libcddb: libcddb-setup
 	+$(MAKE) -C $(BUILD_WORK)/libcddb
 	+$(MAKE) -C $(BUILD_WORK)/libcddb install \
 		DESTDIR=$(BUILD_STAGE)/libcddb
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Preserve the installed LTO dylib and the actual configured flags.
+	+$(MAKE) -C $(BUILD_WORK)/libcddb/lib clean
+	+$(MAKE) -C $(BUILD_WORK)/libcddb/lib libcddb.la \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/libcddb/lib/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/libcddb/lib/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -static"
+	cp -a $(BUILD_WORK)/libcddb/lib/.libs/libcddb.a \
+		$(BUILD_STAGE)/libcddb/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	$(call AFTER_BUILD,copy)
 endif
 
