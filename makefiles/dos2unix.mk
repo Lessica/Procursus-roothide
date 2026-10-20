@@ -16,8 +16,9 @@ dos2unix:
 	@echo "Using previously built dos2unix."
 else
 dos2unix: dos2unix-setup gettext
-	+$(MAKE) -C $(BUILD_WORK)/dos2unix LDFLAGS="$(LDFLAGS)" prefix="$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)"
+	+$(MAKE) -C $(BUILD_WORK)/dos2unix D2U_OS=darwin CFLAGS_OS= LDFLAGS_EXTRA= LDFLAGS="$(LDFLAGS)" prefix="$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)"
 	+$(MAKE) -C $(BUILD_WORK)/dos2unix install \
+		D2U_OS=darwin CFLAGS_OS= LDFLAGS_EXTRA= LDFLAGS="$(LDFLAGS)" \
 		DESTDIR=$(BUILD_STAGE)/dos2unix \
 		prefix="$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)"
 	$(call AFTER_BUILD)
