@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS   += teckit
 TECKIT_VERSION := 2.5.12
-DEB_TECKIT_V   ?= $(TECKIT_VERSION)
+DEB_TECKIT_V   ?= $(TECKIT_VERSION)-1
 
 teckit-setup: setup
 	$(call GITHUB_ARCHIVE,silnrsi,teckit,$(TECKIT_VERSION),refs/tags/v$(TECKIT_VERSION))
@@ -22,6 +22,15 @@ teckit: teckit-setup zlib-ng
 	+$(MAKE) -C $(BUILD_WORK)/teckit/build
 	+$(MAKE) -C $(BUILD_WORK)/teckit/build install \
 		DESTDIR=$(BUILD_STAGE)/teckit
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Keep installed LTO tools and dylibs; rebuild only both public archives.
+	+$(MAKE) -C $(BUILD_WORK)/teckit/build/lib clean
+	+$(MAKE) -C $(BUILD_WORK)/teckit/build/lib libTECkit.la libTECkit_Compiler.la \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/teckit/build/lib/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -fno-lto" \
+		CXXFLAGS="$$(sed -n 's/^CXXFLAGS = //p' $(BUILD_WORK)/teckit/build/lib/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/teckit/build/lib/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -static"
+	cp -a $(BUILD_WORK)/teckit/build/lib/.libs/libTECkit{,_Compiler}.a $(BUILD_STAGE)/teckit/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	$(call AFTER_BUILD,copy)
 endif
 
