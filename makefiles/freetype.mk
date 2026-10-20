@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS      += freetype
 FREETYPE_VERSION := 2.12.1
-DEB_FREETYPE_V   ?= $(FREETYPE_VERSION)
+DEB_FREETYPE_V   ?= $(FREETYPE_VERSION)-1
 
 freetype-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://download.savannah.gnu.org/releases/freetype/freetype-$(FREETYPE_VERSION).tar.xz{$(comma).sig})
@@ -23,6 +23,17 @@ freetype: freetype-setup brotli libpng16
 	+$(MAKE) -C $(BUILD_WORK)/freetype
 	+$(MAKE) -C $(BUILD_WORK)/freetype install \
 		DESTDIR=$(BUILD_STAGE)/freetype
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# FreeType snapshots compiler commands while reading its generated config.
+	# Change only that config's LTO flags for the static pass, then restore it.
+	cp $(BUILD_WORK)/freetype/builds/unix/unix-cc.mk $(BUILD_WORK)/freetype/builds/unix/unix-cc.mk.lto
+	sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g; /^CFLAGS[[:space:]]*:=/s/-c /-c -fno-lto /; /^LDFLAGS[[:space:]]*:=/s/$$/ -static/' \
+		$(BUILD_WORK)/freetype/builds/unix/unix-cc.mk.lto > $(BUILD_WORK)/freetype/builds/unix/unix-cc.mk
+	+$(MAKE) -C $(BUILD_WORK)/freetype clean
+	+$(MAKE) -C $(BUILD_WORK)/freetype library
+	mv $(BUILD_WORK)/freetype/builds/unix/unix-cc.mk.lto $(BUILD_WORK)/freetype/builds/unix/unix-cc.mk
+	cp -a $(BUILD_WORK)/freetype/objs/.libs/libfreetype.a $(BUILD_STAGE)/freetype/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	$(call AFTER_BUILD,copy)
 endif
 

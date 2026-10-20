@@ -4,11 +4,12 @@ endif
 
 SUBPROJECTS         += tree-sitter
 TREE_SITTER_VERSION := 0.20.8
-DEB_TREE_SITTER_V   ?= $(TREE_SITTER_VERSION)
+DEB_TREE_SITTER_V   ?= $(TREE_SITTER_VERSION)-1
 
 tree-sitter-setup: setup
 	$(call GITHUB_ARCHIVE,tree-sitter,tree-sitter,$(TREE_SITTER_VERSION),v$(TREE_SITTER_VERSION))
 	$(call EXTRACT_TAR,tree-sitter-$(TREE_SITTER_VERSION).tar.gz,tree-sitter-$(TREE_SITTER_VERSION),tree-sitter)
+	$(call DO_PATCH,tree-sitter,tree-sitter,-p1)
 	sed -i s/'$$(shell uname)'/'Darwin'/ $(BUILD_WORK)/tree-sitter/Makefile
 
 ifneq ($(wildcard $(BUILD_WORK)/tree-sitter/.build_complete),)

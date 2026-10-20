@@ -1,0 +1,11 @@
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -238,6 +238,8 @@
+ 
+ if(BUILD_STATIC_LIBS)
+     add_library(libsoundio_static STATIC ${LIBSOUNDIO_SOURCES})
++    set_property(TARGET libsoundio_static PROPERTY INTERPROCEDURAL_OPTIMIZATION FALSE)
++    target_compile_options(libsoundio_static PRIVATE -fno-lto)
+     set_target_properties(libsoundio_static PROPERTIES
+         OUTPUT_NAME ${SOUNDIO_STATIC_LIBNAME}
+         COMPILE_FLAGS ${LIB_CFLAGS}

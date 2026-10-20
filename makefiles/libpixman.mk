@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS       += libpixman
 LIBPIXMAN_VERSION := 0.40.0
-DEB_LIBPIXMAN_V   ?= $(LIBPIXMAN_VERSION)
+DEB_LIBPIXMAN_V   ?= $(LIBPIXMAN_VERSION)-1
 
 libpixman-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://cairographics.org/releases/pixman-$(LIBPIXMAN_VERSION).tar.gz)
@@ -24,6 +24,15 @@ libpixman: libpixman-setup
 	+$(MAKE) -C $(BUILD_WORK)/libpixman
 	+$(MAKE) -C $(BUILD_WORK)/libpixman install \
 		DESTDIR=$(BUILD_STAGE)/libpixman
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Rebuild the public archive and its convenience archives together.
+	# Keep installed LTO outputs and all configured feature/assembly flags.
+	+$(MAKE) -C $(BUILD_WORK)/libpixman/pixman clean
+	+$(MAKE) -C $(BUILD_WORK)/libpixman/pixman libpixman-1.la \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/libpixman/pixman/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/libpixman/pixman/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -static"
+	cp -a $(BUILD_WORK)/libpixman/pixman/.libs/libpixman-1.a $(BUILD_STAGE)/libpixman/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	$(call AFTER_BUILD,copy)
 endif
 
