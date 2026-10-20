@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS  += popt
 POPT_VERSION := 1.18
-DEB_POPT_V   ?= $(POPT_VERSION)
+DEB_POPT_V   ?= $(POPT_VERSION)-1
 
 popt-setup: setup
 	$(call GITHUB_ARCHIVE,rpm-software-management,popt,$(POPT_VERSION),popt-$(POPT_VERSION)-release)
@@ -24,6 +24,14 @@ popt: popt-setup gettext
 	+$(MAKE) -C $(BUILD_WORK)/popt install \
 		DESTDIR=$(BUILD_STAGE)/popt
 
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Preserve installed LTO outputs and all configured static compiler flags.
+	+$(MAKE) -C $(BUILD_WORK)/popt/src clean
+	+$(MAKE) -C $(BUILD_WORK)/popt/src libpopt.la \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/popt/src/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/popt/src/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -static"
+	cp -a $(BUILD_WORK)/popt/src/.libs/libpopt.a $(BUILD_STAGE)/popt/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	$(call AFTER_BUILD,copy)
 endif
 
