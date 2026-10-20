@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS  += yasm
 YASM_VERSION := 1.3.0
-DEB_YASM_V   ?= $(YASM_VERSION)-1
+DEB_YASM_V   ?= $(YASM_VERSION)-2
 
 yasm-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://www.tortall.net/projects/yasm/releases/yasm-$(YASM_VERSION).tar.gz)
@@ -22,6 +22,14 @@ yasm: yasm-setup
 	+$(MAKE) -C $(BUILD_WORK)/yasm
 	+$(MAKE) -C $(BUILD_WORK)/yasm install \
 		DESTDIR=$(BUILD_STAGE)/yasm
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Preserve the installed LTO yasm and its host-generated source tables.
+	find $(BUILD_WORK)/yasm/{libyasm,modules} -name '*.o' -type f -delete
+	rm -f $(BUILD_WORK)/yasm/{x86cpu,x86regtmod,lc3bid,gas-token,nasm-token,module}.o $(BUILD_WORK)/yasm/libyasm.a
+	+$(MAKE) -C $(BUILD_WORK)/yasm libyasm.a \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/yasm/Makefile) -fno-lto"
+	cp -a $(BUILD_WORK)/yasm/libyasm.a $(BUILD_STAGE)/yasm/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	$(call AFTER_BUILD,copy)
 endif
 
