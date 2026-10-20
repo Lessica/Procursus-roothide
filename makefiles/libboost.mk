@@ -31,7 +31,7 @@ else
 endif
 	echo "using python : $(PYTHON3_MAJOR_V) : $(shell command -v $(PYTHON_HOST)) : $(BUILD_STAGE)/python3/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include/python$(PYTHON3_MAJOR_V) : $(BUILD_STAGE)/python3/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib : <target-os>darwin ;" >> $(BUILD_WORK)/libboost/tools/build/src/user-config.jam
 	cd $(BUILD_WORK)/libboost && $(BUILD_WORK)/libboost/tools/build/src/engine/b2 \
-		-j$(CORE_COUNT) \
+		--reconfigure -j$(CORE_COUNT) \
 		--prefix=$(BUILD_STAGE)/libboost/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX) \
 		--without-mpi \
 		--without-graph_parallel \
