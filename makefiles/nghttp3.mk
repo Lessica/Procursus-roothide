@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS     += nghttp3
 NGHTTP3_VERSION := 1.2.0
-DEB_NGHTTP3_V   ?= $(NGHTTP3_VERSION)
+DEB_NGHTTP3_V   ?= $(NGHTTP3_VERSION)-1
 
 nghttp3-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://github.com/ngtcp2/nghttp3/releases/download/v$(NGHTTP3_VERSION)/nghttp3-$(NGHTTP3_VERSION).tar.xz)
@@ -21,6 +21,15 @@ nghttp3: nghttp3-setup
 	+$(MAKE) -C $(BUILD_WORK)/nghttp3
 	+$(MAKE) -C $(BUILD_WORK)/nghttp3 install \
 		DESTDIR="$(BUILD_STAGE)/nghttp3"
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Retain installed LTO runtime and configured macros while rebuilding the static target.
+	rm -f $(BUILD_WORK)/nghttp3/lib/*.lo $(BUILD_WORK)/nghttp3/lib/sfparse/*.lo $(BUILD_WORK)/nghttp3/lib/libnghttp3.la
+	+$(MAKE) -C $(BUILD_WORK)/nghttp3/lib libnghttp3.la \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/nghttp3/lib/Makefile) -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/nghttp3/lib/Makefile) -fno-lto -static"
+	cp -a $(BUILD_WORK)/nghttp3/lib/.libs/libnghttp3.a \
+		$(BUILD_STAGE)/nghttp3/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	$(call AFTER_BUILD,copy)
 endif
 
