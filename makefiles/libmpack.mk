@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS      += libmpack
 LIBMPACK_VERSION := 1.0.5
-DEB_LIBMPACK_V   ?= $(LIBMPACK_VERSION)
+DEB_LIBMPACK_V   ?= $(LIBMPACK_VERSION)-1
 
 libmpack-setup: setup
 	$(call GITHUB_ARCHIVE,libmpack,libmpack,$(LIBMPACK_VERSION),$(LIBMPACK_VERSION))
@@ -18,6 +18,16 @@ libmpack: libmpack-setup
 	+$(MAKE) -C $(BUILD_WORK)/libmpack install \
 		PREFIX=$(MEMO_PREFIX)$(MEMO_SUB_PREFIX) \
 		DESTDIR=$(BUILD_STAGE)/libmpack
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Preserve the installed LTO dylib; rebuild only its public static target.
+	+$(MAKE) -C $(BUILD_WORK)/libmpack clean
+	+$(MAKE) -C $(BUILD_WORK)/libmpack build/debug/libmpack.la \
+		PREFIX=$(MEMO_PREFIX)$(MEMO_SUB_PREFIX) \
+		CFLAGS="$(filter-out -flto%,$(CFLAGS)) -fno-lto" \
+		LDFLAGS="$(filter-out -flto%,$(LDFLAGS)) -static"
+	cp -a $(BUILD_WORK)/libmpack/build/debug/.libs/libmpack.a \
+		$(BUILD_STAGE)/libmpack/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	$(call AFTER_BUILD,copy)
 endif
 

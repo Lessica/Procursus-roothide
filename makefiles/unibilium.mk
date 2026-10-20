@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS       += unibilium
 UNIBILIUM_VERSION := 2.1.0
-DEB_UNIBILIUM_V   ?= $(UNIBILIUM_VERSION)
+DEB_UNIBILIUM_V   ?= $(UNIBILIUM_VERSION)-1
 
 unibilium-setup: setup
 	$(call GITHUB_ARCHIVE,neovim,unibilium,$(UNIBILIUM_VERSION),v$(UNIBILIUM_VERSION))
@@ -30,6 +30,20 @@ unibilium: unibilium-setup
 		TERMINFO_DIRS='"/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share/terminfo"'
 	+$(MAKE) -C $(BUILD_WORK)/unibilium install PREFIX=$(MEMO_PREFIX)$(MEMO_SUB_PREFIX) \
 		DESTDIR="$(BUILD_STAGE)/unibilium"
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Keep the installed shared library from the LTO build; rebuild only
+	# the archive target with native objects for downstream linkers.
+	+$(MAKE) -C $(BUILD_WORK)/unibilium clean
+	+$(MAKE) -C $(BUILD_WORK)/unibilium libunibilium.la \
+		PREFIX=$(MEMO_PREFIX)$(MEMO_SUB_PREFIX) \
+		LIBTOOL="$(BUILD_WORK)/unibilium/libtool/libtool" \
+		CC="$(CC)" \
+		TERMINFO_DIRS='"/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share/terminfo"' \
+		CFLAGS="$(filter-out -flto%,$(CFLAGS)) -fno-lto" \
+		LDFLAGS="$(filter-out -flto%,$(LDFLAGS)) -static"
+	cp -a $(BUILD_WORK)/unibilium/.libs/libunibilium.a \
+		$(BUILD_STAGE)/unibilium/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	$(call AFTER_BUILD,copy)
 endif
 

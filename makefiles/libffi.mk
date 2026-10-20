@@ -4,7 +4,7 @@ endif
 
 STRAPPROJECTS  += libffi
 LIBFFI_VERSION := 3.4.6
-DEB_LIBFFI_V   ?= $(LIBFFI_VERSION)
+DEB_LIBFFI_V   ?= $(LIBFFI_VERSION)-1
 
 libffi-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://github.com/libffi/libffi/releases/download/v$(LIBFFI_VERSION)/libffi-$(LIBFFI_VERSION).tar.gz)
@@ -20,6 +20,17 @@ libffi: libffi-setup
 	+$(MAKE) -C $(BUILD_WORK)/libffi
 	+$(MAKE) -C $(BUILD_WORK)/libffi install \
 		DESTDIR=$(BUILD_STAGE)/libffi
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Preserve the installed LTO dylib; rebuild only the public static library
+	# using the same configured sources, including the target assembly objects.
+	+$(MAKE) -C $(BUILD_WORK)/libffi/$(GNU_HOST_TRIPLE) clean
+	+$(MAKE) -C $(BUILD_WORK)/libffi/$(GNU_HOST_TRIPLE) libffi.la \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/libffi/$(GNU_HOST_TRIPLE)/Makefile) -fno-lto" \
+		ASFLAGS="$(filter-out -flto%,$(ASFLAGS)) -fno-lto" \
+		LDFLAGS="$(filter-out -flto%,$(LDFLAGS)) -static"
+	cp -a $(BUILD_WORK)/libffi/$(GNU_HOST_TRIPLE)/.libs/libffi.a \
+		$(BUILD_STAGE)/libffi/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	$(call AFTER_BUILD,copy)
 endif
 

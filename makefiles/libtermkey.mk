@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS        += libtermkey
 LIBTERMKEY_VERSION := 0.22
-DEB_LIBTERMKEY_V   ?= $(LIBTERMKEY_VERSION)
+DEB_LIBTERMKEY_V   ?= $(LIBTERMKEY_VERSION)-1
 
 libtermkey-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),http://www.leonerd.org.uk/code/libtermkey/libtermkey-$(LIBTERMKEY_VERSION).tar.gz)
@@ -26,11 +26,27 @@ libtermkey: libtermkey-setup unibilium
 		$(DEFAULT_CONFIGURE_FLAGS)
 	+$(MAKE) -C $(BUILD_WORK)/libtermkey \
 		PREFIX=$(MEMO_PREFIX)$(MEMO_SUB_PREFIX) \
+		PKG_CONFIG="$(BUILD_TOOLS)/cross-pkg-config" \
 		LIBTOOL="$(BUILD_WORK)/libtermkey/libtool/libtool" \
 		CC="$(CC) $(CFLAGS)" \
 		DEMOS=""
 	+$(MAKE) -C $(BUILD_WORK)/libtermkey install PREFIX=$(MEMO_PREFIX)$(MEMO_SUB_PREFIX) \
 		DESTDIR="$(BUILD_STAGE)/libtermkey"
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Keep the installed shared library from the LTO build; rebuild only
+	# the archive target with native objects for downstream linkers.
+	+$(MAKE) -C $(BUILD_WORK)/libtermkey clean
+	+$(MAKE) -C $(BUILD_WORK)/libtermkey libtermkey.la \
+		PREFIX=$(MEMO_PREFIX)$(MEMO_SUB_PREFIX) \
+		PKG_CONFIG="$(BUILD_TOOLS)/cross-pkg-config" \
+		LIBTOOL="$(BUILD_WORK)/libtermkey/libtool/libtool" \
+		CC="$(CC)" \
+		DEMOS="" \
+		CFLAGS="$(filter-out -flto%,$(CFLAGS)) -fno-lto" \
+		LDFLAGS="$(filter-out -flto%,$(LDFLAGS)) -static"
+	cp -a $(BUILD_WORK)/libtermkey/.libs/libtermkey.a \
+		$(BUILD_STAGE)/libtermkey/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	$(call AFTER_BUILD,copy)
 endif
 

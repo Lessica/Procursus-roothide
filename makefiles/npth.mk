@@ -4,7 +4,7 @@ endif
 
 STRAPPROJECTS += npth
 NPTH_VERSION  := 1.7
-DEB_NPTH_V    ?= $(NPTH_VERSION)
+DEB_NPTH_V    ?= $(NPTH_VERSION)-1
 
 npth-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://gnupg.org/ftp/gcrypt/npth/npth-$(NPTH_VERSION).tar.bz2{$(comma).sig})
@@ -22,6 +22,15 @@ npth: npth-setup
 	+$(MAKE) -C $(BUILD_WORK)/npth
 	+$(MAKE) -C $(BUILD_WORK)/npth install \
 		DESTDIR=$(BUILD_STAGE)/npth
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Preserve the installed LTO dylib; rebuild only its public static target.
+	+$(MAKE) -C $(BUILD_WORK)/npth/src clean
+	+$(MAKE) -C $(BUILD_WORK)/npth/src libnpth.la \
+		CFLAGS="$(filter-out -flto%,$(CFLAGS)) -fno-lto" \
+		LDFLAGS="$(filter-out -flto%,$(LDFLAGS)) -static"
+	cp -a $(BUILD_WORK)/npth/src/.libs/libnpth.a \
+		$(BUILD_STAGE)/npth/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	$(call AFTER_BUILD,copy)
 endif
 
