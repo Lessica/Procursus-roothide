@@ -4,8 +4,8 @@ endif
 
 SUBPROJECTS    += libxaw
 LIBXAW_VERSION := 1.0.13
-DEB_LIBXAW_V  ?= $(LIBXAW_VERSION)
-DEB_LIBXAW_DEV_V ?= $(DEB_LIBXAW_V)-1
+DEB_LIBXAW_V  ?= $(LIBXAW_VERSION)-1
+DEB_LIBXAW_DEV_V ?= $(LIBXAW_VERSION)-2
 
 libxaw-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://www.x.org/archive/individual/lib/libXaw-$(LIBXAW_VERSION).tar.gz{$(comma).sig})
@@ -23,6 +23,14 @@ libxaw: libxaw-setup libx11 libxau libxmu xorgproto libxpm libxt libxext
 	+$(MAKE) -C $(BUILD_WORK)/libxaw
 	+$(MAKE) -C $(BUILD_WORK)/libxaw install \
 		DESTDIR=$(BUILD_STAGE)/libxaw
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Preserve installed LTO outputs and configured static compiler flags.
+	+$(MAKE) -C $(BUILD_WORK)/libxaw/src clean
+	+$(MAKE) -C $(BUILD_WORK)/libxaw/src libXaw7.la \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/libxaw/src/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/libxaw/src/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -static"
+	cp -a $(BUILD_WORK)/libxaw/src/.libs/libXaw7.a $(BUILD_STAGE)/libxaw/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	$(call AFTER_BUILD,copy)
 endif
 

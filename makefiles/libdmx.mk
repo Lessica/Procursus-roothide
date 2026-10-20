@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS    += libdmx
 LIBDMX_VERSION := 1.1.4
-DEB_LIBDMX_V   ?= $(LIBDMX_VERSION)
+DEB_LIBDMX_V   ?= $(LIBDMX_VERSION)-1
 
 libdmx-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://xorg.freedesktop.org/archive/individual/lib/libdmx-$(LIBDMX_VERSION).tar.gz{$(comma).sig})
@@ -23,6 +23,14 @@ libdmx: libdmx-setup libx11 libxext
 	+$(MAKE) -C $(BUILD_WORK)/libdmx
 	+$(MAKE) -C $(BUILD_WORK)/libdmx install \
 		DESTDIR=$(BUILD_STAGE)/libdmx
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Preserve installed LTO outputs and configured static compiler flags.
+	+$(MAKE) -C $(BUILD_WORK)/libdmx/src clean
+	+$(MAKE) -C $(BUILD_WORK)/libdmx/src libdmx.la \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/libdmx/src/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/libdmx/src/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -static"
+	cp -a $(BUILD_WORK)/libdmx/src/.libs/libdmx.a $(BUILD_STAGE)/libdmx/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	$(call AFTER_BUILD,copy)
 endif
 
