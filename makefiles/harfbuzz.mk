@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS      += harfbuzz
 HARFBUZZ_VERSION := 2.8.1
-DEB_HARFBUZZ_V   ?= $(HARFBUZZ_VERSION)
+DEB_HARFBUZZ_V   ?= $(HARFBUZZ_VERSION)-1
 
 harfbuzz-setup: setup
 	$(call GITHUB_ARCHIVE,harfbuzz,harfbuzz,$(HARFBUZZ_VERSION),$(HARFBUZZ_VERSION))
@@ -31,6 +31,16 @@ harfbuzz: harfbuzz-setup cairo freetype glib2.0 graphite2 icu4c fontconfig
 	+$(MAKE) -C $(BUILD_WORK)/harfbuzz
 	+$(MAKE) -C $(BUILD_WORK)/harfbuzz install \
 		DESTDIR="$(BUILD_STAGE)/harfbuzz"
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Generate headers first; then compile only the configured static libraries.
+	+$(MAKE) -C $(BUILD_WORK)/harfbuzz/src clean
+	+$(MAKE) -C $(BUILD_WORK)/harfbuzz/src built-sources
+	+$(MAKE) -C $(BUILD_WORK)/harfbuzz/src libs \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/harfbuzz/src/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -fno-lto" \
+		CXXFLAGS="$$(sed -n 's/^CXXFLAGS = //p' $(BUILD_WORK)/harfbuzz/src/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/harfbuzz/src/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -static"
+	cp -a $(BUILD_WORK)/harfbuzz/src/.libs/libharfbuzz{,-icu,-gobject,-subset}.a $(BUILD_STAGE)/harfbuzz/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	$(call AFTER_BUILD,copy)
 endif
 
