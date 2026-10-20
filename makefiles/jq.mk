@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS  += jq
 JQ_VERSION   := 1.6
-DEB_JQ_V     ?= $(JQ_VERSION)
+DEB_JQ_V     ?= $(JQ_VERSION)-1
 
 jq-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://github.com/stedolan/jq/releases/download/jq-$(JQ_VERSION)/jq-$(JQ_VERSION).tar.gz)
@@ -26,6 +26,15 @@ jq: jq-setup libonig
 		DESTDIR=$(BUILD_STAGE)/jq
 	+$(MAKE) -C $(BUILD_WORK)/jq install \
 		DESTDIR=$(BUILD_STAGE)/jq
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Retain the installed LTO runtime and command; rebuild only libjq inputs.
+	find $(BUILD_WORK)/jq/src -name '*.lo' -type f -delete
+	rm -f $(BUILD_WORK)/jq/libjq.la
+	+$(MAKE) -C $(BUILD_WORK)/jq libjq.la \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/jq/Makefile) -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/jq/Makefile) -fno-lto -static"
+	cp -a $(BUILD_WORK)/jq/.libs/libjq.a $(BUILD_STAGE)/jq/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	$(call AFTER_BUILD)
 endif
 

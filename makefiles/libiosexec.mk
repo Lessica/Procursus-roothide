@@ -7,7 +7,7 @@ ifeq (,$(findstring darwin,$(MEMO_TARGET)))
 STRAPPROJECTS      += libiosexec
 LIBIOSEXEC_COMMIT  := 54a0866ed9b25adf252d20b9e0366280be4e29d3
 LIBIOSEXEC_VERSION := 1.3.1-2
-DEB_LIBIOSEXEC_V   ?= 1.3.1-3
+DEB_LIBIOSEXEC_V   ?= 1.3.1-4
 export DEB_LIBIOSEXEC_V
 
 ifneq (,$(findstring rootless,$(MEMO_TARGET)))
@@ -36,6 +36,14 @@ libiosexec: libiosexec-setup
 		$(LIBIOSEXEC_FLAGS) \
 		DEFAULT_INTERPRETER="$(MEMO_PREFIX)/bin/sh" \
 		LDFLAGS="$(filter-out -liosexec,$(LDFLAGS))"
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Set flags in the environment so the source Makefile still appends its
+	# RootHide/exec implementation macros, exactly as for the normal build.
+	rm -f $(BUILD_WORK)/libiosexec/*.o $(BUILD_WORK)/libiosexec/libiosexec.a
+	+CFLAGS="$(CFLAGS) -fno-lto" $(MAKE) -C $(BUILD_WORK)/libiosexec libiosexec.a \
+		$(LIBIOSEXEC_FLAGS) DEFAULT_INTERPRETER="$(MEMO_PREFIX)/bin/sh"
+	cp -a $(BUILD_WORK)/libiosexec/libiosexec.a $(BUILD_STAGE)/libiosexec/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	$(call AFTER_BUILD)
 endif
 
