@@ -101,6 +101,25 @@ esac
 EOF
 } > "$HOST_TOOL_ROOT/bin/xcrun"
 chmod +x "$HOST_TOOL_ROOT/bin/xcrun"
+# The distributed ld64-609 lacks LTO support. Build the same linker series
+# against the host LLVM used by the cross compiler, retaining bundled TAPI.
+ld64_commit=df82634ce7c3eddba9722e881433fbe357396e16
+archive="$HOST_TOOL_ROOT/downloads/cctools-ld64-$ld64_commit.tar.gz"
+fetch "https://github.com/tpoechtrager/cctools-port/archive/$ld64_commit.tar.gz" "$archive"
+echo "f137bf519be7f08303923b28bdc0fdfd87ca0533e15ad9050eedda2f6d59b420  $archive" | sha256sum -c -
+ld64_src="$HOST_TOOL_ROOT/src/cctools-port-$ld64_commit"
+mkdir -p "$HOST_TOOL_ROOT/src"
+[[ -d $ld64_src ]] || tar -xf "$archive" -C "$HOST_TOOL_ROOT/src"
+(
+ unset CC CXX CPP CFLAGS CXXFLAGS CPPFLAGS LDFLAGS LD AR RANLIB NM SDKROOT MACOSX_DEPLOYMENT_TARGET
+ cd "$ld64_src/cctools"
+ ./autogen.sh
+ CC=clang-18 CXX=clang++-18 ./configure --target=aarch64-apple-darwin \
+  --prefix="$HOST_TOOL_ROOT/ld64-lto" --with-libtapi="$HOST_TOOL_ROOT/toolchain/linux/iphone" \
+  --with-llvm-config="$(command -v llvm-config-18)"
+ make -C ld64 -j"${HOST_JOBS:-4}"
+)
+install -m755 "$ld64_src/cctools/ld64/src/ld/ld" "$toolbin/ld"
 # Build the matching compiler-rt builtins with upstream's Darwin source selection,
 # including os_version_check. This is the iOS arm64 cross-link runtime, not a
 # target LLVM/Swift package build or an arm64e ABI substitute.
@@ -141,6 +160,12 @@ test -s "$resource_dir/lib/darwin/libclang_rt.ios.a"
 printf '%s\n' 'int main(void) { return __builtin_available(iOS 18.0, *) ? 0 : 1; }' > "$runtime_src/build/availability.c"
 "$HOST_TOOL_ROOT/bin/aarch64-apple-darwin-clang" --target=arm64-apple-ios16.0 \
  -isysroot "$TARGET_SYSROOT" "$runtime_src/build/availability.c" -o "$runtime_src/build/availability"
+# Exercise both LTO modes through the same driver used by target recipes.
+for lto_mode in full thin; do
+ "$HOST_TOOL_ROOT/bin/aarch64-apple-darwin-clang" --target=arm64-apple-ios16.0 \
+  -isysroot "$TARGET_SYSROOT" -flto="$lto_mode" "$runtime_src/build/availability.c" \
+  -o "$runtime_src/build/availability-$lto_mode"
+done
 export HOST_TOOL_ROOT
 export HOST_CC=${HOST_CC:-clang}
 export HOST_CXX=${HOST_CXX:-clang++}

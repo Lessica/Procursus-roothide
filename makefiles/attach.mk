@@ -11,7 +11,7 @@ DEB_ATTACH_V   ?= $(ATTACH_VERSION)
 
 attach-setup: setup
 	$(call GITHUB_ARCHIVE,NyaMisty,Attach-Detach,$(ATTACH_COMMIT),$(ATTACH_COMMIT),attach)
-	$(call EXTRACT_TAR,attach-$(ATTACH_COMMIT).tar.gz,attach-detach-$(ATTACH_COMMIT),attach)
+	$(call EXTRACT_TAR,attach-$(ATTACH_COMMIT).tar.gz,Attach-Detach-$(ATTACH_COMMIT),attach)
 	mkdir -p $(BUILD_STAGE)/attach/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin
 
 ifneq ($(wildcard $(BUILD_WORK)/attach/.build_complete),)
