@@ -5,11 +5,12 @@ endif
 SUBPROJECTS      += capstone
 CAPSTONE_COMMIT  := 6e6e602e3815c48270ea1c1b0399302800dd3132
 CAPSTONE_VERSION := 5.0~git20230223.$(shell echo $(CAPSTONE_COMMIT) | cut -c -7)
-DEB_CAPSTONE_V   ?= $(CAPSTONE_VERSION)
+DEB_CAPSTONE_V   ?= $(CAPSTONE_VERSION)-1
 
 capstone-setup: setup
 	$(call GITHUB_ARCHIVE,capstone-engine,capstone,$(CAPSTONE_COMMIT),$(CAPSTONE_COMMIT))
 	$(call EXTRACT_TAR,capstone-$(CAPSTONE_COMMIT).tar.gz,capstone-$(CAPSTONE_COMMIT),capstone)
+	$(call DO_PATCH,capstone,capstone,-p1)
 
 ifneq ($(wildcard $(BUILD_WORK)/capstone/.build_complete),)
 capstone:
@@ -22,6 +23,10 @@ capstone: capstone-setup
 	+$(MAKE) -C $(BUILD_WORK)/capstone install \
 		PREFIX="$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)" \
 		DESTDIR=$(BUILD_STAGE)/capstone
+	+$(MAKE) -C $(BUILD_WORK)/capstone libcapstone-native.a \
+		PREFIX="$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)" \
+		LIBARCHS="$(MEMO_ARCH)"
+	cp $(BUILD_WORK)/capstone/libcapstone-native.a $(BUILD_STAGE)/capstone/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/libcapstone.a
 	$(call AFTER_BUILD,copy)
 endif
 

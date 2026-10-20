@@ -1,0 +1,13 @@
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -273,7 +273,9 @@
+             ${CMAKE_CURRENT_SOURCE_DIR}
+     )
+ 
+-    SET_TARGET_PROPERTIES (msgpackc-static PROPERTIES OUTPUT_NAME "msgpackc")
++    SET_TARGET_PROPERTIES (msgpackc-static PROPERTIES OUTPUT_NAME "msgpackc"
++        INTERPROCEDURAL_OPTIMIZATION FALSE)
++    TARGET_COMPILE_OPTIONS (msgpackc-static PRIVATE -fno-lto)
+ 
+     IF (MSGPACK_ENABLE_SHARED)
+         IF (MSVC)

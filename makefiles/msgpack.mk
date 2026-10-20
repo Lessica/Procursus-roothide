@@ -4,11 +4,12 @@ endif
 
 SUBPROJECTS     += msgpack
 MSGPACK_VERSION := 3.3.0
-DEB_MSGPACK_V   ?= $(MSGPACK_VERSION)
+DEB_MSGPACK_V   ?= $(MSGPACK_VERSION)-1
 
 msgpack-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://github.com/msgpack/msgpack-c/releases/download/cpp-$(MSGPACK_VERSION)/msgpack-$(MSGPACK_VERSION).tar.gz)
 	$(call EXTRACT_TAR,msgpack-$(MSGPACK_VERSION).tar.gz,msgpack-$(MSGPACK_VERSION),msgpack)
+	$(call DO_PATCH,msgpack,msgpack,-p1)
 
 ifneq ($(wildcard $(BUILD_WORK)/msgpack/.build_complete),)
 msgpack:
