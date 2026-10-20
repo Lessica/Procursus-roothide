@@ -16,8 +16,8 @@ mediacli:
 	@echo "Using previously built MediaCLI."
 else
 mediacli: mediacli-setup
-	+$(MAKE) -C $(BUILD_WORK)/mediacli
-	+$(MAKE) -C $(BUILD_WORK)/mediacli install \
+	+$(MAKE) -C $(BUILD_WORK)/mediacli SED=sed
+	+$(MAKE) -C $(BUILD_WORK)/mediacli install SED=sed \
 		PREFIX=$(MEMO_PREFIX)$(MEMO_SUB_PREFIX) \
 		DESTDIR=$(BUILD_STAGE)/mediacli
 	$(call AFTER_BUILD)
