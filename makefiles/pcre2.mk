@@ -4,7 +4,7 @@ endif
 
 STRAPPROJECTS += pcre2
 PCRE2_VERSION := 10.43
-DEB_PCRE2_V   ?= $(PCRE2_VERSION)
+DEB_PCRE2_V   ?= $(PCRE2_VERSION)-1
 
 pcre2-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://github.com/PCRE2Project/pcre2/releases/download/pcre2-$(PCRE2_VERSION)/pcre2-$(PCRE2_VERSION).tar.bz2{$(comma).sig})
@@ -23,10 +23,18 @@ pcre2: pcre2-setup readline
 		--enable-pcre2-16 \
 		--enable-pcre2-32 \
 		--enable-pcre2grep-libz \
-		--enable-pcre2grep-libbz2 \
+		--enable-pcre2grep-libbz2
 	+$(MAKE) -C $(BUILD_WORK)/pcre2
 	+$(MAKE) -C $(BUILD_WORK)/pcre2 install \
 		DESTDIR=$(BUILD_STAGE)/pcre2
+ifneq ($(filter -flto%,$(CFLAGS) $(CXXFLAGS)),)
+	# Rebuild only public static libraries, retaining configured C/C++ flags.
+	+$(MAKE) -C $(BUILD_WORK)/pcre2 clean
+	+$(MAKE) -C $(BUILD_WORK)/pcre2 libpcre2-8.la libpcre2-16.la libpcre2-32.la libpcre2-posix.la \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/pcre2/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/pcre2/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -static"
+	cp -a $(BUILD_WORK)/pcre2/.libs/libpcre2-{8,16,32,posix}.a $(BUILD_STAGE)/pcre2/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	$(call AFTER_BUILD,copy)
 endif
 
