@@ -10,6 +10,7 @@ xcb-proto-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),http://xorg.freedesktop.org/archive/individual/proto/xcb-proto-$(XCBPROTO_VERSION).tar.gz{$(comma).sig})
 	$(call PGP_VERIFY,xcb-proto-$(XCBPROTO_VERSION).tar.gz)
 	$(call EXTRACT_TAR,xcb-proto-$(XCBPROTO_VERSION).tar.gz,xcb-proto-$(XCBPROTO_VERSION),xcb-proto)
+	cd $(BUILD_WORK)/xcb-proto && autoreconf -fi
 
 ifneq ($(wildcard $(BUILD_WORK)/xcb-proto/.build_complete),)
 xcb-proto:
