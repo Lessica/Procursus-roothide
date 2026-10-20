@@ -5,7 +5,7 @@ endif
 SUBPROJECTS += berkeleydb
 # Berkeleydb requires registration on Oracle's website, so this is a mirror.
 BDB_VERSION := 18.1.40
-DEB_BDB_V   ?= $(BDB_VERSION)-1
+DEB_BDB_V   ?= $(BDB_VERSION)-2
 
 berkeleydb-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://fossies.org/linux/misc/db-$(BDB_VERSION).tar.gz)
@@ -32,6 +32,19 @@ berkeleydb: berkeleydb-setup gettext openssl
 	+$(MAKE) -C $(BUILD_WORK)/berkeleydb/build_unix
 	+$(MAKE) -C $(BUILD_WORK)/berkeleydb/build_unix install \
 		DESTDIR=$(BUILD_STAGE)/berkeleydb 
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# C/C++/STL share objects. Preserve the installed LTO libraries/tools
+	# before rebuilding all three public archives in this configuration.
+	find $(BUILD_WORK)/berkeleydb/build_unix -maxdepth 1 -name '*.lo' -type f -delete
+	rm -f $(BUILD_WORK)/berkeleydb/build_unix/libdb{,_cxx,_stl}-18.1.la
+	+$(MAKE) -C $(BUILD_WORK)/berkeleydb/build_unix \
+		libdb-18.1.la libdb_cxx-18.1.la libdb_stl-18.1.la \
+		CFLAGS="$$(sed -n 's/^CFLAGS[[:space:]]*=[[:space:]]*//p' $(BUILD_WORK)/berkeleydb/build_unix/Makefile) -fno-lto" \
+		CXXFLAGS="$$(sed -n 's/^CXXFLAGS[[:space:]]*=[[:space:]]*//p' $(BUILD_WORK)/berkeleydb/build_unix/Makefile) -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS[[:space:]]*=[[:space:]]*//p' $(BUILD_WORK)/berkeleydb/build_unix/Makefile) -fno-lto -static"
+	cp -a $(BUILD_WORK)/berkeleydb/build_unix/.libs/libdb{,_cxx,_stl}-18.1.a \
+		$(BUILD_STAGE)/berkeleydb/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	$(call AFTER_BUILD,copy)
 endif
 
