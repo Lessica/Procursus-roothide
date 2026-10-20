@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS      += libvterm
 LIBVTERM_VERSION := 0.3.3
-DEB_LIBVTERM_V   ?= $(LIBVTERM_VERSION)
+DEB_LIBVTERM_V   ?= $(LIBVTERM_VERSION)-1
 
 libvterm-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://deb.debian.org/debian/pool/main/libv/libvterm/libvterm_$(LIBVTERM_VERSION).orig.tar.gz)
@@ -28,6 +28,18 @@ libvterm: libvterm-setup
 		LIBTOOL="$(BUILD_WORK)/libvterm/libtool/libtool"
 	+$(MAKE) -C $(BUILD_WORK)/libvterm install PREFIX=$(MEMO_PREFIX)$(MEMO_SUB_PREFIX) \
 		DESTDIR="$(BUILD_STAGE)/libvterm"
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# This handwritten Makefile appends its own required CFLAGS with override.
+	# Keep installed LTO library/tools and rebuild only the static target.
+	+$(MAKE) -C $(BUILD_WORK)/libvterm clean
+	+$(MAKE) -C $(BUILD_WORK)/libvterm libvterm.la \
+		PREFIX=$(MEMO_PREFIX)$(MEMO_SUB_PREFIX) \
+		LIBTOOL="$(BUILD_WORK)/libvterm/libtool/libtool" \
+		CFLAGS="$(filter-out -flto%,$(CFLAGS)) -fno-lto" \
+		LDFLAGS="$(filter-out -flto%,$(LDFLAGS)) -static"
+	cp -a $(BUILD_WORK)/libvterm/.libs/libvterm.a \
+		$(BUILD_STAGE)/libvterm/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	$(call AFTER_BUILD,copy)
 endif
 
