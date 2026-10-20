@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS      += libpaper
 LIBPAPER_VERSION := 1.1.28
-DEB_LIBPAPER_V   ?= $(LIBPAPER_VERSION)
+DEB_LIBPAPER_V   ?= $(LIBPAPER_VERSION)-1
 
 libpaper-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),http://deb.debian.org/debian/pool/main/libp/libpaper/libpaper_$(LIBPAPER_VERSION).tar.gz)
@@ -21,6 +21,15 @@ libpaper: libpaper-setup
 	+$(MAKE) -C $(BUILD_WORK)/libpaper
 	+$(MAKE) -C $(BUILD_WORK)/libpaper install \
 		DESTDIR="$(BUILD_STAGE)/libpaper"
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Keep staged LTO tools/dylib; retain the configured paper/header inputs.
+	rm -f $(BUILD_WORK)/libpaper/lib/*.lo $(BUILD_WORK)/libpaper/lib/libpaper.la
+	+$(MAKE) -C $(BUILD_WORK)/libpaper/lib libpaper.la \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/libpaper/lib/Makefile) -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/libpaper/lib/Makefile) -fno-lto -static"
+	cp -a $(BUILD_WORK)/libpaper/lib/.libs/libpaper.a \
+		$(BUILD_STAGE)/libpaper/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	$(call AFTER_BUILD,copy)
 endif
 

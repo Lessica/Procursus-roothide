@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS      += libgeoip
 LIBGEOIP_VERSION := 1.6.12
-DEB_LIBGEOIP_V   ?= $(LIBGEOIP_VERSION)-1
+DEB_LIBGEOIP_V   ?= $(LIBGEOIP_VERSION)-2
 
 libgeoip-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE), \
@@ -23,6 +23,15 @@ libgeoip: libgeoip-setup
 	+$(MAKE) -C $(BUILD_WORK)/libgeoip
 	+$(MAKE) -C $(BUILD_WORK)/libgeoip install \
 		DESTDIR="$(BUILD_STAGE)/libgeoip"
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Preserve installed LTO programs/dylib and configured feature flags.
+	rm -f $(BUILD_WORK)/libgeoip/libGeoIP/*.lo $(BUILD_WORK)/libgeoip/libGeoIP/libGeoIP.la
+	+$(MAKE) -C $(BUILD_WORK)/libgeoip/libGeoIP libGeoIP.la \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/libgeoip/libGeoIP/Makefile) -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/libgeoip/libGeoIP/Makefile) -fno-lto -static"
+	cp -a $(BUILD_WORK)/libgeoip/libGeoIP/.libs/libGeoIP.a \
+		$(BUILD_STAGE)/libgeoip/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	$(call AFTER_BUILD,copy)
 endif
 
