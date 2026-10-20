@@ -493,7 +493,8 @@ endif
 CC              != xcrun --find cc
 CXX             != xcrun --find c++
 CPP             := $(CC) -E
-PATH            := /opt/procursus/bin:/opt/procursus/libexec/gnubin:/usr/bin:$(PATH)
+# Respect the explicitly prepared host tools (GNU utilities and patched signers).
+PATH            := $(PATH):/opt/procursus/bin:/opt/procursus/libexec/gnubin
 
 CFLAGS_FOR_BUILD   := -arch $(shell uname -m) -mmacosx-version-min=$(shell sw_vers -productVersion) -isysroot $(MACOSX_SYSROOT)
 CPPFLAGS_FOR_BUILD := $(CFLAGS_FOR_BUILD)
@@ -510,7 +511,7 @@ MACOSX_SYSROOT  ?= /usr/share/SDKs/MacOSX.sdk
 CC              != command -v cc
 CXX             != command -v c++
 CPP             := $(CC) -E
-PATH            := /usr/bin:$(PATH)
+PATH            := $(PATH):/usr/bin
 
 CFLAGS_FOR_BUILD   := -arch $(shell arch) -miphoneos-version-min=$(shell sw_vers -productVersion)
 CPPFLAGS_FOR_BUILD := $(CFLAGS_FOR_BUILD)

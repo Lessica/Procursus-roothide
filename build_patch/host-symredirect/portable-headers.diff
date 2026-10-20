@@ -1,0 +1,37 @@
+--- a/symredirect.cpp
++++ b/symredirect.cpp
+@@ -1,3 +1,8 @@
++#if defined(__linux__) && defined(__aarch64__) && !defined(__arm64__)
++// cctools' Darwin architecture selectors use Apple's spelling.
++#define __arm64__ 1
++#endif
++
+ #include <unistd.h>
+ #include <stdio.h>
+ #include <stdlib.h>
+@@ -9,7 +14,13 @@
+ #include <mach-o/fat.h>
+ #include <mach-o/nlist.h>
+ #include <mach-o/loader.h>
++#ifdef __APPLE__
+ #include <mach-o/fixup-chains.h>
++#else
++// cctools-port keeps this file beside otool rather than in include/mach-o.
++#include <fixup-chains.h>
++#endif
++#include <cstdint>
+ #include <assert.h>
+ #include <libgen.h>
+ 
+--- a/vroot.h
++++ b/vroot.h
+@@ -25,7 +25,9 @@
+ #define VROOT_API_NAME(NAME) vroot_##NAME
+ #define VROOTAT_API_NAME(NAME) vrootat_##NAME
+ 
++#ifdef __APPLE__
+ #include <Availability.h>
++#endif
+ 
+ #if !defined(VROOT_API_ALL) && !defined(__IPHONE_16_0)
+ #error "ios sdk version too old"

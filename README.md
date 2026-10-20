@@ -29,59 +29,11 @@ Here are a few changes over other existing build-systems
 ## Contributing
 Contributions (Issues or Pull Requests) are welcome with open arms. Check out the [contribution guidelines](./CONTRIBUTING.md) before helping out.
 
-## RootHide host tools
+## RootHide package updates
 
-RootHide builds require patched host `ldid` and `symredirect` on `PATH`. Restore their sources from the versions in [ldid.mk](makefiles/ldid.mk) and [roothide.mk](makefiles/roothide.mk), applying the checked-in patches before compiling for the host. The following prepares sources only; set `CHECKOUT` to this checkout's absolute path and use a fresh directory beneath it:
+This branch updates the full RootHide package collection, including the alt development tools, against Procursus main while retaining newer RootHide versions. Packages keep their RootHide compatibility; ordinary Procursus packages are not interchangeable.
 
-```sh
-: "${CHECKOUT:?Set CHECKOUT to the absolute checkout path}"
-HOST_TOOL_ROOT="$CHECKOUT/build_work/host-tools"
-(
-set -e
-test ! -e "$HOST_TOOL_ROOT"
-mkdir -p "$HOST_TOOL_ROOT/src" "$HOST_TOOL_ROOT/bin"
-git clone --depth 1 --branch v2.1.5-procursus7 https://github.com/ProcursusTeam/ldid.git "$HOST_TOOL_ROOT/src/ldid"
-for patch in bundle-code-signing-flags.patch entitlement-memory.patch preserve-linkedit-extent.patch; do
-    patch -d "$HOST_TOOL_ROOT/src/ldid" -p1 < "$CHECKOUT/build_patch/ldid/$patch" || exit 1
-done
-git init "$HOST_TOOL_ROOT/src/libroothide"
-git -C "$HOST_TOOL_ROOT/src/libroothide" fetch --depth 1 https://github.com/roothide/libroothide.git 7764c54759009272b4f2f23c18c62b21794fe6dd
-git -C "$HOST_TOOL_ROOT/src/libroothide" checkout --detach FETCH_HEAD
-patch -d "$HOST_TOOL_ROOT/src/libroothide" -p1 < "$CHECKOUT/build_patch/roothide/symredirect-universal.diff"
-)
-```
-
-Host compilation needs a host C++ toolchain and, for `ldid`, host OpenSSL/libcrypto and libplist headers and libraries. Select the compiler, macOS SDK and dependency prefixes explicitly; keep the login `HOME` and place generated tools in `$HOST_TOOL_ROOT/bin`, then prepend that directory to `PATH`. Do not use the iOS libraries or package-install targets to prepare host tools. The commands above prepare sources only; host dependency installation and compilation remain manual. The Linux setup script builds pinned, patched `ldid`; `symredirect` and the remaining host-tool preparation are still separate steps.
-
-## Jailbreak-specific libkrw providers
-
-`libkrw-dopamine` targets the ordinary Dopamine 2 `libjailbreak` ABI. It is
-excluded from RootHide aggregate builds; its ABI headers must not be substituted
-for the paired RootHide runtime headers.
-
-The Relaxin provider is an optional integration, excluded from both `package`
-and `strapprojects`. Select it explicitly with your usual SDK and host-tool
-settings:
-
-```sh
-gmake libkrw-relaxin-package MEMO_TARGET=iphoneos-arm64-roothide MEMO_CFVER=1900
-```
-
-Its pinned source, ABI headers and link stub are in `source-repo/`. It requires
-the matching Relaxin runtime and `dopamine-basebin-link`; the link stub does not
-supply that runtime. The existing package identity `libkrw0-dopamine` and version
-`0:2.0.6:compat` are retained for compatibility. The separate `libkrw-relaxin`
-build directory prevents reuse of an ordinary Dopamine provider build.
-
-## Bender runtime compatibility
-
-The Bender recipe and built package are retained. Bender requires
-`org.coolstar.libhooker (>= 1.4.0)` and a compatible tweak loader that honors its
-`/var/mobile/Library/Preferences/org.coolstar.libhooker.plist` configuration.
-An implementation of the libhooker hooking ABI alone, including an ElleKit
-`Provides` declaration, does not establish this configuration compatibility.
-The original package dependency is preserved; runtime compatibility with the
-current RootHide/ElleKit environment has not been validated.
+The Relaxin integration is optional. Bender requires a compatible libhooker environment. Build and runtime validation does not constitute a published repository or Bootstrap release.
 
 ## Credits
 Build system created by [Diatrus](https://twitter.com/Diatrus) and [Kirb](https://twitter.com/hbkirb). Built better by all our wonderful contributors. Made worth it by people like you!

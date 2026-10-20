@@ -1,198 +1,96 @@
-#Build Procursus-roothide on Debian/Ubuntu
-
-set -e
-set -x
-
-IOS_SDK_VERSION=16.5 #from https://github.com/theos/sdks/releases/tag/master-146e41f
-MACOSX_SDK_VERSION=11.3 #from https://github.com/phracker/MacOSX-SDKs/releases/tag/11.3
-
-# Resolve the checkout before changing to the login home directory.
-PROJDIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
-
-if [ -e "$HOME/ldid" ] || [ -L "$HOME/ldid" ]; then
-    echo "*** host ldid path already exists at $HOME/ldid; move it aside before preparing the pinned, patched host ldid"
-    exit 1
+#!/usr/bin/env bash
+# Prepare a self-contained Linux host toolchain inside this checkout.
+set -euo pipefail
+umask 022
+PROJDIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)
+HOST_TOOL_ROOT=${HOST_TOOL_ROOT:-"$PROJDIR/build_work/host-tools"}
+case ${1:-} in
+ --help) printf '%s\n' 'Usage: bash config-on-linux.sh [--skip-system-deps|--deps-only]' 'Ubuntu 24.04 / Debian-compatible Linux. Installs native apt dependencies, downloads' 'pinned toolchain/SDK inputs, builds patched host tools and writes host-env.sh.' 'HOST_TOOL_ROOT must be inside the checkout; HOME is preserved.' 'Set TARGET_SYSROOT and MACOSX_SYSROOT to use explicitly supplied SDKs.' 'Docker containers must use --init to reap fakeroot helper processes.'; exit 0;;
+ ''|--skip-system-deps|--deps-only) ;;
+ *) echo 'Unknown option; use --help' >&2;exit 2;;
+esac
+[[ $(uname -s) == Linux ]] || { echo 'Use build_tools/prepare-host-tools.sh on macOS or iOS.' >&2;exit 1; }
+HOST_TOOL_ROOT=$(realpath -m -- "$HOST_TOOL_ROOT")
+[[ $HOST_TOOL_ROOT != "$PROJDIR" ]] || { echo "HOST_TOOL_ROOT must be below checkout" >&2; exit 1; }
+case "$HOST_TOOL_ROOT/" in "$PROJDIR/"*) ;; *) echo 'HOST_TOOL_ROOT must be inside the checkout' >&2;exit 1;; esac
+mkdir -p "$HOST_TOOL_ROOT"
+if [[ ${1:-} != --skip-system-deps ]]; then
+ SUDO=(); [[ $(id -u) == 0 ]] || SUDO=(sudo)
+ "${SUDO[@]}" apt-get update
+ "${SUDO[@]}" env DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+  ca-certificates build-essential clang llvm lld make coreutils findutils sed tar patch bash \
+  openssl gnupg libtool libtool-bin automake autoconf bison flex groff fakeroot dpkg-dev zstd \
+  xz-utils libncurses-dev wget cmake docbook-xsl python3 python3-dev python3-venv git pkg-config \
+  autopoint po4a unzip triehash ninja-build curl libssl-dev libplist-dev libplist++-dev \
+  libbsd-dev file gettext gperf texinfo help2man rsync
 fi
-
-cd ~
-
-if ! eval $(echo "echo $PATH") || echo "$PATH" | grep -qE '[[:space:]]|[^[:print:]]' ; then
-    echo "*** your PATH contains special characters, please start a new shell with a clean PATH to build Procursus-roothide"
-    echo "$PATH"
-    exit
+[[ ${1:-} != --deps-only ]] || exit 0
+mkdir -p "$HOST_TOOL_ROOT"/{downloads,toolchain,SDK,bin}
+fetch() {
+ local url=$1 dst=$2
+ if [[ ! -s $dst ]]; then
+  curl --fail --location --retry 3 --connect-timeout 30 --output "$dst.part" "$url"
+  mv "$dst.part" "$dst"
+ fi
+}
+case $(uname -m) in aarch64|arm64) arch=aarch64;; x86_64) arch=x86_64;; *) echo 'Unsupported Linux architecture' >&2;exit 1;; esac
+# The release used by the upstream Theos installer, pinned instead of /latest.
+release=test-210562a
+archive="$HOST_TOOL_ROOT/downloads/iOSToolchain-$arch.tar.xz"
+fetch "https://github.com/L1ghtmann/llvm-project/releases/download/$release/iOSToolchain-$arch.tar.xz" "$archive"
+if [[ $arch == aarch64 ]]; then
+ echo "9051e9d531de5e511f0fab40d925d625bc6efe7ed9dce821d179c09de9bc690b  $archive" | sha256sum -c -
 fi
-
-TEST_INODE_1=$(touch "$PROJDIR/.inode_test_file_1"; stat -c %i "$PROJDIR/.inode_test_file_1"; rm -f "$PROJDIR/.inode_test_file_1")
-TEST_INODE_2=$(touch "$PROJDIR/.inode_test_file_2"; stat -c %i "$PROJDIR/.inode_test_file_2"; rm -f "$PROJDIR/.inode_test_file_2")
-if [ "$TEST_INODE_1" = "$TEST_INODE_2" ]; then
-	echo "*** The file system where the build directory is located reuses inodes, fakeroot will not work correctly. You can move the build directory to a different type of file system for building."
-	exit
-fi
-
-if [ -d ~/cctools ]; then
-    echo "*** cctools already exists in $(realpath ~/cctools), please remove it before running this script"
-    exit
-fi
-
-if which aarch64-apple-darwin-clang; then
-    echo "*** an exists toolchain is already in your PATH, please remove it from PATH before running this script"
-    exit
-fi
-
-echo "Installing dependencies"
-
-# sudo apt update || true
-
-sudo apt install -y build-essential clang llvm make coreutils findutils sed tar patch bash openssl gnupg libtool automake bison flex groff fakeroot dpkg zstd libncurses6 wget cmake docbook-xsl python3 git pkg-config autopoint po4a unzip triehash meson ninja-build curl
-
-echo "Installing toolchain and SDKs with iOS($IOS_SDK_VERSION) and MacOSX($MACOSX_SDK_VERSION)"
-
-
-echo "Installing toolchain for Procursus from theos"
-
-if [ ! -d ~/theos ]; then
-    echo 'theos not installed, try: bash -c "$(curl -fsSL https://raw.githubusercontent.com/roothide/theos/master/bin/install-theos)"'
-    exit
-fi
-
-if [ ! -d ~/theos/toolchain/linux/iphone ]; then
-    echo "toolchain not found, try reinstalling latest theos"
-    exit
-fi
-
-mkdir -p ~/cctools/theos-bin
-for file in ~/theos/toolchain/linux/iphone/bin/*; do
-    ln -sf $file ~/cctools/theos-bin/aarch64-apple-darwin-$(basename $file)
+tar -xf "$archive" -C "$HOST_TOOL_ROOT/toolchain"
+toolbin="$HOST_TOOL_ROOT/toolchain/linux/iphone/bin"
+# The upstream archiver invokes this configured ranlib name internally.
+ln -sf ranlib "$toolbin/aarch64-apple-darwin14-ranlib"
+# Use the distribution's current clang with the pinned Darwin binutils. The
+# bundled clang11 cannot parse all modern SDK headers. No host/iOS library mix.
+for name in ar ld ranlib strings strip install_name_tool nm lipo otool libtool; do
+ test -x "$toolbin/$name"
+ ln -sf "$toolbin/$name" "$HOST_TOOL_ROOT/bin/aarch64-apple-darwin-$name"
 done
-# `ar` in the (theos)lightman's toolchain might call aarch64-apple-darwin14-ranlib instead of aarch64-apple-darwin-ranlib
-if [ ! -e ~/theos/linux/iphone/bin/aarch64-apple-darwin14-ranlib ]; then
-    ln -sf ranlib  ~/theos/toolchain/linux/iphone/bin/aarch64-apple-darwin14-ranlib
-fi
-# fix: lightman's clang(++) cannot be called through symbolic links when building for ios on Ubuntu
-rm -f ~/cctools/theos-bin/aarch64-apple-darwin-clang ~/cctools/theos-bin/aarch64-apple-darwin-clang++
-echo '#!/bin/bash
-~/theos/toolchain/linux/iphone/bin/clang $([ "$CLANG_VERBOSE_ENABLE" = "1" ] && echo "-v") --target=aarch64-apple-darwin "$@"
-exit $?' > ~/cctools/theos-bin/aarch64-apple-darwin-clang
-chmod +x ~/cctools/theos-bin/aarch64-apple-darwin-clang
-
-rm -f ~/cctools/theos-bin/aarch64-apple-darwin-clang++
-echo '#!/bin/bash
-~/theos/toolchain/linux/iphone/bin/clang++ $([ "$CLANG_VERBOSE_ENABLE" = "1" ] && echo "-v") --target=aarch64-apple-darwin "$@"
-exit $?' > ~/cctools/theos-bin/aarch64-apple-darwin-clang++
-chmod +x ~/cctools/theos-bin/aarch64-apple-darwin-clang++
-
-
-echo "Downloading iPhoneOS $IOS_SDK_VERSION SDK"
-rm -f iPhoneOS$IOS_SDK_VERSION.sdk.tar.xz #the previously downloaded file may be corrupted.
-wget https://github.com/theos/sdks/releases/download/master-146e41f/iPhoneOS$IOS_SDK_VERSION.sdk.tar.xz
-DOWNLOADED_SDK_FILE_PATH=$(realpath ./iPhoneOS$IOS_SDK_VERSION.sdk.tar.xz)
-
-# since cctools uses the host's llvm/clang but its own ld, they may be incompatible and the build may fail
-# and, tapi may not be able to generate tbd file for macho built by cctools
-echo "Installing cctools toolchain"
-
-if [ ! -f ./cctools-port/.build_complete ]; then
-    rm -rf ./cctools-port
-    sudo apt install -y libssl-dev
-    git clone --recursive https://github.com/tpoechtrager/cctools-port
-fi
-
-sed -i 's/HAVE_UTIMESAT/HAVE_UTIMENSAT/g' cctools-port/cctools/libstuff/writeout.c
-
-pushd cctools-port/usage_examples/ios_toolchain
-
-if [ ! -f ~/cctools-port/.build_complete ] || [ ! -d ./target/SDK/iPhoneOS$IOS_SDK_VERSION.sdk ]; then
-sed -i 's/arm-apple-darwin11/aarch64-apple-darwin/g' build.sh
-./build.sh $DOWNLOADED_SDK_FILE_PATH arm64
-touch ~/cctools-port/.build_complete
-fi
-
-# remove the outdated ldid, we will install procursus ldid later
-rm -f ./target/bin/ldid
-
-mkdir -p ~/cctools/SDK
-ln -sf $(realpath ./target/SDK/iPhoneOS$IOS_SDK_VERSION.sdk) ~/cctools/SDK/iPhoneOS.sdk
-
-mkdir -p ~/cctools/bin
-for file in ./target/bin/*; do
-    ln -sf $(realpath $file) ~/cctools/bin/$(basename $file)
+for name in clang clang++; do
+ compiler=$(command -v "$name")
+ printf '#!/usr/bin/env bash\nexec %q --target=aarch64-apple-darwin -B%q -stdlib=libc++ "$@"\n' "$compiler" "$toolbin" > "$HOST_TOOL_ROOT/bin/aarch64-apple-darwin-$name"
+ chmod +x "$HOST_TOOL_ROOT/bin/aarch64-apple-darwin-$name"
 done
-
-# if the sdk's c++ header is not compatible with the old llvm/clang, we need to use theos' c++ header to build for ios
-if ! echo -e "#include <string>\n#include <iostream>\nint main(){std::cout << std::string(\"test\");return 0;}" | ./target/bin/aarch64-apple-darwin-clang++ -x c++ -c -stdlib=libc++ -isysroot ~/cctools/SDK/iPhoneOS.sdk -v - ; then
-    echo "*** warning: the host's llvm/clang++ may not be compatible with the current iPhoneOS$IOS_SDK_VERSION.sdk, you can upgrade your llvm/clang or use an older version of iPhoneOS.sdk"
-    exit
-    # sudo apt install -y libc++-dev
-    # rm -rf ~/cctools/SDK/iPhoneOS.sdk/usr/include/c++
-    # LIBCXX_INCLUDE_PATH=$(dpkg -S include/c++/v1/ | grep libc++ | awk -F ': ' '{print $2}' | xargs -n 1 dirname | sort -u | head -n 1)
-    # if [ ! -d $LIBCXX_INCLUDE_PATH ]; then
-    #     echo "libc++ header path not found!"
-    #     exit
-    # fi
-    # EXTRA_CXX_FLAGS="-isystem $LIBCXX_INCLUDE_PATH"
+ln -sf "$toolbin/tapi" "$HOST_TOOL_ROOT/bin/tapi"
+if [[ -z ${TARGET_SYSROOT:-} ]]; then
+ archive="$HOST_TOOL_ROOT/downloads/iPhoneOS16.5.sdk.tar.xz"
+ fetch 'https://github.com/theos/sdks/releases/download/master-146e41f/iPhoneOS16.5.sdk.tar.xz' "$archive"
+ [[ -d "$HOST_TOOL_ROOT/SDK/iPhoneOS16.5.sdk" ]] || tar -xf "$archive" -C "$HOST_TOOL_ROOT/SDK"
+ TARGET_SYSROOT="$HOST_TOOL_ROOT/SDK/iPhoneOS16.5.sdk"
 fi
-
-# fix: some hosts' llvm/clang++ would not auto use libc++ for aarch64-apple-darwin
-rm -f ~/cctools/bin/aarch64-apple-darwin-clang ~/cctools/bin/aarch64-apple-darwin-clang++
-
-echo -e "#!/bin/bash\n\
-$(realpath ./target/bin)/aarch64-apple-darwin-clang \
-\$([ \"\$CLANG_VERBOSE_ENABLE\" = \"1\" ] && echo '-v') \
-$EXTRA_CXX_FLAGS \
--stdlib=libc++ \"\$@\"\n\
-exit \$?" > ~/cctools/bin/aarch64-apple-darwin-clang
-chmod +x ~/cctools/bin/aarch64-apple-darwin-clang
-
-echo -e "#!/bin/bash\n\
-$(realpath ./target/bin)/aarch64-apple-darwin-clang++ \
-\$([ \"\$CLANG_VERBOSE_ENABLE\" = \"1\" ] && echo '-v') \
-$EXTRA_CXX_FLAGS \
--stdlib=libc++ -lc++ \"\$@\"\n\
-exit \$?" > ~/cctools/bin/aarch64-apple-darwin-clang++
-chmod +x ~/cctools/bin/aarch64-apple-darwin-clang++
-
-popd
-
-if [ ! -f ./apple-libtapi/.build_complete ]; then
-    sudo apt install -y lld
-    rm -rf apple-libtapi
-    git clone https://github.com/tpoechtrager/apple-libtapi.git
-    cd apple-libtapi
-    INSTALLPREFIX=/usr/local ./build_tapi_tools.sh
-    sudo ./install.sh
-    cd -
-    touch ./apple-libtapi/.build_complete
+if [[ -z ${MACOSX_SYSROOT:-} ]]; then
+ archive="$HOST_TOOL_ROOT/downloads/MacOSX11.3.sdk.tar.xz"
+ fetch 'https://github.com/phracker/MacOSX-SDKs/releases/download/11.3/MacOSX11.3.sdk.tar.xz' "$archive"
+ [[ -d "$HOST_TOOL_ROOT/SDK/MacOSX11.3.sdk" ]] || tar -xf "$archive" -C "$HOST_TOOL_ROOT/SDK"
+ MACOSX_SYSROOT="$HOST_TOOL_ROOT/SDK/MacOSX11.3.sdk"
 fi
-
-
-echo "Installing MacOSX SDK"
-rm -f MacOSX$MACOSX_SDK_VERSION.sdk.tar.xz #the previously downloaded file may be corrupted.
-wget https://github.com/phracker/MacOSX-SDKs/releases/download/$MACOSX_SDK_VERSION/MacOSX$MACOSX_SDK_VERSION.sdk.tar.xz
-mkdir -p ~/cctools/SDK
-tar -xf MacOSX$MACOSX_SDK_VERSION.sdk.tar.xz -C ~/cctools/SDK/
-mv ~/cctools/SDK/MacOSX$MACOSX_SDK_VERSION.sdk ~/cctools/SDK/MacOSX.sdk
-
-echo "Building patched Procursus ldid v2.1.5-procursus7"
-sudo apt install -y libssl-dev libplist-dev libplist++-dev
-git clone --depth 1 --branch v2.1.5-procursus7 https://github.com/ProcursusTeam/ldid.git ./ldid
-for patch in bundle-code-signing-flags.patch entitlement-memory.patch preserve-linkedit-extent.patch; do
-    patch -d ./ldid -p1 < "$PROJDIR/build_patch/ldid/$patch"
-done
-cd ldid
-make -j$(nproc)
-sudo make -j$(nproc) install
-cd ..
-touch ./ldid/.build_complete
-
-echo '*** All done ***, now you can add
-
- ~/cctools/bin          (using host'\''s llvm/clang)
-
-  or
- ~/cctools/theos-bin    (using theos'\''s llvm/clang)
- 
- to PATH to build Procursus-roothide ...
-'
-
-# export PATH=~/cctools/bin:$PATH or export PATH=~/cctools/theos-bin:$PATH
-# make rebuild-libiosexec-package MEMO_TARGET=iphoneos-arm64-roothide NO_PGP=1 MEMO_CFVER=1900
+test -f "$TARGET_SYSROOT/usr/include/stdio.h"
+test -d "$MACOSX_SYSROOT/System/Library/Frameworks/CoreServices.framework"
+export HOST_TOOL_ROOT
+export HOST_CC=${HOST_CC:-clang}
+export HOST_CXX=${HOST_CXX:-clang++}
+bash "$PROJDIR/build_tools/prepare-host-tools.sh"
+# Apple's Mach interface generator is required by the main setup target.
+mig_commit=f337e600741638896fb6056ce87c6479f74b89a3
+archive="$HOST_TOOL_ROOT/downloads/bootstrap_cmds-$mig_commit.tar.gz"
+fetch "https://github.com/markmentovai/bootstrap_cmds/archive/$mig_commit.tar.gz" "$archive"
+mig_src="$HOST_TOOL_ROOT/src/bootstrap_cmds-$mig_commit"
+[[ -d $mig_src ]] || tar -xf "$archive" -C "$HOST_TOOL_ROOT/src"
+(
+ cd "$mig_src"
+ autoreconf -fi
+ CC="$HOST_CC" ./configure --prefix="$HOST_TOOL_ROOT"
+ make -j"${HOST_JOBS:-4}"
+ make install
+)
+# Supplement the shared host-tool environment with cross compiler and SDK paths.
+{
+ printf '\nexport TARGET_SYSROOT=%q\nexport MACOSX_SYSROOT=%q\n' "$TARGET_SYSROOT" "$MACOSX_SYSROOT"
+} >> "$HOST_TOOL_ROOT/host-env.sh"
+sha256sum "$HOST_TOOL_ROOT"/downloads/* > "$HOST_TOOL_ROOT/downloads.sha256"
+printf 'Ready. Run: source %q\n' "$HOST_TOOL_ROOT/host-env.sh"
