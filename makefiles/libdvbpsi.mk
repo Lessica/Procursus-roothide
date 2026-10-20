@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS       += libdvbpsi
 LIBDVBPSI_VERSION := 1.3.3
-DEB_LIBDVBPSI_V   ?= $(LIBDVBPSI_VERSION)
+DEB_LIBDVBPSI_V   ?= $(LIBDVBPSI_VERSION)-1
 
 libdvbpsi-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://download.videolan.org/pub/videolan/libdvbpsi/$(LIBDVBPSI_VERSION)/libdvbpsi-$(LIBDVBPSI_VERSION).tar.bz2)
@@ -20,6 +20,15 @@ libdvbpsi: libdvbpsi-setup
 	+$(MAKE) -C $(BUILD_WORK)/libdvbpsi
 	+$(MAKE) -C $(BUILD_WORK)/libdvbpsi install \
 		DESTDIR=$(BUILD_STAGE)/libdvbpsi
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Keep installed LTO outputs and the complete configured compiler flags.
+	+$(MAKE) -C $(BUILD_WORK)/libdvbpsi/src clean
+	+$(MAKE) -C $(BUILD_WORK)/libdvbpsi/src libdvbpsi.la \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/libdvbpsi/src/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/libdvbpsi/src/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -static"
+	cp -a $(BUILD_WORK)/libdvbpsi/src/.libs/libdvbpsi.a \
+		$(BUILD_STAGE)/libdvbpsi/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	$(call AFTER_BUILD,copy)
 endif
 

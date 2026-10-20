@@ -4,7 +4,7 @@ endif
 
 STRAPPROJECTS += libidn2
 IDN2_VERSION  := 2.3.7
-DEB_IDN2_V    ?= $(IDN2_VERSION)-1
+DEB_IDN2_V    ?= $(IDN2_VERSION)-2
 
 libidn2-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://ftpmirror.gnu.org/libidn/libidn2-$(IDN2_VERSION).tar.gz{$(comma).sig})
@@ -21,6 +21,20 @@ libidn2: libidn2-setup gettext libunistring
 	+$(MAKE) -C $(BUILD_WORK)/libidn2
 	+$(MAKE) -C $(BUILD_WORK)/libidn2 install \
 		DESTDIR=$(BUILD_STAGE)/libidn2
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Keep staged LTO output and generated tables/headers; rebuild the archive
+	# together with its bundled gnulib/unistring convenience objects.
+	+set -e; for entry in gl:libgnu.la unistring:libunistring.la lib:libidn2.la; do \
+		sub=$${entry%:*}; target=$${entry##*:}; \
+		find $(BUILD_WORK)/libidn2/$$sub -name '*.lo' -type f -delete; \
+		rm -f $(BUILD_WORK)/libidn2/$$sub/$$target; \
+		$(MAKE) -C $(BUILD_WORK)/libidn2/$$sub $$target \
+			CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/libidn2/$$sub/Makefile) -fno-lto" \
+			LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/libidn2/$$sub/Makefile) -fno-lto -static"; \
+	done
+	cp -a $(BUILD_WORK)/libidn2/lib/.libs/libidn2.a \
+		$(BUILD_STAGE)/libidn2/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	$(call AFTER_BUILD,copy)
 endif
 
