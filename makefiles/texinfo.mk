@@ -21,7 +21,8 @@ texinfo:
 else
 texinfo: texinfo-setup perl ncurses
 	$(call DO_PATCH,texinfo,texinfo,-p1)
-	cd $(BUILD_WORK)/texinfo && ./configure -C \
+	mkdir -p $(BUILD_WORK)/texinfo/build
+	cd $(BUILD_WORK)/texinfo/build && ../configure -C \
 		$(DEFAULT_CONFIGURE_FLAGS) \
 		--enable-perl-xs \
 		PERL=$(PERL_HOST) \
@@ -29,21 +30,21 @@ texinfo: texinfo-setup perl ncurses
 		PERL_EXT_CPPFLAGS="$(CPPFLAGS)" \
 		PERL_EXT_LDFLAGS="$(LDFLAGS)" \
 		PERL_EXT_CC="$(CC)"
-	+$(MAKE) -C $(BUILD_WORK)/texinfo PERL_INC=$(PERL_TARGET_CORE)
-	+$(MAKE) -C $(BUILD_WORK)/texinfo install \
+	+$(MAKE) -C $(BUILD_WORK)/texinfo/build PERL_INC=$(PERL_TARGET_CORE) PERL_CONF_ccdlflags=
+	+$(MAKE) -C $(BUILD_WORK)/texinfo/build install \
 		DESTDIR=$(BUILD_STAGE)/texinfo \
-		PERL_INC=$(PERL_TARGET_CORE)
+		PERL_INC=$(PERL_TARGET_CORE) PERL_CONF_ccdlflags=
 ifneq ($(filter -flto%,$(CFLAGS)),)
 	# Keep installed LTO commands/XS modules; rebuild their public archives only.
-	find $(BUILD_WORK)/texinfo/tp/Texinfo/XS -name '*.lo' -type f -delete
-	rm -f $(BUILD_WORK)/texinfo/tp/Texinfo/XS/{gnulib/lib/libgnu,XSParagraph,MiscXS,Parsetexi}.la
-	+$(MAKE) -C $(BUILD_WORK)/texinfo/tp/Texinfo/XS/gnulib/lib libgnu.la \
-		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/texinfo/tp/Texinfo/XS/gnulib/lib/Makefile) -fno-lto"
-	+$(MAKE) -C $(BUILD_WORK)/texinfo/tp/Texinfo/XS XSParagraph.la MiscXS.la Parsetexi.la \
-		PERL_INC=$(PERL_TARGET_CORE) \
-		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/texinfo/tp/Texinfo/XS/Makefile) -fno-lto" \
-		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/texinfo/tp/Texinfo/XS/Makefile) -fno-lto -static"
-	cp -a $(BUILD_WORK)/texinfo/tp/Texinfo/XS/.libs/{XSParagraph,MiscXS,Parsetexi}.a $(BUILD_STAGE)/texinfo/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/texinfo/
+	find $(BUILD_WORK)/texinfo/build/tp/Texinfo/XS -name '*.lo' -type f -delete
+	rm -f $(BUILD_WORK)/texinfo/build/tp/Texinfo/XS/{gnulib/lib/libgnu,XSParagraph,MiscXS,Parsetexi}.la
+	+$(MAKE) -C $(BUILD_WORK)/texinfo/build/tp/Texinfo/XS/gnulib/lib libgnu.la \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/texinfo/build/tp/Texinfo/XS/gnulib/lib/Makefile) -fno-lto"
+	+$(MAKE) -C $(BUILD_WORK)/texinfo/build/tp/Texinfo/XS XSParagraph.la MiscXS.la Parsetexi.la \
+		PERL_INC=$(PERL_TARGET_CORE) PERL_CONF_ccdlflags= \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/texinfo/build/tp/Texinfo/XS/Makefile) -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/texinfo/build/tp/Texinfo/XS/Makefile) -fno-lto -static"
+	cp -a $(BUILD_WORK)/texinfo/build/tp/Texinfo/XS/.libs/{XSParagraph,MiscXS,Parsetexi}.a $(BUILD_STAGE)/texinfo/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/texinfo/
 endif
 	$(call AFTER_BUILD)
 endif
