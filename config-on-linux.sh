@@ -80,6 +80,27 @@ if [[ -z ${MACOSX_SYSROOT:-} ]]; then
 fi
 test -f "$TARGET_SYSROOT/usr/include/stdio.h"
 test -d "$MACOSX_SYSROOT/System/Library/Frameworks/CoreServices.framework"
+# Older Rust cc/gcc build helpers query SDKs through xcrun even with explicit CC.
+{
+ printf '#!/usr/bin/env bash\nset -euo pipefail\niphoneos_sdk=%q\nmacosx_sdk=%q\n' "$TARGET_SYSROOT" "$MACOSX_SYSROOT"
+ cat <<'EOF'
+sdk= operation=
+while (( $# )); do
+ case $1 in
+  --sdk|-sdk) [[ $# -ge 2 ]] || exit 2; sdk=$2; shift 2 ;;
+  --show-sdk-path|-show-sdk-path) operation=path; shift ;;
+  *) echo "Unsupported Linux xcrun argument: $1" >&2; exit 2 ;;
+ esac
+done
+[[ $operation == path ]] || { echo 'Linux xcrun supports explicit SDK path queries only' >&2; exit 2; }
+case $sdk in
+ iphoneos) printf '%s\n' "$iphoneos_sdk" ;;
+ macosx) printf '%s\n' "$macosx_sdk" ;;
+ *) echo "Unsupported Linux xcrun SDK: $sdk" >&2; exit 2 ;;
+esac
+EOF
+} > "$HOST_TOOL_ROOT/bin/xcrun"
+chmod +x "$HOST_TOOL_ROOT/bin/xcrun"
 # Build the matching compiler-rt builtins with upstream's Darwin source selection,
 # including os_version_check. This is the iOS arm64 cross-link runtime, not a
 # target LLVM/Swift package build or an arm64e ABI substitute.
