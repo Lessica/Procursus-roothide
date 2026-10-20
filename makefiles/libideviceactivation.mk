@@ -5,7 +5,7 @@ endif
 SUBPROJECTS                  += libideviceactivation
 LIBIDEVICEACTIVATION_COMMIT  := 75505b75816691e1ff651fb55bfc6aaa7170ba3f
 LIBIDEVICEACTIVATION_VERSION := 1.1.1+git20220404.$(shell echo $(LIBIDEVICEACTIVATION_COMMIT) | cut -c -7)
-DEB_LIBIDEVICEACTIVATION_V   ?= $(LIBIDEVICEACTIVATION_VERSION)-2
+DEB_LIBIDEVICEACTIVATION_V   ?= $(LIBIDEVICEACTIVATION_VERSION)-3
 
 libideviceactivation-setup: setup
 	$(call GITHUB_ARCHIVE,libimobiledevice,libideviceactivation,$(LIBIDEVICEACTIVATION_COMMIT),$(LIBIDEVICEACTIVATION_COMMIT))
@@ -24,6 +24,16 @@ libideviceactivation: libideviceactivation-setup libplist libimobiledevice curl
 	+$(MAKE) -C $(BUILD_WORK)/libideviceactivation
 	+$(MAKE) -C $(BUILD_WORK)/libideviceactivation install \
 		DESTDIR=$(BUILD_STAGE)/libideviceactivation
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Preserve normal installed LTO runtime/tools; rebuild only the archive.
+	find $(BUILD_WORK)/libideviceactivation/src -name '*.lo' -type f -delete
+	rm -f $(BUILD_WORK)/libideviceactivation/src/libideviceactivation-1.0.la
+	+$(MAKE) -C $(BUILD_WORK)/libideviceactivation/src libideviceactivation-1.0.la \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/libideviceactivation/src/Makefile) -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/libideviceactivation/src/Makefile) -fno-lto -static"
+	cp -a $(BUILD_WORK)/libideviceactivation/src/.libs/libideviceactivation-1.0.a \
+		$(BUILD_STAGE)/libideviceactivation/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	$(call AFTER_BUILD,copy)
 endif
 
