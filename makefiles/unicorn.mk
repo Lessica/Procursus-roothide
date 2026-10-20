@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS     += unicorn
 UNICORN_VERSION := 2.0.1.post1
-DEB_UNICORN_V   ?= $(UNICORN_VERSION)
+DEB_UNICORN_V   ?= $(UNICORN_VERSION)-1
 
 unicorn-setup: setup
 	$(call GITHUB_ARCHIVE,unicorn-engine,unicorn,$(UNICORN_VERSION),$(UNICORN_VERSION))
@@ -33,6 +33,23 @@ unicorn: unicorn-setup
 		--root="$(BUILD_STAGE)/unicorn" \
 		--prefix="$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)"
 	find $(BUILD_STAGE)/unicorn -name __pycache__ -prune -exec rm -rf {} \;
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Preserve installed LTO runtime/bindings; keep all configured emulator targets.
+	: > $(BUILD_WORK)/unicorn/build/.native-static-flags
+	cd $(BUILD_WORK)/unicorn/build && for link in CMakeFiles/*.dir/link.txt; do \
+		grep -qE '(^|[[:space:]])[^[:space:]]*ar qc ' "$$link" || continue; \
+		dir=$$(dirname "$$link"); flags="$$dir/flags.make"; \
+		cp -p "$$flags" "$$flags.lto"; \
+		sed -E -i '/^(C|CXX)_FLAGS[^[:space:]]* =/ { s/(^|[[:space:]])-flto(=[^[:space:]]+)?//g; s/$$/ -fno-lto/; }' "$$flags"; \
+		touch -r "$$flags.lto" "$$flags"; echo "$$flags" >> .native-static-flags; \
+		find "$$dir" -type f \( -name '*.c.o' -o -name '*.cc.o' -o -name '*.cpp.o' -o -name '*.cxx.o' \) -delete; \
+	done
+	rm -f $(BUILD_WORK)/unicorn/build/libunicorn.a
+	+$(MAKE) -C $(BUILD_WORK)/unicorn/build bundling_target
+	cd $(BUILD_WORK)/unicorn/build && while read flags; do mv -f "$$flags.lto" "$$flags"; done < .native-static-flags
+	rm -f $(BUILD_WORK)/unicorn/build/.native-static-flags
+	cp -a $(BUILD_WORK)/unicorn/build/libunicorn.a $(BUILD_STAGE)/unicorn/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	$(call AFTER_BUILD,copy)
 endif
 
