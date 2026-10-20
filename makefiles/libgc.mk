@@ -5,7 +5,7 @@ endif
 SUBPROJECTS     += libgc
 LIBGC_VERSION   := 8.2.2
 LIBATOMIC_OPS_V := 7.6.14
-DEB_LIBGC_V     ?= $(LIBGC_VERSION)
+DEB_LIBGC_V     ?= $(LIBGC_VERSION)-1
 
 libgc-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://www.hboehm.info/gc/gc_source/{gc-$(LIBGC_VERSION)$(comma)libatomic_ops-$(LIBATOMIC_OPS_V)}.tar.gz)
@@ -28,6 +28,15 @@ libgc: libgc-setup
 	+$(MAKE) -C $(BUILD_WORK)/libgc
 	+$(MAKE) -C $(BUILD_WORK)/libgc install \
 		DESTDIR="$(BUILD_STAGE)/libgc"
+ifneq ($(filter -flto%,$(CFLAGS) $(CXXFLAGS)),)
+	# Retain installed LTO outputs and all configured static compiler flags.
+	+$(MAKE) -C $(BUILD_WORK)/libgc clean
+	+$(MAKE) -C $(BUILD_WORK)/libgc libgc.la libcord.la libgccpp.la libgctba.la \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/libgc/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -fno-lto" \
+		CXXFLAGS="$$(sed -n 's/^CXXFLAGS = //p' $(BUILD_WORK)/libgc/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/libgc/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -static"
+	cp -a $(BUILD_WORK)/libgc/.libs/lib{gc,cord,gccpp,gctba}.a $(BUILD_STAGE)/libgc/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	$(call AFTER_BUILD,copy)
 endif
 
