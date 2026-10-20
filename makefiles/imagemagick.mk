@@ -13,7 +13,7 @@ DEB_IMAGEMAGICK_V   ?= $(shell echo $(IMAGEMAGICK_VERSION) | sed s/-/./)-2
 ###
 
 imagemagick-setup: setup
-	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://download.imagemagick.org/archive/releases/ImageMagick-$(IMAGEMAGICK_VERSION).tar.xz)
+	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://mirror.accum.se/mirror/imagemagick.org/ftp/releases/ImageMagick-$(IMAGEMAGICK_VERSION).tar.xz)
 	$(call EXTRACT_TAR,ImageMagick-$(IMAGEMAGICK_VERSION).tar.xz,ImageMagick-$(IMAGEMAGICK_VERSION),imagemagick)
 
 ifneq ($(wildcard $(BUILD_WORK)/imagemagick/.build_complete),)
