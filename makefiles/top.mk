@@ -11,6 +11,7 @@ DEB_TOP_V     ?= $(TOP_VERSION)
 top-setup: setup
 	$(call GITHUB_ARCHIVE,apple-oss-distributions,top,$(TOP_VERSION),top-$(TOP_VERSION))
 	$(call EXTRACT_TAR,top-$(TOP_VERSION).tar.gz,top-top-$(TOP_VERSION),top)
+	$(call DO_PATCH,top,top,-p1)
 	mkdir -p $(BUILD_WORK)/top/include/{IOKit/storage,mach}
 	cp -a $(MACOSX_SYSROOT)/usr/include/libkern $(BUILD_WORK)/top/include
 	cp -a $(MACOSX_SYSROOT)/usr/include/mach/mach_vm.h $(BUILD_WORK)/top/include/mach
