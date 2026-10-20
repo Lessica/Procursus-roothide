@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS    += ffmpeg
 FFMPEG_VERSION := 5.1.2
-DEB_FFMPEG_V   ?= $(FFMPEG_VERSION)
+DEB_FFMPEG_V   ?= $(FFMPEG_VERSION)-1
 
 ifeq (,$(findstring darwin,$(MEMO_TARGET)))
 FFMPEG_CONFIGURE_FLAGS := --disable-audiotoolbox
@@ -85,6 +85,25 @@ ffmpeg: ffmpeg-setup aom dav1d fontconfig freetype frei0r gnutls lame libass lib
 		DESTDIR=$(BUILD_STAGE)/ffmpeg
 	$(INSTALL) -m755 $(BUILD_WORK)/ffmpeg/tools/qt-faststart $(BUILD_STAGE)/ffmpeg/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/
 	$(INSTALL) -m644 $(BUILD_MISC)/ffmpeg/qt-faststart.1 $(BUILD_STAGE)/ffmpeg/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share/man/man1/
+	# Preserve the installed LTO libraries/tools; rebuild only archive C-family objects.
+ifneq (,$(findstring -flto,$(CFLAGS)))
+	cp -p $(BUILD_WORK)/ffmpeg/ffbuild/config.mak $(BUILD_WORK)/ffmpeg/ffbuild/config.mak.lto
+	sed -E -i '/^(CFLAGS|CXXFLAGS|OBJCFLAGS)=/ { s/(^|[[:space:]])-flto(=[^[:space:]]+)?//g; s/$$/ -fno-lto/; }' $(BUILD_WORK)/ffmpeg/ffbuild/config.mak
+	touch -r $(BUILD_WORK)/ffmpeg/ffbuild/config.mak.lto $(BUILD_WORK)/ffmpeg/ffbuild/config.mak
+	cd $(BUILD_WORK)/ffmpeg && for lib in libavcodec libavdevice libavfilter libavformat libavutil libpostproc libswresample libswscale; do \
+		find $$lib -name '*.o' -type f | while read obj; do \
+			for ext in c cc cpp m mm; do if test -f "$${obj%.o}.$$ext"; then rm -f "$$obj"; break; fi; done; \
+		done; \
+		rm -f $$lib/$$lib.a; \
+	done
+	+$(MAKE) -C $(BUILD_WORK)/ffmpeg \
+		libavcodec/libavcodec.a libavdevice/libavdevice.a libavfilter/libavfilter.a libavformat/libavformat.a \
+		libavutil/libavutil.a libpostproc/libpostproc.a libswresample/libswresample.a libswscale/libswscale.a
+	cd $(BUILD_WORK)/ffmpeg && for lib in libavcodec libavdevice libavfilter libavformat libavutil libpostproc libswresample libswscale; do \
+		cp -a $$lib/$$lib.a $(BUILD_STAGE)/ffmpeg/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/; \
+	done
+	mv -f $(BUILD_WORK)/ffmpeg/ffbuild/config.mak.lto $(BUILD_WORK)/ffmpeg/ffbuild/config.mak
+endif
 	$(call AFTER_BUILD,copy)
 endif
 
