@@ -6,7 +6,7 @@ SUBPROJECTS       += rtmpdump
 RTMPDUMP_VERSION  := 2.4
 RTMPDUMP_SHORT_V1 := 20151223
 RTMPDUMP_SHORT_V2 := gitfa8646d.1
-DEB_RTMPDUMP_V    ?= $(RTMPDUMP_VERSION)+$(RTMPDUMP_SHORT_V1).$(RTMPDUMP_SHORT_V2)-2
+DEB_RTMPDUMP_V    ?= $(RTMPDUMP_VERSION)+$(RTMPDUMP_SHORT_V1).$(RTMPDUMP_SHORT_V2)-3
 
 rtmpdump-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),http://deb.debian.org/debian/pool/main/r/rtmpdump/rtmpdump_$(RTMPDUMP_VERSION)+$(RTMPDUMP_SHORT_V1).$(RTMPDUMP_SHORT_V2).orig.tar.gz)
@@ -28,6 +28,15 @@ rtmpdump: rtmpdump-setup nettle gnutls libgmp10
 		prefix="$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)" \
 		DESTDIR="$(BUILD_STAGE)/rtmpdump" \
 		mandir="$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share/man"
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Retain installed LTO programs/dylib and the source's GNU TLS/PIC macros.
+	rm -f $(BUILD_WORK)/rtmpdump/librtmp/*.o $(BUILD_WORK)/rtmpdump/librtmp/librtmp.a
+	+$(MAKE) -C $(BUILD_WORK)/rtmpdump/librtmp librtmp.a \
+		CC="$(CC)" LD="$(LD)" CRYPTO=GNUTLS SYS=darwin \
+		XCFLAGS="$(CFLAGS) -fno-lto" XLDFLAGS="$(LDFLAGS)" \
+		prefix="$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)"
+	cp -a $(BUILD_WORK)/rtmpdump/librtmp/librtmp.a $(BUILD_STAGE)/rtmpdump/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	$(call AFTER_BUILD,copy)
 endif
 

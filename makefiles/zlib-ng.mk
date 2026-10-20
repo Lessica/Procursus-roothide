@@ -4,7 +4,7 @@ endif
 
 STRAPPROJECTS    += zlib-ng
 ZLIB-NG_VERSION  := 2.1.6
-DEB_ZLIB-NG_V    ?= $(ZLIB-NG_VERSION)
+DEB_ZLIB-NG_V    ?= $(ZLIB-NG_VERSION)-1
 
 zlib-ng-setup: setup
 	$(call GITHUB_ARCHIVE,zlib-ng,zlib-ng,$(ZLIB-NG_VERSION),$(ZLIB-NG_VERSION))
@@ -24,6 +24,18 @@ zlib-ng: zlib-ng-setup
 	+$(MAKE) -C $(BUILD_WORK)/zlib-ng
 	+$(MAKE) -C $(BUILD_WORK)/zlib-ng install \
 		DESTDIR=$(BUILD_STAGE)/zlib-ng
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Keep the installed LTO dylib; change only the static target's C objects.
+	cp -p $(BUILD_WORK)/zlib-ng/CMakeFiles/zlibstatic.dir/flags.make $(BUILD_WORK)/zlib-ng/CMakeFiles/zlibstatic.dir/flags.make.lto
+	sed -E '/^C_FLAGS[^=]* =/ { s/(^|[[:space:]])-flto(=[^[:space:]]*)?//g; s/$$/ -fno-lto/; }' \
+		$(BUILD_WORK)/zlib-ng/CMakeFiles/zlibstatic.dir/flags.make.lto > $(BUILD_WORK)/zlib-ng/CMakeFiles/zlibstatic.dir/flags.make
+	touch -r $(BUILD_WORK)/zlib-ng/CMakeFiles/zlibstatic.dir/flags.make.lto $(BUILD_WORK)/zlib-ng/CMakeFiles/zlibstatic.dir/flags.make
+	find $(BUILD_WORK)/zlib-ng/CMakeFiles/zlibstatic.dir -type f -name '*.c.o' -delete
+	rm -f $(BUILD_WORK)/zlib-ng/libz-ng.a
+	+$(MAKE) -C $(BUILD_WORK)/zlib-ng zlibstatic
+	cp -a $(BUILD_WORK)/zlib-ng/libz-ng.a $(BUILD_STAGE)/zlib-ng/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+	mv $(BUILD_WORK)/zlib-ng/CMakeFiles/zlibstatic.dir/flags.make.lto $(BUILD_WORK)/zlib-ng/CMakeFiles/zlibstatic.dir/flags.make
+endif
 	$(call AFTER_BUILD,copy)
 endif
 
