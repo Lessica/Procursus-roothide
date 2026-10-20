@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS           += libsamplerate
 LIBSAMPLERATE_VERSION := 0.1.9
-DEB_LIBSAMPLERATE_V   ?= $(LIBSAMPLERATE_VERSION)
+DEB_LIBSAMPLERATE_V   ?= $(LIBSAMPLERATE_VERSION)-1
 
 libsamplerate-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),http://www.mega-nerd.com/SRC/libsamplerate-$(LIBSAMPLERATE_VERSION).tar.gz)
@@ -23,6 +23,15 @@ libsamplerate: libsamplerate-setup
 	+$(MAKE) -C $(BUILD_WORK)/libsamplerate install \
 		SUBDIRS="M4 src" \
 		DESTDIR=$(BUILD_STAGE)/libsamplerate
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Keep installed LTO outputs and the complete configured compiler flags.
+	+$(MAKE) -C $(BUILD_WORK)/libsamplerate/src clean
+	+$(MAKE) -C $(BUILD_WORK)/libsamplerate/src libsamplerate.la \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/libsamplerate/src/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/libsamplerate/src/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -static"
+	cp -a $(BUILD_WORK)/libsamplerate/src/.libs/libsamplerate.a \
+		$(BUILD_STAGE)/libsamplerate/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	$(call AFTER_BUILD,copy)
 endif
 
