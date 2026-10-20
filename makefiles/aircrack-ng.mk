@@ -19,6 +19,8 @@ aircrack-ng: aircrack-ng-setup openssl pcre libpcap
 	cd $(BUILD_WORK)/aircrack-ng && ./autogen.sh -C \
 		$(DEFAULT_CONFIGURE_FLAGS) \
 		--with-experimental=yes \
+		--with-libpcap-include="$(BUILD_BASE)$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include" \
+		--with-libpcap-lib="$(BUILD_BASE)$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib" \
 		--disable-silent-rules \
 		--without-xcode \
 		--without-duma \

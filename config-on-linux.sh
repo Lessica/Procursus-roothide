@@ -47,10 +47,15 @@ toolbin="$HOST_TOOL_ROOT/toolchain/linux/iphone/bin"
 ln -sf ranlib "$toolbin/aarch64-apple-darwin14-ranlib"
 # Use the distribution's Clang 18 with the pinned Darwin binutils. The
 # bundled clang11 cannot parse all modern SDK headers. No host/iOS library mix.
-for name in ar ld ranlib strings strip install_name_tool nm lipo otool libtool; do
+for name in ld strings strip install_name_tool nm lipo otool libtool; do
  test -x "$toolbin/$name"
  ln -sf "$toolbin/$name" "$HOST_TOOL_ROOT/bin/aarch64-apple-darwin-$name"
 done
+# LLVM bitcode archives need an index produced by the matching LLVM version.
+rm -f "$HOST_TOOL_ROOT/bin/aarch64-apple-darwin-ar"
+printf '#!/usr/bin/env bash\nexec %q --format=darwin "$@"\n' "$(command -v llvm-ar-18)" > "$HOST_TOOL_ROOT/bin/aarch64-apple-darwin-ar"
+chmod +x "$HOST_TOOL_ROOT/bin/aarch64-apple-darwin-ar"
+ln -sfn "$(command -v llvm-ranlib-18)" "$HOST_TOOL_ROOT/bin/aarch64-apple-darwin-ranlib"
 resource_dir="$HOST_TOOL_ROOT/clang-resource"
 mkdir -p "$resource_dir"
 ln -sfn "$(clang-18 -print-resource-dir)/include" "$resource_dir/include"
@@ -161,10 +166,20 @@ printf '%s\n' 'int main(void) { return __builtin_available(iOS 18.0, *) ? 0 : 1;
 "$HOST_TOOL_ROOT/bin/aarch64-apple-darwin-clang" --target=arm64-apple-ios16.0 \
  -isysroot "$TARGET_SYSROOT" "$runtime_src/build/availability.c" -o "$runtime_src/build/availability"
 # Exercise both LTO modes through the same driver used by target recipes.
+printf '%s\n' 'int procursus_lto_probe(void) { return 0; }' > "$runtime_src/build/archive-probe.c"
+printf '%s\n' 'int procursus_lto_probe(void); int main(void) { return procursus_lto_probe(); }' > "$runtime_src/build/archive-main.c"
 for lto_mode in full thin; do
  "$HOST_TOOL_ROOT/bin/aarch64-apple-darwin-clang" --target=arm64-apple-ios16.0 \
   -isysroot "$TARGET_SYSROOT" -flto="$lto_mode" "$runtime_src/build/availability.c" \
   -o "$runtime_src/build/availability-$lto_mode"
+ "$HOST_TOOL_ROOT/bin/aarch64-apple-darwin-clang" --target=arm64-apple-ios16.0 \
+  -isysroot "$TARGET_SYSROOT" -flto="$lto_mode" -c "$runtime_src/build/archive-probe.c" \
+  -o "$runtime_src/build/archive-$lto_mode.o"
+ "$HOST_TOOL_ROOT/bin/aarch64-apple-darwin-ar" rcs "$runtime_src/build/archive-$lto_mode.a" "$runtime_src/build/archive-$lto_mode.o"
+ "$HOST_TOOL_ROOT/bin/aarch64-apple-darwin-ranlib" "$runtime_src/build/archive-$lto_mode.a"
+ "$HOST_TOOL_ROOT/bin/aarch64-apple-darwin-clang" --target=arm64-apple-ios16.0 \
+  -isysroot "$TARGET_SYSROOT" -flto="$lto_mode" "$runtime_src/build/archive-main.c" \
+  "$runtime_src/build/archive-$lto_mode.a" -o "$runtime_src/build/archive-$lto_mode"
 done
 export HOST_TOOL_ROOT
 export HOST_CC=${HOST_CC:-clang}
