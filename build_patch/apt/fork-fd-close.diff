@@ -12,7 +12,7 @@ diff -urN a/apt-pkg/contrib/fileutl.cc b/apt-pkg/contrib/fileutl.cc
  #include <apti18n.h>
  									/*}}}*/
  
-@@ -917,6 +921,25 @@
+@@ -917,6 +921,23 @@
        signal(SIGCONT,SIG_DFL);
        signal(SIGTSTP,SIG_DFL);
  
@@ -27,18 +27,16 @@ diff -urN a/apt-pkg/contrib/fileutl.cc b/apt-pkg/contrib/fileutl.cc
 +        count = bufsz / PROC_PIDLISTFD_SIZE;
 +
 +        for (int i = 0; i < count; i++) {
-+            if (buf[i].proc_fdtype == PROX_FDTYPE_VNODE) {
-+                int fd = buf[i].proc_fd;
-+                if (fd >= 3 && KeepFDs.find(fd) == KeepFDs.end())
-+                    fcntl(fd,F_SETFD,FD_CLOEXEC);
-+            }
++            int fd = buf[i].proc_fd;
++            if (fd >= 3 && KeepFDs.find(fd) == KeepFDs.end())
++                fcntl(fd,F_SETFD,FD_CLOEXEC);
 +        }
 +        free(buf);
 +#else
        DIR *dir = opendir("/proc/self/fd");
        if (dir != NULL)
        {
-@@ -938,6 +961,7 @@
+@@ -938,6 +959,7 @@
  	       fcntl(K,F_SETFD,FD_CLOEXEC);
  	 }
        }
