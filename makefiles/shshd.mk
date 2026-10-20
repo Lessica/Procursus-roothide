@@ -8,7 +8,10 @@ endif
 
 ifeq (,$(findstring darwin,$(MEMO_TARGET)))
 
-ifeq ($(call HAS_COMMAND,swiftc),1)
+ifeq ($(MEMO_TARGET),iphoneos-arm64-roothide)
+# Optional SHSH backup service, not part of the Relaxin Bootstrap.
+SUBPROJECTS   += shshd
+else ifeq ($(call HAS_COMMAND,swiftc),1)
 STRAPPROJECTS += shshd
 else
 SUBPROJECTS   += shshd

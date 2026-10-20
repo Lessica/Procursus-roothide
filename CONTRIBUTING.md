@@ -74,10 +74,15 @@ Re-export after changing the target, libroothide recipe, patches or supporting
 headers. Use a fresh build directory or `rebuild-roothide-package` when replacing
 an input already used in a completed build.
 
+Linux preparation still lacks the Darwin compiler-rt target library
+(`libclang_rt.ios.a`). Programs using runtime availability checks, including
+launchctl, cannot yet link there; the complete Linux Bootstrap remains unverified.
+
 `package` builds the complete applicable collection, including LLVM/Swift.
 `bootstrap` builds `STRAPPROJECTS` and assembles the binary members listed in
-the main Makefile. Relaxin's current Bootstrap uses 71 packages: its original
-70 members plus the `libxo0` dependency of the updated shell commands. SSH
+the main Makefile. Relaxin's current Bootstrap uses 70 packages: its original
+70 members plus the `libxo0` dependency of the updated shell commands, excluding
+the optional `shshd` backup service. The `shshd` recipe remains available. SSH
 remains opt-in with `SSH_STRAP=1`. Firmware, the selected package manager and
 the matching libkrw plugin are supplied by Relaxin's installation sequence.
 

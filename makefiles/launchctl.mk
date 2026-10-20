@@ -11,6 +11,12 @@ launchctl-setup: setup
 	$(call GITHUB_ARCHIVE,roothide,launchctl,$(LAUNCHCTL_COMMIT),$(LAUNCHCTL_COMMIT))
 	$(call EXTRACT_TAR,launchctl-$(LAUNCHCTL_COMMIT).tar.gz,launchctl-$(LAUNCHCTL_COMMIT),launchctl)
 	$(call DO_PATCH,launchctl,launchctl,-p1)
+ifeq ($(UNAME)-$(PLATFORM),Linux-iphoneos)
+	# Upstream Clang cannot parse bridgeOS in __builtin_available. Only remove
+	# that unrelated platform from iOS builds; retain every iOS version guard.
+	sed -i -E '/__builtin_available/s/, bridgeOS [0-9.]+//g' $(BUILD_WORK)/launchctl/*.c
+	sed -i -E 's/, bridgeos\([^)]*\)//g' $(BUILD_WORK)/launchctl/xpc_private.h
+endif
 
 ifneq ($(wildcard $(BUILD_WORK)/launchctl/.build_complete),)
 launchctl:
