@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS       += libkeccak
 LIBKECCAK_VERSION := 1.3
-DEB_LIBKECCAK_V   ?= $(LIBKECCAK_VERSION)
+DEB_LIBKECCAK_V   ?= $(LIBKECCAK_VERSION)-1
 
 libkeccak-setup: setup
 	$(call GITHUB_ARCHIVE,maandree,libkeccak,$(LIBKECCAK_VERSION),$(LIBKECCAK_VERSION))
@@ -22,6 +22,10 @@ libkeccak: libkeccak-setup
 		PREFIX=$(MEMO_PREFIX)$(MEMO_SUB_PREFIX) \
 		MANPREFIX=$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share/man
 	rm -rf $(BUILD_STAGE)/libkeccak/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share/licenses
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	+$(MAKE) -C $(BUILD_WORK)/libkeccak libkeccak-native.a
+	cp -a $(BUILD_WORK)/libkeccak/libkeccak-native.a $(BUILD_STAGE)/libkeccak/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/libkeccak.a
+endif
 	$(call AFTER_BUILD,copy)
 endif
 

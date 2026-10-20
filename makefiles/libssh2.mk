@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS     += libssh2
 LIBSSH2_VERSION := 1.11.0
-DEB_LIBSSH2_V   ?= $(LIBSSH2_VERSION)-1
+DEB_LIBSSH2_V   ?= $(LIBSSH2_VERSION)-2
 
 libssh2-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://libssh2.org/download/libssh2-$(LIBSSH2_VERSION).tar.gz{$(comma).asc})
@@ -26,6 +26,15 @@ libssh2: libssh2-setup openssl
 	# Dependency libraries are described by Requires.private; do not export build-root search paths.
 	sed -i -e 's|^Libs:.*|Libs: -L$${libdir} -lssh2|' -e 's|^Libs.private:.*|Libs.private:|' \
 		$(BUILD_STAGE)/libssh2$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/pkgconfig/libssh2.pc
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Keep the installed LTO runtime; rebuild only the public static library.
+	rm -f $(BUILD_WORK)/libssh2/src/*.lo $(BUILD_WORK)/libssh2/src/libssh2.la
+	+$(MAKE) -C $(BUILD_WORK)/libssh2/src libssh2.la \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/libssh2/src/Makefile) -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/libssh2/src/Makefile) -fno-lto -static"
+	cp -a $(BUILD_WORK)/libssh2/src/.libs/libssh2.a \
+		$(BUILD_STAGE)/libssh2/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	$(call AFTER_BUILD,copy)
 endif
 
