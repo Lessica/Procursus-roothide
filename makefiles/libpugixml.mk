@@ -4,11 +4,12 @@ endif
 
 SUBPROJECTS            += libpugixml
 LIBPUGIXML_VERSION     := 1.11.4
-DEB_LIBPUGIXML_V       ?= $(LIBPUGIXML_VERSION)
+DEB_LIBPUGIXML_V       ?= $(LIBPUGIXML_VERSION)-1
 
 libpugixml-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://github.com/zeux/pugixml/releases/download/v$(LIBPUGIXML_VERSION)/pugixml-$(LIBPUGIXML_VERSION).tar.gz)
 	$(call EXTRACT_TAR,pugixml-$(LIBPUGIXML_VERSION).tar.gz,pugixml-$(LIBPUGIXML_VERSION),libpugixml)
+	$(call DO_PATCH,libpugixml,libpugixml,-p1)
 
 ifneq ($(wildcard $(BUILD_WORK)/libpugixml/.build_complete),)
 libpugixml:

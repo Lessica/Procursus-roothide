@@ -1,0 +1,11 @@
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -94,6 +94,8 @@
+   add_library(pugixml-static STATIC
+     ${PROJECT_SOURCE_DIR}/src/pugixml.cpp)
+   add_library(pugixml::static ALIAS pugixml-static)
++  set_property(TARGET pugixml-static PROPERTY INTERPROCEDURAL_OPTIMIZATION FALSE)
++  target_compile_options(pugixml-static PRIVATE -fno-lto)
+   list(APPEND libs pugixml-static)
+ 
+   set_property(TARGET pugixml-static PROPERTY EXPORT_NAME static)

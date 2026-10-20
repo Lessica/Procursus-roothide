@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS    += libxmu
 LIBXMU_VERSION := 1.1.3
-DEB_LIBXMU_V   ?= $(LIBXMU_VERSION)-1
+DEB_LIBXMU_V   ?= $(LIBXMU_VERSION)-2
 
 libxmu-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://xorg.freedesktop.org/archive/individual/lib/libXmu-$(LIBXMU_VERSION).tar.bz2{$(comma).sig})
@@ -24,6 +24,14 @@ libxmu: libxmu-setup libxext libxt
 	+$(MAKE) -C $(BUILD_WORK)/libxmu
 	+$(MAKE) -C $(BUILD_WORK)/libxmu install \
 		DESTDIR=$(BUILD_STAGE)/libxmu
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Preserve installed LTO outputs and configured static compiler flags.
+	+$(MAKE) -C $(BUILD_WORK)/libxmu/src clean
+	+$(MAKE) -C $(BUILD_WORK)/libxmu/src libXmu.la libXmuu.la \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/libxmu/src/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/libxmu/src/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -static"
+	cp -a $(BUILD_WORK)/libxmu/src/.libs/lib{Xmu,Xmuu}.a $(BUILD_STAGE)/libxmu/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	$(call AFTER_BUILD,copy)
 endif
 
