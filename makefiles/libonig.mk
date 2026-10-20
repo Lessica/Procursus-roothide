@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS     += libonig
 LIBONIG_VERSION := 6.9.6
-DEB_LIBONIG_V   ?= $(LIBONIG_VERSION)
+DEB_LIBONIG_V   ?= $(LIBONIG_VERSION)-1
 
 libonig-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://github.com/kkos/oniguruma/releases/download/v$(LIBONIG_VERSION)/onig-$(LIBONIG_VERSION).tar.gz)
@@ -19,6 +19,15 @@ libonig: libonig-setup
 		$(DEFAULT_CONFIGURE_FLAGS)
 	+$(MAKE) -C $(BUILD_WORK)/libonig install \
 		DESTDIR=$(BUILD_STAGE)/libonig
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Keep installed LTO outputs and the complete configured compiler flags.
+	+$(MAKE) -C $(BUILD_WORK)/libonig/src clean
+	+$(MAKE) -C $(BUILD_WORK)/libonig/src libonig.la \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/libonig/src/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/libonig/src/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -static"
+	cp -a $(BUILD_WORK)/libonig/src/.libs/libonig.a \
+		$(BUILD_STAGE)/libonig/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	$(call AFTER_BUILD,copy)
 endif
 

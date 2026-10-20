@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS    += libnet
 LIBNET_VERSION := 1.2
-DEB_LIBNET_V   ?= $(LIBNET_VERSION)
+DEB_LIBNET_V   ?= $(LIBNET_VERSION)-1
 
 libnet-setup: setup
 	$(call GITHUB_ARCHIVE,libnet,libnet,$(LIBNET_VERSION),v$(LIBNET_VERSION))
@@ -21,6 +21,15 @@ libnet: libnet-setup
 	+$(MAKE) -C $(BUILD_WORK)/libnet
 	+$(MAKE) -C $(BUILD_WORK)/libnet install \
 		DESTDIR="$(BUILD_STAGE)/libnet"
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Keep installed LTO output and the configured BPF/backend headers.
+	rm -f $(BUILD_WORK)/libnet/src/*.lo $(BUILD_WORK)/libnet/src/libnet.la
+	+$(MAKE) -C $(BUILD_WORK)/libnet/src libnet.la \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/libnet/src/Makefile) -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/libnet/src/Makefile) -fno-lto -static"
+	cp -a $(BUILD_WORK)/libnet/src/.libs/libnet.a \
+		$(BUILD_STAGE)/libnet/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	$(call AFTER_BUILD,copy)
 endif
 
