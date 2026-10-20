@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS    += libogg
 LIBOGG_VERSION := 1.3.5
-DEB_LIBOGG_V   ?= $(LIBOGG_VERSION)
+DEB_LIBOGG_V   ?= $(LIBOGG_VERSION)-1
 
 libogg-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://downloads.xiph.org/releases/ogg/libogg-$(LIBOGG_VERSION).tar.xz)
@@ -24,6 +24,15 @@ libogg: libogg-setup
 	+$(MAKE) -C $(BUILD_WORK)/libogg
 	+$(MAKE) -C $(BUILD_WORK)/libogg install \
 		DESTDIR=$(BUILD_STAGE)/libogg
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Preserve the installed LTO dylib; rebuild only its public static target.
+	+$(MAKE) -C $(BUILD_WORK)/libogg/src clean
+	+$(MAKE) -C $(BUILD_WORK)/libogg/src libogg.la \
+		CFLAGS="$(filter-out -flto%,$(CFLAGS)) -fno-lto" \
+		LDFLAGS="$(filter-out -flto%,$(LDFLAGS)) -static"
+	cp -a $(BUILD_WORK)/libogg/src/.libs/libogg.a \
+		$(BUILD_STAGE)/libogg/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	$(call AFTER_BUILD,copy)
 endif
 

@@ -4,7 +4,7 @@ endif
 
 STRAPPROJECTS     += libunistring
 UNISTRING_VERSION := 1.2
-DEB_UNISTRING_V   ?= $(UNISTRING_VERSION)
+DEB_UNISTRING_V   ?= $(UNISTRING_VERSION)-1
 
 libunistring-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://ftpmirror.gnu.org/libunistring/libunistring-$(UNISTRING_VERSION).tar.gz{$(comma).sig})
@@ -21,6 +21,16 @@ libunistring: libunistring-setup
 	+$(MAKE) -C $(BUILD_WORK)/libunistring
 	+$(MAKE) -C $(BUILD_WORK)/libunistring install \
 		DESTDIR=$(BUILD_STAGE)/libunistring
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Keep installed shared output with LTO; rebuild only the public archive
+	# from the same configured sources and compiler feature options.
+	+$(MAKE) -C $(BUILD_WORK)/libunistring/lib clean
+	+$(MAKE) -C $(BUILD_WORK)/libunistring/lib all \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/libunistring/lib/Makefile) -fno-lto" \
+		LDFLAGS="$(filter-out -flto%,$(LDFLAGS)) -static"
+	cp -a $(BUILD_WORK)/libunistring/lib/.libs/libunistring.a \
+		$(BUILD_STAGE)/libunistring/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	$(call AFTER_BUILD,copy)
 endif
 

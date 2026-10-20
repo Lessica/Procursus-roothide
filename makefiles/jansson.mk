@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS     += jansson
 JANSSON_VERSION := 2.14
-DEB_JANSSON_V   ?= $(JANSSON_VERSION)
+DEB_JANSSON_V   ?= $(JANSSON_VERSION)-1
 
 jansson-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://github.com/akheron/jansson/releases/download/v$(JANSSON_VERSION)/jansson-$(JANSSON_VERSION).tar.gz)
@@ -20,6 +20,15 @@ jansson: jansson-setup
 	+$(MAKE) -C $(BUILD_WORK)/jansson
 	+$(MAKE) -C $(BUILD_WORK)/jansson install \
 		DESTDIR="$(BUILD_STAGE)/jansson"
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Preserve the installed LTO dylib; rebuild only its public static target.
+	+$(MAKE) -C $(BUILD_WORK)/jansson/src clean
+	+$(MAKE) -C $(BUILD_WORK)/jansson/src libjansson.la \
+		CFLAGS="$(filter-out -flto%,$(CFLAGS)) -fno-lto" \
+		LDFLAGS="$(filter-out -flto%,$(LDFLAGS)) -static"
+	cp -a $(BUILD_WORK)/jansson/src/.libs/libjansson.a \
+		$(BUILD_STAGE)/jansson/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	$(call AFTER_BUILD,copy)
 endif
 
