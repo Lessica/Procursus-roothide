@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS         += aircrack-ng
 AIRCRACK-NG_VERSION := 1.7
-DEB_AIRCRACK-NG_V   ?= $(AIRCRACK-NG_VERSION)
+DEB_AIRCRACK-NG_V   ?= $(AIRCRACK-NG_VERSION)-1
 
 aircrack-ng-setup: setup
 	$(call GITHUB_ARCHIVE,aircrack-ng,aircrack-ng,$(AIRCRACK-NG_VERSION),$(AIRCRACK-NG_VERSION))
@@ -31,6 +31,17 @@ aircrack-ng: aircrack-ng-setup openssl pcre libpcap
 	+$(MAKE) -C $(BUILD_WORK)/aircrack-ng
 	+$(MAKE) -C $(BUILD_WORK)/aircrack-ng install \
 		DESTDIR=$(BUILD_STAGE)/aircrack-ng
+	# Configure enables LTO explicitly. Retain installed tools/modules and
+	# rebuild only configured public archives and their convenience objects.
+	find $(BUILD_WORK)/aircrack-ng/lib -name '*.lo' -type f -delete
+	rm -f $(BUILD_WORK)/aircrack-ng/*.la
+	+$(MAKE) -C $(BUILD_WORK)/aircrack-ng \
+		--eval='procursus-native-archives: ; +$$(MAKE) $$(lib_LTLIBRARIES)' procursus-native-archives \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/aircrack-ng/Makefile) -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/aircrack-ng/Makefile) -fno-lto -static"
+	set -e; for archive in $(BUILD_STAGE)/aircrack-ng/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/*.a; do \
+		cp -a $(BUILD_WORK)/aircrack-ng/.libs/$$(basename "$$archive") "$$archive"; \
+	done
 	$(call AFTER_BUILD)
 endif
 
