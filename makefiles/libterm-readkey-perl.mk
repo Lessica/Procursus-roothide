@@ -24,7 +24,7 @@ libterm-readkey-perl: libterm-readkey-perl-setup perl
 		$(DEFAULT_PERL_MAKE_FLAGS) \
 		DLEXT=so \
 		LDDLFLAGS="$(LDFLAGS) -L$(PERL_TARGET_CORE) -lperl -shared"
-	+$(MAKE) -C $(BUILD_WORK)/libterm-readkey-perl ReadKey.c \
+	+$(MAKE) -C $(BUILD_WORK)/libterm-readkey-perl ReadKey.c cchars.h \
 		PERL_INCDEP="$(PERL_HOST_CORE)" \
 		DLEXT=so
 	+@set -e; \
