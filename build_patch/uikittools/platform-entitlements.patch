@@ -1,0 +1,112 @@
+--- a/lsrebuild.plist
++++ b/lsrebuild.plist
+@@ -2,6 +2,8 @@
+ <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+ <plist version="1.0">
+ <dict>
++	<key>com.apple.private.set-exception-port</key>
++	<true/>
+ 	<key>com.apple.private.skip-library-validation</key>
+ 	<true/>
+ 	<key>platform-application</key>
+--- a/mgask.plist
++++ b/mgask.plist
+@@ -1,6 +1,8 @@
+ <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+ <plist version="1.0">
+ <dict>
++	<key>com.apple.private.set-exception-port</key>
++	<true/>
+ 	<key>platform-application</key>
+ 	<true/>
+ 	<key>com.apple.private.skip-library-validation</key>
+--- a/sbreload.plist
++++ b/sbreload.plist
+@@ -1,6 +1,8 @@
+ <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+ <plist version="1.0">
+ <dict>
++	<key>com.apple.private.set-exception-port</key>
++	<true/>
+ 	<key>platform-application</key>
+ 	<true/>
+ 	<key>com.apple.private.skip-library-validation</key>
+--- a/uialert.plist
++++ b/uialert.plist
+@@ -2,6 +2,8 @@
+ <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+ <plist version="1.0">
+ <dict>
++	<key>com.apple.private.set-exception-port</key>
++	<true/>
+ 	<key>com.apple.springboard.CFUserNotification</key>
+ 	<true/>
+ 	<key>platform-application</key>
+--- a/uicache.plist
++++ b/uicache.plist
+@@ -1,6 +1,10 @@
+ <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+ <plist version="1.0">
+ <dict>
++	<key>com.apple.CommCenter.fine-grained</key>
++	<array><string>data-allowed-write</string></array>
++	<key>com.apple.private.set-exception-port</key>
++	<true/>
+ 	<key>platform-application</key>
+ 	<true/>
+ 	<key>com.apple.private.skip-library-validation</key>
+--- a/uidisplay.plist
++++ b/uidisplay.plist
+@@ -1,6 +1,8 @@
+ <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+ <plist version="1.0">
+ <dict>
++	<key>com.apple.private.set-exception-port</key>
++	<true/>
+ 	<key>platform-application</key>
+ 	<true/>
+ 	<key>com.apple.private.skip-library-validation</key>
+--- a/uinotify.plist
++++ b/uinotify.plist
+@@ -2,6 +2,8 @@
+ <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+ <plist version="1.0">
+ <dict>
++	<key>com.apple.private.set-exception-port</key>
++	<true/>
+ 	<key>platform-application</key>
+ 	<true/>
+ 	<key>com.apple.private.skip-library-validation</key>
+--- a/uiopen.plist
++++ b/uiopen.plist
+@@ -1,6 +1,8 @@
+ <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+ <plist version="1.0">
+ <dict>
++	<key>com.apple.private.set-exception-port</key>
++	<true/>
+ 	<key>platform-application</key>
+ 	<true/>
+ 	<key>com.apple.private.skip-library-validation</key>
+--- a/uisave.plist
++++ b/uisave.plist
+@@ -1,6 +1,8 @@
+ <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+ <plist version="1.0">
+ <dict>
++	<key>com.apple.private.set-exception-port</key>
++	<true/>
+ 	<key>platform-application</key>
+ 	<true/>
+ 	<key>com.apple.private.skip-library-validation</key>
+--- a/uishoot.plist
++++ b/uishoot.plist
+@@ -2,6 +2,8 @@
+ <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+ <plist version="1.0">
+ <dict>
++	<key>com.apple.private.set-exception-port</key>
++	<true/>
+ 	<key>platform-application</key>
+ 	<true/>
+ 	<key>com.apple.private.security.no-container</key>

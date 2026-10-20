@@ -5,7 +5,7 @@ endif
 ifeq (,$(findstring darwin,$(MEMO_TARGET)))
 
 STRAPPROJECTS     += essential
-ESSENTIAL_VERSION := 0-5
+ESSENTIAL_VERSION := 0-6
 DEB_ESSENTIAL_V   ?= $(ESSENTIAL_VERSION)
 
 essential: setup

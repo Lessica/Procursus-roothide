@@ -14,6 +14,7 @@ DEB_UIKITTOOLS_V   ?= $(UIKITTOOLS_VERSION)
 uikittools-setup: setup
 	$(call GITHUB_ARCHIVE,roothide,uikittools-ng,$(UIKITTOOLS_COMMIT),$(UIKITTOOLS_COMMIT))
 	$(call EXTRACT_TAR,uikittools-ng-$(UIKITTOOLS_COMMIT).tar.gz,uikittools-ng-$(UIKITTOOLS_COMMIT),uikittools)
+	$(call DO_PATCH,uikittools,uikittools,-p1)
 
 ifneq (,$(findstring darwin,$(MEMO_TARGET)))
 UIKITTOOLS_MAKE_ARGS += NO_COMPAT=1

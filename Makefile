@@ -1,3 +1,34 @@
+# Candidate input reuses the Bootstrap assembler below, without loading the
+# compiler/SDK setup or entering any package build target.
+ifneq ($(strip $(BOOTSTRAP_CANDIDATES)),)
+ifneq ($(filter-out bootstrap strapprojects,$(MAKECMDGOALS)),)
+$(error BOOTSTRAP_CANDIDATES is only supported for bootstrap/strapprojects)
+endif
+SHELL := /usr/bin/env bash
+ifneq ($(shell umask),0022)
+$(error Please run `umask 022` before running this)
+endif
+MEMO_TARGET ?= iphoneos-arm64-roothide
+MEMO_CFVER ?= 1900
+ifneq ($(MEMO_TARGET)/$(MEMO_CFVER),iphoneos-arm64-roothide/1900)
+$(error Candidate Bootstrap currently supports iphoneos-arm64-roothide/1900)
+endif
+MEMO_ROOTLESS := 1
+MEMO_PREFIX :=
+MEMO_SUB_PREFIX := /usr
+MEMO_ALT_PREFIX := /local
+MEMO_ROOTFS := /rootfs
+MEMO_REPO_URI ?= https://procursus.owngoal.dev
+MEMO_PGP_SIGN_KEY ?=
+BOOTSTRAP_NAME ?= bootstrap_1900.tar.zst
+REPO_BASE := $(CURDIR)
+BUILD_ROOT ?= $(CURDIR)
+BUILD_INFO ?= $(REPO_BASE)/build_info
+BUILD_MISC ?= $(REPO_BASE)/build_misc
+BUILD_STRAP := $(BUILD_ROOT)/build_strap/$(MEMO_TARGET)/$(MEMO_CFVER)
+BUILD_STAGE := $(BUILD_ROOT)/build_stage/$(MEMO_TARGET)/$(MEMO_CFVER)
+BUILD_DIST := $(BUILD_ROOT)/build_dist/$(MEMO_TARGET)/$(MEMO_CFVER)/work
+else
 ifeq ($(firstword $(subst ., ,$(MAKE_VERSION))),3)
 $(error Install latest make from Procursus - sudo apt install make)
 endif
@@ -544,8 +575,14 @@ STRIP_FOR_BUILD := $(shell command -v strip)
 export CC_FOR_BUILD CPP_FOR_BUILD CXX_FOR_BUILD AR_FOR_BUILD
 
 DEB_MAINTAINER    ?= roothide <roothideDev@twitter>
+ifneq (,$(findstring roothide,$(MEMO_TARGET)))
+MEMO_REPO_URI     ?= https://procursus.owngoal.dev
+MEMO_PGP_SIGN_KEY ?=
+BOOTSTRAP_NAME   ?= bootstrap_$(MEMO_CFVER).tar.zst
+else
 MEMO_REPO_URI     ?= https://apt.procurs.us
 MEMO_PGP_SIGN_KEY ?= C59F3798A305ADD7E7E6C7256430292CF9551B0E
+endif
 CODESIGN_IDENTITY ?= -
 
 MEMO_LDID_EXTRA_FLAGS     ?=
@@ -1288,30 +1325,48 @@ ramdisk:
 	rm -rf $(BUILD_DIST)/strap
 
 package:: $(SUBPROJECTS:%=%-package)
+endif # source build setup
 
+ifneq (,$(findstring darwin,$(MEMO_TARGET)))
+BOOTSTRAP_PKGS := apt/apt_*.deb brotli/libbrotli1_*.deb cacerts/ca-certificates_*.deb coreutils/coreutils_*.deb darwintools/darwintools_*.deb dpkg/dpkg_*.deb gnupg/gpgv_*.deb apt/libapt-pkg6.0_*.deb libassuan/libassuan0_*.deb libffi/libffi8_*.deb libgcrypt/libgcrypt20_*.deb libgmp10/libgmp10_*.deb gnutls/libgnutls30_*.deb libgpg-error/libgpg-error0_*.deb nettle/libhogweed6_*.deb libidn2/libidn2-0_*.deb gettext/libintl8_*.deb lz4/liblz4-1_*.deb xz/liblzma5_*.deb libmd/libmd0_*.deb nettle/libnettle8_*.deb npth/libnpth0_*.deb p11-kit/libp11-kit0_*.deb openssl/libssl3_*.deb libtasn1/libtasn1-6_*.deb libunistring/libunistring5_*.deb xxhash/libxxhash0_*.deb zlib-ng/libz-ng2_*.deb zstd/libzstd1_*.deb keyring/procursus-keyring_*.deb tar/tar_*.deb
+else
+BOOTSTRAP_PKGS := roothide/roothide_*.deb ldid/ldid_*.deb libplist/libplist3_*.deb apt/apt_*.deb base/base_*.deb bash/bash_*.deb brotli/libbrotli1_*.deb cacerts/ca-certificates_*.deb chariz-keyring/chariz-keyring_*.deb coreutils/coreutils_*.deb darwintools/darwintools_*.deb dash/dash_*.deb debianutils/debianutils_*.deb diffutils/diffutils_*.deb diskdev-cmds/diskdev-cmds_*.deb dpkg/dpkg_*.deb essential/essential_*.deb file-cmds/file-cmds_*.deb findutils/findutils_*.deb firmware-sbin/firmware-sbin_*.deb gnupg/gpgv_*.deb grep/grep_*.deb havoc-keyring/havoc-keyring_*.deb launchctl/launchctl_*.deb apt/libapt-pkg6.0_*.deb libassuan/libassuan0_*.deb libxcrypt/libcrypt2_*.deb dimentio/libdimentio0_*.deb libedit/libedit0_*.deb libffi/libffi8_*.deb libgcrypt/libgcrypt20_*.deb libgmp10/libgmp10_*.deb gnutls/libgnutls30_*.deb libgpg-error/libgpg-error0_*.deb nettle/libhogweed6_*.deb libidn2/libidn2-0_*.deb gettext/libintl8_*.deb libiosexec/libiosexec1_*.deb libkrw/libkrw0_*.deb lz4/liblz4-1_*.deb xz/liblzma5_*.deb libmd/libmd0_*.deb ncurses/libncursesw6_*.deb nettle/libnettle8_*.deb npth/libnpth0_*.deb p11-kit/libp11-kit0_*.deb pam-modules/libpam-modules_*.deb openpam/libpam2_*.deb pcre/libpcre1_*.deb pcre2/libpcre2-8-0_*.deb readline/libreadline8_*.deb libtasn1/libtasn1-6_*.deb libunistring/libunistring5_*.deb xxhash/libxxhash0_*.deb zlib-ng/libz-ng2_*.deb zstd/libzstd1_*.deb ncurses/ncurses-bin_*.deb ncurses/ncurses-term_*.deb openssh/openssh-server_*.deb openssh/openssh-sftp-server_*.deb openssh/openssh-client_*.deb openssl/libssl3_*.deb keyring/procursus-keyring_*.deb profile.d/profile.d_*.deb sed/sed_*.deb shell-cmds/shell-cmds_*.deb shshd/shshd_*.deb snaputil/snaputil_*.deb sudo/sudo_*.deb system-cmds/system-cmds_*.deb tar/tar_*.deb uikittools/uikittools_*.deb vi/vi_*.deb zsh/zsh_*.deb
+endif
+ifeq ($(MEMO_TARGET),iphoneos-arm64-roothide)
+BOOTSTRAP_PKGS := $(filter-out firmware-sbin/firmware-sbin_*.deb,$(BOOTSTRAP_PKGS)) libxo/libxo0_*.deb
+ifneq ($(SSH_STRAP),1)
+BOOTSTRAP_PKGS := $(filter-out openssh/%,$(BOOTSTRAP_PKGS))
+endif
+endif
+
+ifeq ($(strip $(BOOTSTRAP_CANDIDATES)),)
 strapprojects:: export BUILD_DIST=$(BUILD_STRAP)/work/
 strapprojects:: $(STRAPPROJECTS:%=%-package)
-bootstrap:: .SHELLFLAGS=-O extglob -c
+else
+strapprojects::
+	python3 $(BUILD_MISC)/bootstrap_candidates.py --candidates "$(BOOTSTRAP_CANDIDATES)" \
+		--destination "$(BUILD_STRAP)" --packages "$(BOOTSTRAP_PKGS)" \
+		--baseline "$(BOOTSTRAP_BASELINE)" --manifest "$(BUILD_STRAP)/candidates.json"
+endif
+bootstrap:: .SHELLFLAGS=-e -o pipefail -O extglob -c
 bootstrap:: strapprojects
+ifeq ($(strip $(BOOTSTRAP_CANDIDATES)),)
 	mkdir -p $(BUILD_DIST)
 	cp -a $(BUILD_STRAP)/* $(BUILD_DIST)
+endif
+	mkdir -p $(BUILD_STAGE)
 	rm -rf $(BUILD_STRAP)/strap
 	rm -f $(BUILD_STAGE)/.fakeroot_bootstrap
 	touch $(BUILD_STAGE)/.fakeroot_bootstrap
 	mkdir -p $(BUILD_STRAP)/strap/$(MEMO_PREFIX)/Library/dpkg/info
 	touch $(BUILD_STRAP)/strap/$(MEMO_PREFIX)/Library/dpkg/{status,available}
-	-if echo $(MEMO_TARGET) | grep "darwin"; then \
-		PKGS="apt/apt_*.deb brotli/libbrotli1_*.deb cacerts/ca-certificates_*.deb coreutils/coreutils_*.deb darwintools/darwintools_*.deb dpkg/dpkg_*.deb gnupg/gpgv_*.deb apt/libapt-pkg6.0_*.deb libassuan/libassuan0_*.deb libffi/libffi8_*.deb libgcrypt/libgcrypt20_*.deb libgmp10/libgmp10_*.deb gnutls/libgnutls30_*.deb libgpg-error/libgpg-error0_*.deb nettle/libhogweed6_*.deb libidn2/libidn2-0_*.deb gettext/libintl8_*.deb lz4/liblz4-1_*.deb xz/liblzma5_*.deb libmd/libmd0_*.deb nettle/libnettle8_*.deb npth/libnpth0_*.deb p11-kit/libp11-kit0_*.deb openssl/libssl3_*.deb libtasn1/libtasn1-6_*.deb libunistring/libunistring5_*.deb xxhash/libxxhash0_*.deb zlib-ng/libz-ng2_*.deb zstd/libzstd1_*.deb keyring/procursus-keyring_*.deb tar/tar_*.deb"; \
-	else \
-		PKGS="roothide/roothide_*.deb ldid/ldid_*.deb libplist/libplist3_*.deb apt/apt_*.deb base/base_*.deb bash/bash_*.deb brotli/libbrotli1_*.deb cacerts/ca-certificates_*.deb chariz-keyring/chariz-keyring_*.deb coreutils/coreutils_*.deb darwintools/darwintools_*.deb dash/dash_*.deb debianutils/debianutils_*.deb diffutils/diffutils_*.deb diskdev-cmds/diskdev-cmds_*.deb dpkg/dpkg_*.deb essential/essential_*.deb file-cmds/file-cmds_*.deb findutils/findutils_*.deb firmware-sbin/firmware-sbin_*.deb gnupg/gpgv_*.deb grep/grep_*.deb havoc-keyring/havoc-keyring_*.deb launchctl/launchctl_*.deb apt/libapt-pkg6.0_*.deb libassuan/libassuan0_*.deb libxcrypt/libcrypt2_*.deb dimentio/libdimentio0_*.deb libedit/libedit0_*.deb libffi/libffi8_*.deb libgcrypt/libgcrypt20_*.deb libgmp10/libgmp10_*.deb gnutls/libgnutls30_*.deb libgpg-error/libgpg-error0_*.deb nettle/libhogweed6_*.deb libidn2/libidn2-0_*.deb gettext/libintl8_*.deb libiosexec/libiosexec1_*.deb libkrw/libkrw0_*.deb lz4/liblz4-1_*.deb xz/liblzma5_*.deb libmd/libmd0_*.deb ncurses/libncursesw6_*.deb nettle/libnettle8_*.deb npth/libnpth0_*.deb p11-kit/libp11-kit0_*.deb pam-modules/libpam-modules_*.deb openpam/libpam2_*.deb pcre/libpcre1_*.deb pcre2/libpcre2-8-0_*.deb readline/libreadline8_*.deb libtasn1/libtasn1-6_*.deb libunistring/libunistring5_*.deb xxhash/libxxhash0_*.deb zlib-ng/libz-ng2_*.deb zstd/libzstd1_*.deb ncurses/ncurses-bin_*.deb ncurses/ncurses-term_*.deb openssh/openssh-server_*.deb openssh/openssh-sftp-server_*.deb openssh/openssh-client_*.deb openssl/libssl3_*.deb keyring/procursus-keyring_*.deb profile.d/profile.d_*.deb sed/sed_*.deb shell-cmds/shell-cmds_*.deb shshd/shshd_*.deb snaputil/snaputil_*.deb sudo/sudo_*.deb system-cmds/system-cmds_*.deb tar/tar_*.deb uikittools/uikittools_*.deb vi/vi_*.deb zsh/zsh_*.deb"; \
-	fi; \
+	set -e; PKGS="$(BOOTSTRAP_PKGS)"; \
+	if [ -n "$(BOOTSTRAP_CANDIDATES)" ]; then PKGS=$$(cat "$(BUILD_STRAP)/selected-packages.list"); fi; \
 	export FAKEROOT='fakeroot -i $(BUILD_STAGE)/.fakeroot_bootstrap -s $(BUILD_STAGE)/.fakeroot_bootstrap --'; \
 	cd $(BUILD_STRAP); for DEB in $$PKGS; do \
-		if [ ! -f $$DEB ]; then \
-			continue; \
-		fi; \
+		if [ ! -f $$DEB ]; then echo "Missing Bootstrap member: $$DEB" >&2; exit 1; fi; \
 		PKGNAME=$$(basename $$DEB | cut -f1 -d"_"); \
-		dpkg-deb -R $$DEB $(BUILD_STRAP)/strap; \
+		$$FAKEROOT dpkg-deb -R $$DEB $(BUILD_STRAP)/strap; \
 		cp $(BUILD_STRAP)/strap/DEBIAN/md5sums $(BUILD_STRAP)/strap/$(MEMO_PREFIX)/Library/dpkg/info/$$PKGNAME.md5sums; \
 		dpkg-deb -c $$DEB | cut -f2- -d"." | awk -F'\\-\\>' '{print $$1}' | sed '1 s/$$/./' | sed 's/\/$$//' > $(BUILD_STRAP)/strap/$(MEMO_PREFIX)/Library/dpkg/info/$$PKGNAME.list; \
 		for script in preinst postinst extrainst_ prerm postrm conffiles triggers; do \
@@ -1372,8 +1427,11 @@ endif
 	else \
 		BOOTSTRAP=bootstrap.tar.zst; \
 	fi; \
-	zstd -qf -c19 --rm $(BUILD_STRAP)/bootstrap.tar > $(BUILD_STRAP)/$${BOOTSTRAP}; \
-	gpg --armor -u $(MEMO_PGP_SIGN_KEY) --detach-sign $(BUILD_STRAP)/$${BOOTSTRAP}; \
+	if [ -n "$(BOOTSTRAP_NAME)" ]; then BOOTSTRAP="$(BOOTSTRAP_NAME)"; fi; \
+	zstd -qf -c19 --rm $(BUILD_STRAP)/bootstrap.tar > $(BUILD_STRAP)/$${BOOTSTRAP}.tmp; \
+	if [ -n "$(MEMO_PGP_SIGN_KEY)" ]; then gpg --batch --yes --armor -u "$(MEMO_PGP_SIGN_KEY)" --output $(BUILD_STRAP)/$${BOOTSTRAP}.asc.tmp --detach-sign $(BUILD_STRAP)/$${BOOTSTRAP}.tmp; fi; \
+	mv $(BUILD_STRAP)/$${BOOTSTRAP}.tmp $(BUILD_STRAP)/$${BOOTSTRAP}; \
+	if [ -n "$(MEMO_PGP_SIGN_KEY)" ]; then mv $(BUILD_STRAP)/$${BOOTSTRAP}.asc.tmp $(BUILD_STRAP)/$${BOOTSTRAP}.asc; else rm -f $(BUILD_STRAP)/$${BOOTSTRAP}.asc; fi; \
 	rm -rf $(BUILD_STRAP)/*/; \
 	echo "********** Successfully built bootstrap with **********"; \
 	echo "$(STRAPPROJECTS)"; \
@@ -1413,7 +1471,14 @@ endif
 	fi
 	chmod +x $(BUILD_STRAP)/strap/$(MEMO_PREFIX)/prep_bootstrap.sh
 endif
+	if [ -n "$(BOOTSTRAP_APT_KEYRING)" ]; then \
+		gpg --batch --show-keys "$(BOOTSTRAP_APT_KEYRING)" >/dev/null; \
+		mkdir -p $(BUILD_STRAP)/strap/$(MEMO_PREFIX)/usr/share/keyrings; \
+		cp "$(BOOTSTRAP_APT_KEYRING)" $(BUILD_STRAP)/strap/$(MEMO_PREFIX)/usr/share/keyrings/owngoal-procursus.gpg; \
+		echo 'Signed-By: /usr/share/keyrings/owngoal-procursus.gpg' >> $(BUILD_STRAP)/strap/$(MEMO_PREFIX)/etc/apt/sources.list.d/procursus.sources; \
+	fi
 	export FAKEROOT='fakeroot -i $(BUILD_STAGE)/.fakeroot_bootstrap -s $(BUILD_STAGE)/.fakeroot_bootstrap --'; \
+	$$FAKEROOT chown -hR 0:0 $(BUILD_STRAP)/strap; \
 	$$FAKEROOT chown 0:0 $(BUILD_STRAP)/strap/$(MEMO_PREFIX)/var/root; \
 	$$FAKEROOT chown 501:501 $(BUILD_STRAP)/strap/$(MEMO_PREFIX)/var/mobile; \
 	$$FAKEROOT chmod 1777 $(BUILD_STRAP)/strap/$(MEMO_PREFIX)/tmp; \
@@ -1443,20 +1508,25 @@ endif
 			fi; \
 		done <<<  $$(find $(BUILD_STRAP)/strap/$(MEMO_PREFIX) -type f -exec sh -c "file -ib '{}' | grep -q 'x-mach-binary; charset=binary'" \; -print); \
 	fi; \
+	$$FAKEROOT chown -hR 0:0 $(BUILD_STRAP)/strap; \
+	$$FAKEROOT chown 501:501 $(BUILD_STRAP)/strap/$(MEMO_PREFIX)/var/mobile; \
 	cd $(BUILD_STRAP)/strap && $$FAKEROOT tar -cf ../bootstrap.tar .
 	@if [[ "$(SSH_STRAP)" = 1 ]]; then \
 		BOOTSTRAP=bootstrap-ssh.tar.zst; \
 	else \
 		BOOTSTRAP=bootstrap.tar.zst; \
 	fi; \
-	zstd -qf -c19 --rm $(BUILD_STRAP)/bootstrap.tar > $(BUILD_STRAP)/$${BOOTSTRAP}; \
-	gpg --armor -u $(MEMO_PGP_SIGN_KEY) --detach-sign $(BUILD_STRAP)/$${BOOTSTRAP}; \
-	#rm -rf $(BUILD_STRAP)/*/; \
+	if [ -n "$(BOOTSTRAP_NAME)" ]; then BOOTSTRAP="$(BOOTSTRAP_NAME)"; fi; \
+	zstd -qf -c19 --rm $(BUILD_STRAP)/bootstrap.tar > $(BUILD_STRAP)/$${BOOTSTRAP}.tmp; \
+	if [ -n "$(MEMO_PGP_SIGN_KEY)" ]; then gpg --batch --yes --armor -u "$(MEMO_PGP_SIGN_KEY)" --output $(BUILD_STRAP)/$${BOOTSTRAP}.asc.tmp --detach-sign $(BUILD_STRAP)/$${BOOTSTRAP}.tmp; fi; \
+	mv $(BUILD_STRAP)/$${BOOTSTRAP}.tmp $(BUILD_STRAP)/$${BOOTSTRAP}; \
+	if [ -n "$(MEMO_PGP_SIGN_KEY)" ]; then mv $(BUILD_STRAP)/$${BOOTSTRAP}.asc.tmp $(BUILD_STRAP)/$${BOOTSTRAP}.asc; else rm -f $(BUILD_STRAP)/$${BOOTSTRAP}.asc; fi; \
 	echo "********** Successfully built bootstrap with **********"; \
 	echo "$(STRAPPROJECTS)"; \
 	echo "$(BUILD_STRAP)/$${BOOTSTRAP}"
 endif # ($(MEMO_ROOTLESS),)
 
+ifeq ($(strip $(BOOTSTRAP_CANDIDATES)),)
 %-package: FAKEROOT=fakeroot -i $(BUILD_STAGE)/.fakeroot_$$(echo $@ | sed 's/\(.*\)-package/\1/') -s $(BUILD_STAGE)/.fakeroot_$$(echo $@ | sed 's/\(.*\)-package/\1/') --
 %-package: .SHELLFLAGS=-O extglob -c
 %-stage: %
@@ -1762,3 +1832,4 @@ print-%:
 	BUILD_BASE="$(BUILD_BASE)" BUILD_DIST="$(BUILD_DIST)" BUILD_WORK="$(BUILD_WORK)" DEB_ARCH="$(DEB_ARCH)" MACOSX_SUITE_NAME="$(MACOSX_SUITE_NAME)" MAKE="$(MAKE)" MEMO_CFVER="$(MEMO_CFVER)" MEMO_TARGET="$(MEMO_TARGET)" $(BUILD_TOOLS)/setup_base.sh '$*'
 
 .PHONY: clean setup
+endif # source build targets

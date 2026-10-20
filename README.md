@@ -31,9 +31,11 @@ Contributions (Issues or Pull Requests) are welcome with open arms. Check out th
 
 ## RootHide package updates
 
-This branch updates the full RootHide package collection, including the alt development tools, against Procursus main while retaining newer RootHide versions. Packages keep their RootHide compatibility; ordinary Procursus packages are not interchangeable.
+This branch updates the full RootHide package collection, including development tools, against Procursus main while retaining newer RootHide versions. Packages keep their RootHide compatibility; ordinary Procursus packages are not interchangeable.
 
 The Relaxin integration is optional. Bender requires a compatible libhooker environment. Build and runtime validation does not constitute a published repository or Bootstrap release.
+
+The existing `bootstrap` target produces the Relaxin Bootstrap directly. It can optionally reuse accepted packages through `BOOTSTRAP_CANDIDATES`; normal source builds do not require that input.
 
 ## Credits
 Build system created by [Diatrus](https://twitter.com/Diatrus) and [Kirb](https://twitter.com/hbkirb). Built better by all our wonderful contributors. Made worth it by people like you!

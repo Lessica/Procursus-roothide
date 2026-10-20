@@ -2,7 +2,11 @@ ifneq ($(PROCURSUS),1)
 $(error Use the main Makefile)
 endif
 
+ifneq (,$(findstring roothide,$(MEMO_TARGET)))
+STRAPPROJECTS += libxo
+else
 SUBPROJECTS   += libxo
+endif
 LIBXO_VERSION := 1.4.0
 DEB_LIBXO_V   ?= $(LIBXO_VERSION)-2
 
@@ -24,7 +28,7 @@ ifneq ($(wildcard $(BUILD_WORK)/libxo/.build_complete),)
 libxo:
 	@echo "Using previously built libxo."
 else
-libxo: libxo-setup
+libxo: libxo-setup gettext
 	cd $(BUILD_WORK)/libxo && ./configure -C \
 		$(DEFAULT_CONFIGURE_FLAGS) \
 		--with-gettext=$(BUILD_BASE)/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX) \
