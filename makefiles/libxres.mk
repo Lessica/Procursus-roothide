@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS     += libxres
 LIBXRES_VERSION := 1.2.1
-DEB_LIBXRES_V   ?= $(LIBXRES_VERSION)
+DEB_LIBXRES_V   ?= $(LIBXRES_VERSION)-1
 
 libxres-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://www.x.org/archive/individual/lib/libXres-$(LIBXRES_VERSION).tar.gz{$(comma).sig})
@@ -22,6 +22,14 @@ libxres: libxres-setup libx11 libxext
 	+$(MAKE) -C $(BUILD_WORK)/libxres
 	+$(MAKE) -C $(BUILD_WORK)/libxres install \
 		DESTDIR=$(BUILD_STAGE)/libxres
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Preserve installed LTO outputs and configured static compiler flags.
+	+$(MAKE) -C $(BUILD_WORK)/libxres/src clean
+	+$(MAKE) -C $(BUILD_WORK)/libxres/src libXRes.la \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/libxres/src/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/libxres/src/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -static"
+	cp -a $(BUILD_WORK)/libxres/src/.libs/libXRes.a $(BUILD_STAGE)/libxres/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	$(call AFTER_BUILD,copy)
 endif
 
