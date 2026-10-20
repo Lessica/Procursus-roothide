@@ -8,7 +8,7 @@ else # ($(MEMO_TARGET),darwin-\*)
 SUBPROJECTS   += pcre
 endif # ($(MEMO_TARGET),darwin-\*)
 PCRE_VERSION  := 8.45
-DEB_PCRE_V    ?= $(PCRE_VERSION)-1
+DEB_PCRE_V    ?= $(PCRE_VERSION)-2
 
 pcre-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://downloads.sourceforge.net/pcre/pcre-$(PCRE_VERSION).tar.bz2{$(comma).sig})
@@ -36,6 +36,15 @@ pcre: pcre-setup
 	+$(MAKE) -C $(BUILD_WORK)/pcre
 	+$(MAKE) -C $(BUILD_WORK)/pcre install \
 		DESTDIR=$(BUILD_STAGE)/pcre
+ifneq ($(filter -flto%,$(CFLAGS) $(CXXFLAGS)),)
+	# Rebuild only public static libraries, retaining configured C/C++ flags.
+	+$(MAKE) -C $(BUILD_WORK)/pcre clean
+	+$(MAKE) -C $(BUILD_WORK)/pcre libpcre.la libpcre16.la libpcre32.la libpcreposix.la libpcrecpp.la \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/pcre/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -fno-lto" \
+		CXXFLAGS="$$(sed -n 's/^CXXFLAGS = //p' $(BUILD_WORK)/pcre/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/pcre/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -static"
+	cp -a $(BUILD_WORK)/pcre/.libs/libpcre{,16,32,posix,cpp}.a $(BUILD_STAGE)/pcre/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	$(call AFTER_BUILD,copy)
 endif
 
