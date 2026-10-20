@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS   += libao
 LIBAO_VERSION := 1.2.2
-DEB_LIBAO_V   ?= $(LIBAO_VERSION)
+DEB_LIBAO_V   ?= $(LIBAO_VERSION)-1
 
 libao-setup: setup
 	$(call GITHUB_ARCHIVE,xiph,libao,$(LIBAO_VERSION),$(LIBAO_VERSION))
@@ -33,6 +33,15 @@ endif
 	mkdir -p $(BUILD_STAGE)/libao/$(MEMO_PREFIX)/etc
 	echo "default_driver=macosx\nquiet" > $(BUILD_STAGE)/libao/$(MEMO_PREFIX)/etc/libao.conf
 
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Preserve the installed LTO libraries/programs; rebuild only public static targets.
+	rm -f $(BUILD_WORK)/libao/src/plugins/macosx/*.lo $(BUILD_WORK)/libao/src/plugins/macosx/libmacosx.la
+	+$(MAKE) -C $(BUILD_WORK)/libao/src/plugins/macosx libmacosx.la \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/libao/src/plugins/macosx/Makefile) -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/libao/src/plugins/macosx/Makefile) -fno-lto -static"
+	cp -a $(BUILD_WORK)/libao/src/plugins/macosx/.libs/libmacosx.a \
+		$(BUILD_STAGE)/libao/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/ao/plugins-4/
+endif
 	$(call AFTER_BUILD,copy)
 endif
 
