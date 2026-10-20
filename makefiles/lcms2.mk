@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS   += lcms2
 LCMS2_VERSION := 2.12
-DEB_LCMS2_V   ?= $(LCMS2_VERSION)
+DEB_LCMS2_V   ?= $(LCMS2_VERSION)-1
 
 lcms2-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE), \
@@ -21,6 +21,14 @@ lcms2: lcms2-setup libjpeg-turbo libtiff
 	+$(MAKE) -C $(BUILD_WORK)/lcms2
 	+$(MAKE) -C $(BUILD_WORK)/lcms2 install \
 		DESTDIR="$(BUILD_STAGE)/lcms2"
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Retain installed LTO utilities and dylib; rebuild only the static library.
+	+$(MAKE) -C $(BUILD_WORK)/lcms2/src clean
+	+$(MAKE) -C $(BUILD_WORK)/lcms2/src liblcms2.la \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/lcms2/src/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/lcms2/src/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -static"
+	cp -a $(BUILD_WORK)/lcms2/src/.libs/liblcms2.a $(BUILD_STAGE)/lcms2/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	$(call AFTER_BUILD,copy)
 endif
 

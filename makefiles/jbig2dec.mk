@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS      += jbig2dec
 JBIG2DEC_VERSION := 0.19
-DEB_JBIG2DEC_V   ?= $(JBIG2DEC_VERSION)
+DEB_JBIG2DEC_V   ?= $(JBIG2DEC_VERSION)-1
 
 jbig2dec-setup: setup
 	$(call GITHUB_ARCHIVE,ArtifexSoftware,jbig2dec,$(JBIG2DEC_VERSION),$(JBIG2DEC_VERSION))
@@ -20,6 +20,14 @@ jbig2dec: jbig2dec-setup libpng16
 	+$(MAKE) -C $(BUILD_WORK)/jbig2dec
 	+$(MAKE) -C $(BUILD_WORK)/jbig2dec install \
 		DESTDIR="$(BUILD_STAGE)/jbig2dec"
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Preserve installed LTO program/dylib and configured static flags.
+	+$(MAKE) -C $(BUILD_WORK)/jbig2dec clean
+	+$(MAKE) -C $(BUILD_WORK)/jbig2dec libjbig2dec.la \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/jbig2dec/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/jbig2dec/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -static"
+	cp -a $(BUILD_WORK)/jbig2dec/.libs/libjbig2dec.a $(BUILD_STAGE)/jbig2dec/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	$(call AFTER_BUILD,copy)
 endif
 

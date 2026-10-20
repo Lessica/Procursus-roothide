@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS   += libxo
 LIBXO_VERSION := 1.4.0
-DEB_LIBXO_V   ?= $(LIBXO_VERSION)-1
+DEB_LIBXO_V   ?= $(LIBXO_VERSION)-2
 
 ifeq ($(shell [ "$(CFVER_WHOLE)" -ge 2000 ] && echo 1),1)
 LIBXO_LIBDIR  := $(MEMO_PREFIX)$(MEMO_SUB_PREFIX)$(MEMO_ALT_PREFIX)/lib
@@ -36,7 +36,22 @@ libxo: libxo-setup
 	+$(MAKE) -C $(BUILD_WORK)/libxo install \
 		LIBTOOL='$(BUILD_WORK)/libxo/libtool' \
 		DESTDIR=$(BUILD_STAGE)/libxo
-	sed -i 's|echo -I${prefix}/include .*|echo -I${prefix}/include|' \
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Preserve installed LTO tools/encoders; rebuild only delivered archives.
+	+set -e; for entry in libxo:libxo encoder/cbor:libenc_cbor encoder/csv:libenc_csv; do \
+		sub=$${entry%:*}; name=$${entry##*:}; \
+		find $(BUILD_WORK)/libxo/$$sub -maxdepth 1 -name '*.lo' -type f -delete; \
+		rm -f $(BUILD_WORK)/libxo/$$sub/$$name.la; \
+		$(MAKE) -C $(BUILD_WORK)/libxo/$$sub $$name.la \
+			LIBTOOL='$(BUILD_WORK)/libxo/libtool' \
+			CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/libxo/$$sub/Makefile) -fno-lto" \
+			LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/libxo/$$sub/Makefile) -fno-lto -static"; \
+		if [ "$$sub" = libxo ]; then dest=$(BUILD_STAGE)/libxo/$(LIBXO_LIBDIR); \
+		else dest=$(BUILD_STAGE)/libxo/$(LIBXO_LIBDIR)/libxo/encoder; fi; \
+		cp -a $(BUILD_WORK)/libxo/$$sub/.libs/$$name.a $$dest/; \
+	done
+endif
+	sed -i 's|echo -I$${prefix}/include .*|echo -I$${prefix}/include|' \
 		$(BUILD_STAGE)/libxo/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/libxo-config
 ifeq ($(shell [ "$(CFVER_WHOLE)" -ge 2000 ] && echo 1),1)
 	mkdir -p $(BUILD_BASE)$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/pkgconfig
