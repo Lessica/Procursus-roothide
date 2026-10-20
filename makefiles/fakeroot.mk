@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS        += fakeroot
 FAKEROOT_VERSION   := 1.31
-DEB_FAKEROOT_V     ?= $(FAKEROOT_VERSION)-1
+DEB_FAKEROOT_V     ?= $(FAKEROOT_VERSION)-2
 
 ### mknodat introduced in iOS 16
 
@@ -40,6 +40,14 @@ endif
 		CFLAGS='$(CFLAGS) -D__DARWIN_UNIX03 -DMAC_OS_X_VERSION_MIN_REQUIRED=1000'
 	+$(MAKE) -C $(BUILD_WORK)/fakeroot install \
 		DESTDIR=$(BUILD_STAGE)/fakeroot
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Preserve installed faked and runtime; include the original Darwin overrides.
+	find $(BUILD_WORK)/fakeroot -maxdepth 1 \( -name '*.lo' -o -name '*.la' \) -type f -delete
+	+$(MAKE) -C $(BUILD_WORK)/fakeroot libfakeroot.la \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/fakeroot/Makefile) -D__DARWIN_UNIX03 -DMAC_OS_X_VERSION_MIN_REQUIRED=1000 -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/fakeroot/Makefile) -fno-lto -static"
+	cp -a $(BUILD_WORK)/fakeroot/.libs/libfakeroot.a $(BUILD_STAGE)/fakeroot/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 
 ifneq (,$(findstring roothide,$(MEMO_TARGET)))
 	symredirect $(BUILD_STAGE)/fakeroot/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/faked
