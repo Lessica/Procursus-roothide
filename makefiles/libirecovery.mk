@@ -5,7 +5,7 @@ endif
 SUBPROJECTS          += libirecovery
 LIBIRECOVERY_COMMIT  := ab5b4d8d4c0e90c05d80f80c7e99a6516de9b5c6
 LIBIRECOVERY_VERSION := 1.0.0+git20220628.$(shell echo $(LIBIRECOVERY_COMMIT) | cut -c -7)
-DEB_LIBIRECOVERY_V   ?= $(LIBIRECOVERY_VERSION)-1
+DEB_LIBIRECOVERY_V   ?= $(LIBIRECOVERY_VERSION)-2
 
 libirecovery-setup: setup
 	$(call GITHUB_ARCHIVE,libimobiledevice,libirecovery,$(LIBIRECOVERY_COMMIT),$(LIBIRECOVERY_COMMIT))
@@ -23,6 +23,16 @@ libirecovery: libirecovery-setup readline libusb libimobiledevice-glue
 		CFLAGS="$(CFLAGS) -I$(BUILD_BASE)$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include/libusb-1.0"
 	+$(MAKE) -C $(BUILD_WORK)/libirecovery install \
 		DESTDIR=$(BUILD_STAGE)/libirecovery
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Keep normal installed LTO runtime/tools; rebuild just the archive.
+	find $(BUILD_WORK)/libirecovery/src -name '*.lo' -type f -delete
+	rm -f $(BUILD_WORK)/libirecovery/src/libirecovery-1.0.la
+	+$(MAKE) -C $(BUILD_WORK)/libirecovery/src libirecovery-1.0.la \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/libirecovery/src/Makefile) -I$(BUILD_BASE)$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include/libusb-1.0 -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/libirecovery/src/Makefile) -fno-lto -static"
+	cp -a $(BUILD_WORK)/libirecovery/src/.libs/libirecovery-1.0.a \
+		$(BUILD_STAGE)/libirecovery/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	$(call AFTER_BUILD,copy)
 endif
 
