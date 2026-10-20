@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS    += libsrt
 LIBSRT_VERSION := 1.4.4
-DEB_LIBSRT_V   ?= $(LIBSRT_VERSION)
+DEB_LIBSRT_V   ?= $(LIBSRT_VERSION)-1
 
 libsrt-setup: setup
 	$(call GITHUB_ARCHIVE,Haivision,srt,$(LIBSRT_VERSION),v$(LIBSRT_VERSION),libsrt)
@@ -23,6 +23,23 @@ libsrt: libsrt-setup openssl
 		-DWITH_OPENSSL_LIBDIR=$(BUILD_BASE)$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib
 	+$(MAKE) -C $(BUILD_WORK)/libsrt install \
 		DESTDIR=$(BUILD_STAGE)/libsrt
+ifneq ($(filter -flto%,$(CXXFLAGS)),)
+	# srt_virtual is shared by both library targets. Keep the full installed
+	# LTO runtime/tools, and rebuild only its public archive with native objects.
+	set -e; for target in srt_virtual srt_static; do \
+		flags=$(BUILD_WORK)/libsrt/CMakeFiles/$$target.dir/flags.make; \
+		cp -p "$$flags" "$$flags.lto"; \
+		sed -E '/^(C|CXX)_FLAGS[^=]* =/ { s/(^|[[:space:]])-flto(=[^[:space:]]*)?//g; s/$$/ -fno-lto/; }' "$$flags.lto" > "$$flags"; \
+		touch -r "$$flags.lto" "$$flags"; \
+		find "$$(dirname "$$flags")" -type f \( -name '*.c.o' -o -name '*.cpp.o' \) -delete; \
+	done
+	rm -f $(BUILD_WORK)/libsrt/libsrt.a
+	+$(MAKE) -C $(BUILD_WORK)/libsrt srt_static
+	cp -a $(BUILD_WORK)/libsrt/libsrt.a $(BUILD_STAGE)/libsrt/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+	for target in srt_virtual srt_static; do \
+		flags=$(BUILD_WORK)/libsrt/CMakeFiles/$$target.dir/flags.make; mv "$$flags.lto" "$$flags"; \
+	done
+endif
 	$(call AFTER_BUILD,copy)
 endif
 
