@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS          += libmaxminddb
 LIBMAXMINDDB_VERSION := 1.6.0
-DEB_LIBMAXMINDDB_V   ?= $(LIBMAXMINDDB_VERSION)
+DEB_LIBMAXMINDDB_V   ?= $(LIBMAXMINDDB_VERSION)-1
 
 libmaxminddb-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://github.com/maxmind/libmaxminddb/releases/download/$(LIBMAXMINDDB_VERSION)/libmaxminddb-$(LIBMAXMINDDB_VERSION).tar.gz)
@@ -20,6 +20,15 @@ libmaxminddb: libmaxminddb-setup
 	+$(MAKE) -C $(BUILD_WORK)/libmaxminddb
 	+$(MAKE) -C $(BUILD_WORK)/libmaxminddb install \
 		DESTDIR=$(BUILD_STAGE)/libmaxminddb
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Keep staged LTO tools/dylib and the same configured API/features.
+	rm -f $(BUILD_WORK)/libmaxminddb/src/*.lo $(BUILD_WORK)/libmaxminddb/src/libmaxminddb.la
+	+$(MAKE) -C $(BUILD_WORK)/libmaxminddb/src libmaxminddb.la \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/libmaxminddb/src/Makefile) -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/libmaxminddb/src/Makefile) -fno-lto -static"
+	cp -a $(BUILD_WORK)/libmaxminddb/src/.libs/libmaxminddb.a \
+		$(BUILD_STAGE)/libmaxminddb/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	$(call AFTER_BUILD,copy)
 endif
 

@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS        += libfribidi
 LIBFRIBIDI_VERSION := 1.0.10
-DEB_LIBFRIBIDI_V   ?= $(LIBFRIBIDI_VERSION)-1
+DEB_LIBFRIBIDI_V   ?= $(LIBFRIBIDI_VERSION)-2
 
 libfribidi-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://github.com/fribidi/fribidi/releases/download/v$(LIBFRIBIDI_VERSION)/fribidi-$(LIBFRIBIDI_VERSION).tar.xz)
@@ -20,6 +20,15 @@ libfribidi: libfribidi-setup
 	+$(MAKE) -C $(BUILD_WORK)/libfribidi
 	+$(MAKE) -C $(BUILD_WORK)/libfribidi install \
 		DESTDIR=$(BUILD_STAGE)/libfribidi
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Keep installed LTO outputs and the complete configured compiler flags.
+	+$(MAKE) -C $(BUILD_WORK)/libfribidi/lib clean
+	+$(MAKE) -C $(BUILD_WORK)/libfribidi/lib libfribidi.la \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/libfribidi/lib/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/libfribidi/lib/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -static"
+	cp -a $(BUILD_WORK)/libfribidi/lib/.libs/libfribidi.a \
+		$(BUILD_STAGE)/libfribidi/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	$(call AFTER_BUILD,copy)
 endif
 
