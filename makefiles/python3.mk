@@ -5,7 +5,7 @@ endif
 SUBPROJECTS      += python3
 PYTHON3_MAJOR_V  := 3.9
 PYTHON3_VERSION  := $(PYTHON3_MAJOR_V).9
-DEB_PYTHON3_V    ?= $(PYTHON3_VERSION)-3
+DEB_PYTHON3_V    ?= $(PYTHON3_VERSION)-4
 
 ifeq ($(shell [ "$(CFVER_WHOLE)" -lt 1900 ] && echo 1),1)
 PYTHON3_CONFIGURE_FLAGS = ac_cv_func_mkfifoat=no \
@@ -58,6 +58,16 @@ endif
 	mkdir -p $(BUILD_STAGE)/python3/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/python3/dist-packages $(BUILD_STAGE)/python3/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)$(MEMO_ALT_PREFIX)/lib/python$(PYTHON3_MAJOR_V)/dist-packages
 	sed -e 's|@MEMO_PREFIX@|$(MEMO_PREFIX)|g' -e 's|@MEMO_SUB_PREFIX@|$(MEMO_SUB_PREFIX)|g' < $(BUILD_MISC)/python3/_sysconfigdata__darwin_darwin.py > $(BUILD_STAGE)/python3/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/python$(PYTHON3_MAJOR_V)/_sysconfigdata__darwin_darwin.py
 	rm -f $(BUILD_STAGE)/python3/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/{bin,share/man/man1}/!(*$(PYTHON3_MAJOR_V)*)
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Keep the complete installed LTO interpreter/modules; rebuild only LIBRARY_OBJS.
+	+$(MAKE) -C $(BUILD_WORK)/python3 --eval='procursus-static-clean:;rm -f $$(LIBRARY_OBJS) $$(LIBRARY)' procursus-static-clean
+	+$(MAKE) -C $(BUILD_WORK)/python3 libpython$(PYTHON3_MAJOR_V).a \
+		CONFIGURE_CFLAGS="$$(sed -n 's/^CONFIGURE_CFLAGS=[[:space:]]*//p' $(BUILD_WORK)/python3/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g')" \
+		CFLAGS="$(filter-out -flto%,$(CFLAGS)) -fno-lto"
+	cp -a $(BUILD_WORK)/python3/libpython$(PYTHON3_MAJOR_V).a $(BUILD_STAGE)/python3/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/python$(PYTHON3_MAJOR_V)/config-$(PYTHON3_MAJOR_V)-darwin/
+endif
+	# The built-in locale module also needs libintl for static embedding.
+	sed -i '/^Libs.private:/s/$$/ -lintl/' $(BUILD_STAGE)/python3/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/pkgconfig/python-$(PYTHON3_MAJOR_V)-embed.pc
 	$(call AFTER_BUILD,copy)
 endif
 
