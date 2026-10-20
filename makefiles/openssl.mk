@@ -4,7 +4,7 @@ endif
 
 STRAPPROJECTS   += openssl
 OPENSSL_VERSION := 3.2.1
-DEB_OPENSSL_V   ?= $(OPENSSL_VERSION)
+DEB_OPENSSL_V   ?= $(OPENSSL_VERSION)-1
 
 openssl-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://www.openssl.org/source/openssl-$(OPENSSL_VERSION).tar.gz{$(comma).asc})
@@ -65,7 +65,19 @@ endif
 	+$(MAKE) -C $(BUILD_WORK)/openssl
 	+$(MAKE) -C $(BUILD_WORK)/openssl install install_ssldirs \
 		DESTDIR=$(BUILD_STAGE)/openssl
+	+$(MAKE) openssl-static
 	$(call AFTER_BUILD,copy)
+endif
+
+# The generated source map keeps provider selections, generated inputs and assembly intact.
+openssl-static:
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	cd $(BUILD_WORK)/openssl && perl -I. -Mconfigdata -e 'my %seen; sub rebuild { my ($$k) = @_; return if $$seen{$$k}++; my $$s = $$configdata::unified_info{sources}{$$k}; die "unknown source mapping: $$k" unless $$s && @$$s; if ($$k =~ /\.o$$/) { if (grep { /\.c$$/ } @$$s) { unlink $$k or die "unlink $$k: $$!" if -e $$k; } else { die "unknown non-C source: $$k" unless grep { /\.(?:s|S|asm)$$/ } @$$s; } } else { die "unknown archive node: $$k" unless $$k =~ /\.a$$/ || $$k eq "libcrypto" || $$k eq "libssl"; rebuild($$_) for @$$s; rebuild($$_) for grep { /\.a$$/ || $$_ eq "libcrypto" || $$_ eq "libssl" } @{$$configdata::unified_info{depends}{$$k} || []}; unlink $$k or die "unlink $$k: $$!" if -e $$k; } } rebuild($$_) for qw(libcrypto libssl);'
+	rm -f $(BUILD_WORK)/openssl/libcrypto.a $(BUILD_WORK)/openssl/libssl.a
+	+$(MAKE) -C $(BUILD_WORK)/openssl libcrypto.a libssl.a \
+		CFLAGS="$$(sed -n 's/^CFLAGS=//p' $(BUILD_WORK)/openssl/Makefile) -fno-lto"
+	cp -a $(BUILD_WORK)/openssl/lib{crypto,ssl}.a \
+		$(BUILD_STAGE)/openssl/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
 endif
 
 openssl-package: openssl-stage
@@ -101,4 +113,4 @@ openssl-package: openssl-stage
 	# openssl.mk Build cleanup
 	rm -rf $(BUILD_DIST)/{openssl,libssl{3,-dev,-doc}}
 
-.PHONY: openssl openssl-package
+.PHONY: openssl openssl-static openssl-package
