@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS        += libsndfile
 LIBSNDFILE_VERSION := 1.0.31
-DEB_LIBSNDFILE_V   ?= $(LIBSNDFILE_VERSION)
+DEB_LIBSNDFILE_V   ?= $(LIBSNDFILE_VERSION)-1
 
 libsndfile-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE), \
@@ -22,6 +22,15 @@ libsndfile: libsndfile-setup flac libogg libvorbis libopus
 	+$(MAKE) -C $(BUILD_WORK)/libsndfile
 	+$(MAKE) -C $(BUILD_WORK)/libsndfile install \
 		DESTDIR=$(BUILD_STAGE)/libsndfile
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Keep the installed LTO library/programs. Rebuild only the configured
+	# public archive and its codec/common convenience-library dependencies.
+	+$(MAKE) -C $(BUILD_WORK)/libsndfile clean
+	+$(MAKE) -C $(BUILD_WORK)/libsndfile src/libsndfile.la \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/libsndfile/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/libsndfile/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -static"
+	cp -a $(BUILD_WORK)/libsndfile/src/.libs/libsndfile.a $(BUILD_STAGE)/libsndfile/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	$(call AFTER_BUILD,copy)
 endif
 

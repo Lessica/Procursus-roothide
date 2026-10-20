@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS  += flex
 FLEX_VERSION := 2.6.4
-DEB_FLEX_V   ?= $(FLEX_VERSION)-2
+DEB_FLEX_V   ?= $(FLEX_VERSION)-3
 
 ifeq (,$(findstring darwin,$(MEMO_TARGET)))
 FLEX_LDFLAGS := -Wl,-undefined -Wl,suppress
@@ -32,6 +32,14 @@ flex: flex-setup gettext
 		LDFLAGS="$(LDFLAGS) $(FLEX_LDFLAGS)"
 	+$(MAKE) -C $(BUILD_WORK)/flex install \
 		DESTDIR="$(BUILD_STAGE)/flex"
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Keep installed flex and libfl's normal LTO build.
+	rm -f $(BUILD_WORK)/flex/src/{libmain,libyywrap}.lo
+	rm -f $(BUILD_WORK)/flex/src/libfl.la
+	+$(MAKE) -C $(BUILD_WORK)/flex/src libfl.la \
+		CFLAGS="$(CFLAGS) -fno-lto" LDFLAGS="$(LDFLAGS) $(FLEX_LDFLAGS) -fno-lto -static"
+	cp -a $(BUILD_WORK)/flex/src/.libs/libfl.a $(BUILD_STAGE)/flex/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	$(LN_S) flex $(BUILD_STAGE)/flex/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/lex
 	$(call AFTER_BUILD,copy)
 endif

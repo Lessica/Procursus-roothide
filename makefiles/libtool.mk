@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS     += libtool
 LIBTOOL_VERSION := 2.4.7
-DEB_LIBTOOL_V   ?= $(LIBTOOL_VERSION)-2
+DEB_LIBTOOL_V   ?= $(LIBTOOL_VERSION)-3
 LIBTOOL_SYS_LIB_SEARCH_PATHS := $(sort $(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib $(MEMO_PREFIX)$(MEMO_SUB_PREFIX)$(MEMO_ALT_PREFIX)/lib /usr/lib /usr/local/lib)
 LIBTOOL_SYS_LIB_DLSEARCH_PATHS := $(sort $(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib $(MEMO_PREFIX)$(MEMO_SUB_PREFIX)$(MEMO_ALT_PREFIX)/lib /usr/local/lib /lib /usr/lib)
 
@@ -29,6 +29,17 @@ libtool: libtool-setup
 	+$(MAKE) -C $(BUILD_WORK)/libtool
 	+$(MAKE) -C $(BUILD_WORK)/libtool install \
 		DESTDIR=$(BUILD_STAGE)/libtool
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Preserve the installed LTO runtime; rebuild only ltdl's archive inputs.
+	# Libtool compiles its generated dlpreopen table using captured LTCFLAGS.
+	sed -i '/^LTCFLAGS=/s/"$$/ -fno-lto"/' $(BUILD_WORK)/libtool/libtool
+	find $(BUILD_WORK)/libtool/libltdl -name '*.lo' -type f -delete
+	find $(BUILD_WORK)/libtool/libltdl -name '*.la' -type f -delete
+	+$(MAKE) -C $(BUILD_WORK)/libtool libltdl/libltdl.la \
+		CFLAGS="$(CFLAGS) -fno-lto" LDFLAGS="$(LDFLAGS) -fno-lto -static"
+	sed -i '/^LTCFLAGS=/s/ -fno-lto"$$/"/' $(BUILD_WORK)/libtool/libtool
+	cp -a $(BUILD_WORK)/libtool/libltdl/.libs/libltdl.a $(BUILD_STAGE)/libtool/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	$(call AFTER_BUILD,copy)
 endif
 libtool-package: libtool-stage
@@ -43,6 +54,7 @@ libtool-package: libtool-stage
 		-e 's#^CC="([^\"]*/)?(cc|gcc|clang)"$$#CC="clang"#' \
 		-e 's#^CC="([^\"]*/)?(c\+\+|g\+\+|clang\+\+)"$$#CC="clang++"#' \
 		-e 's#^lt_truncate_bin=".*"$$#lt_truncate_bin="dd bs=4096 count=1"#' \
+		-e 's#^max_cmd_len=$$#max_cmd_len=49152#' \
 		$(BUILD_STAGE)/libtool$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/glibtool
 	mkdir -p $(BUILD_DIST)/libtool/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/{bin,share/{man/man1,libtool,aclocal}} \
 		$(BUILD_DIST)/libtool-bin/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/{bin,share/man/man1} \
