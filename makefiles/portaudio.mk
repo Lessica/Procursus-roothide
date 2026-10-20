@@ -5,7 +5,7 @@ endif
 SUBPROJECTS          += portaudio
 PORTAUDIO_VERSION    := 19.7.0
 PORTAUDIO_DOWNLOAD_V := 190700_20210406
-DEB_PORTAUDIO_V      ?= $(PORTAUDIO_VERSION)
+DEB_PORTAUDIO_V      ?= $(PORTAUDIO_VERSION)-1
 
 portaudio-setup: setup
 	$(call DOWNLOAD_FILE,$(BUILD_SOURCE)/portaudio-$(PORTAUDIO_VERSION).tgz,http://files.portaudio.com/archives/pa_stable_v$(PORTAUDIO_DOWNLOAD_V).tgz)
@@ -35,6 +35,18 @@ portaudio: portaudio-setup
 	+$(MAKE) -C $(BUILD_WORK)/portaudio
 	+$(MAKE) -C $(BUILD_WORK)/portaudio install \
 		DESTDIR=$(BUILD_STAGE)/portaudio
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Keep installed LTO dylibs and tests; rebuild only the C/C++ archives.
+	+$(MAKE) -C $(BUILD_WORK)/portaudio clean
+	+$(MAKE) -C $(BUILD_WORK)/portaudio lib/libportaudio.la \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/portaudio/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/portaudio/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -static"
+	+$(MAKE) -C $(BUILD_WORK)/portaudio/bindings/cpp/lib clean
+	+$(MAKE) -C $(BUILD_WORK)/portaudio/bindings/cpp/lib libportaudiocpp.la \
+		CXXFLAGS="$$(sed -n 's/^CXXFLAGS = //p' $(BUILD_WORK)/portaudio/bindings/cpp/lib/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/portaudio/bindings/cpp/lib/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -static"
+	cp -a $(BUILD_WORK)/portaudio/lib/.libs/libportaudio.a $(BUILD_WORK)/portaudio/bindings/cpp/lib/.libs/libportaudiocpp.a $(BUILD_STAGE)/portaudio/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	$(call AFTER_BUILD,copy)
 endif
 
