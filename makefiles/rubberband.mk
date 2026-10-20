@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS           += rubberband
 RUBBERBAND_VERSION    := 2.0.2
-DEB_RUBBERBAND_V      ?= $(RUBBERBAND_VERSION)
+DEB_RUBBERBAND_V      ?= $(RUBBERBAND_VERSION)-1
 
 rubberband-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://breakfastquay.com/files/releases/rubberband-$(RUBBERBAND_VERSION).tar.bz2)
@@ -34,6 +34,26 @@ rubberband: rubberband-setup libsamplerate libsndfile
 		--cross-file cross.txt \
 		..
 	+DESTDIR=$(BUILD_STAGE)/rubberband ninja -C $(BUILD_WORK)/rubberband/build install
+ifneq ($(filter iphoneos%,$(MEMO_TARGET)),)
+	# The public C API archive also needs the Apple C++ runtime.
+	if ! grep -q '^Libs.private:' $(BUILD_STAGE)/rubberband/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/pkgconfig/rubberband.pc; then \
+		printf '\nLibs.private: -lc++\n' >> $(BUILD_STAGE)/rubberband/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/pkgconfig/rubberband.pc; \
+	else \
+		sed -i '/^Libs.private:/s/$$/ -lc++/' $(BUILD_STAGE)/rubberband/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/pkgconfig/rubberband.pc; \
+	fi
+endif
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# The public static library extracts these shared object-library members.
+	# Keep installed LTO outputs and all generated feature flags/assembly.
+	cp -p $(BUILD_WORK)/rubberband/build/build.ninja $(BUILD_WORK)/rubberband/build/build.ninja.lto
+	sed -E '/^build librubberband_objlib[.]a[.]p\/.*[.](c|cc|cpp|cxx)[.]o: (c|cpp)_COMPILER/,/^$$/ { /^ ARGS =/ { s/(^|[[:space:]])-flto(=[^[:space:]]*)?//g; s/$$/ -fno-lto/; } }' \
+		$(BUILD_WORK)/rubberband/build/build.ninja.lto > $(BUILD_WORK)/rubberband/build/build.ninja
+	find $(BUILD_WORK)/rubberband/build/librubberband_objlib.a.p -type f \
+		\( -name '*.c.o' -o -name '*.cc.o' -o -name '*.cpp.o' -o -name '*.cxx.o' \) -delete
+	+ninja -j$(CORE_COUNT) -C $(BUILD_WORK)/rubberband/build librubberband.a
+	cp -a $(BUILD_WORK)/rubberband/build/librubberband.a $(BUILD_STAGE)/rubberband/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+	mv $(BUILD_WORK)/rubberband/build/build.ninja.lto $(BUILD_WORK)/rubberband/build/build.ninja
+endif
 	$(call AFTER_BUILD,copy)
 endif
 
