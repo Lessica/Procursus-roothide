@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS   += libsm
 LIBSM_VERSION := 1.2.3
-DEB_LIBSM_V   ?= $(LIBSM_VERSION)
+DEB_LIBSM_V   ?= $(LIBSM_VERSION)-1
 
 libsm-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://xorg.freedesktop.org/archive/individual/lib/libSM-$(LIBSM_VERSION).tar.gz{$(comma).sig})
@@ -23,6 +23,14 @@ libsm: libsm-setup xtrans libice uuid
 	+$(MAKE) -C $(BUILD_WORK)/libsm
 	+$(MAKE) -C $(BUILD_WORK)/libsm install \
 		DESTDIR=$(BUILD_STAGE)/libsm
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Preserve installed LTO outputs and configured static compiler flags.
+	+$(MAKE) -C $(BUILD_WORK)/libsm/src clean
+	+$(MAKE) -C $(BUILD_WORK)/libsm/src libSM.la \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/libsm/src/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/libsm/src/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -static"
+	cp -a $(BUILD_WORK)/libsm/src/.libs/libSM.a $(BUILD_STAGE)/libsm/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	$(call AFTER_BUILD,copy)
 endif
 

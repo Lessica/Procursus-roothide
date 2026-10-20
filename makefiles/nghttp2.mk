@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS     += nghttp2
 NGHTTP2_VERSION := 1.61.0
-DEB_NGHTTP2_V   ?= $(NGHTTP2_VERSION)
+DEB_NGHTTP2_V   ?= $(NGHTTP2_VERSION)-1
 
 ##### EVALUATE WHETHER THIS NEEDS LAUNCHDAEMONS AT A LATER DATE #####
 
@@ -30,6 +30,15 @@ nghttp2: nghttp2-setup openssl libc-ares libev jansson libjemalloc libevent nght
 	+$(MAKE) -C $(BUILD_WORK)/nghttp2
 	+$(MAKE) -C $(BUILD_WORK)/nghttp2 install \
 		DESTDIR="$(BUILD_STAGE)/nghttp2"
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Preserve installed LTO programs/runtime and rebuild only the library target.
+	rm -f $(BUILD_WORK)/nghttp2/lib/*.lo $(BUILD_WORK)/nghttp2/lib/libnghttp2.la
+	+$(MAKE) -C $(BUILD_WORK)/nghttp2/lib libnghttp2.la \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/nghttp2/lib/Makefile) -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/nghttp2/lib/Makefile) -fno-lto -static"
+	cp -a $(BUILD_WORK)/nghttp2/lib/.libs/libnghttp2.a \
+		$(BUILD_STAGE)/nghttp2/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	$(call AFTER_BUILD,copy)
 endif
 
