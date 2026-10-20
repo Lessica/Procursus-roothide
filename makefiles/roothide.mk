@@ -13,10 +13,46 @@ ROOTHIDE_COMMIT  := 7764c54759009272b4f2f23c18c62b21794fe6dd
 DEB_ROOTHIDE_V    ?= $(ROOTHIDE_VERSION)
 export DEB_ROOTHIDE_V
 
+# Optional cross-host input, produced only by roothide-xcode-export below.
+ROOTHIDE_XCODE_INPUT ?=
+ROOTHIDE_XCODE_OUTPUT ?= $(BUILD_WORK)/libroothide-xcode.tar
+ROOTHIDE_BINARIES := roothideinit.dylib libroothide.dylib libvroot.dylib libvrootapi.dylib updatelink symredirect jbrand jbroot rootfs
+ROOTHIDE_INPUT_ID = { printf '%s\n' '$(ROOTHIDE_COMMIT)' '$(MEMO_TARGET)' '$(MEMO_CFVER)' '$(MEMO_PREFIX)' '$(MEMO_SUB_PREFIX)' '$(MEMO_ALT_PREFIX)'; \
+	cd "$(REPO_BASE)" && sha256sum makefiles/roothide.mk build_patch/roothide/* build_misc/roothide/* build_misc/libiosexec/*; } | sha256sum | cut -d' ' -f1
+
 roothide-setup: setup
 	$(call GITHUB_ARCHIVE,roothide,libroothide,$(ROOTHIDE_COMMIT),$(ROOTHIDE_COMMIT))
 	$(call EXTRACT_TAR,libroothide-$(ROOTHIDE_COMMIT).tar.gz,libroothide-$(ROOTHIDE_COMMIT),libroothide)
 	$(call DO_PATCH,roothide,libroothide,-p1)
+
+# Compile without packaging: Linux performs the normal AFTER_BUILD/SIGN/PACK.
+roothide-compile: roothide-setup
+	$(MAKE) -C $(BUILD_WORK)/libroothide clean
+	CFLAGS="$(CFLAGS) -DLIBIOSEXEC_INTERNAL" LDFLAGS="$(filter-out -liosexec,$(LDFLAGS))" $(MAKE) -C $(BUILD_WORK)/libroothide all
+
+roothide-xcode-export: .SHELLFLAGS=-e -o pipefail -c
+roothide-xcode-export: roothide-compile
+	test "$(UNAME)" = Darwin && test "$(PLATFORM)" = iphoneos
+	cd $(BUILD_WORK)/libroothide; for lib in *.dylib; do xcrun lipo "$$lib" -verify_arch arm64 arm64e; done
+	$(ROOTHIDE_INPUT_ID) > $(BUILD_WORK)/libroothide/input-id
+	cd $(BUILD_WORK)/libroothide && sha256sum $(ROOTHIDE_BINARIES) updatelinks.sh > SHA256SUMS
+	{ xcodebuild -version; "$(CC)" --version; printf 'SDK: %s\n' "$(TARGET_SYSROOT)"; } > $(BUILD_WORK)/libroothide/toolchain.txt
+	tar -cf "$(ROOTHIDE_XCODE_OUTPUT).tmp" -C $(BUILD_WORK)/libroothide $(ROOTHIDE_BINARIES) updatelinks.sh input-id SHA256SUMS toolchain.txt
+	mv "$(ROOTHIDE_XCODE_OUTPUT).tmp" "$(ROOTHIDE_XCODE_OUTPUT)"
+
+ifneq ($(ROOTHIDE_XCODE_INPUT),)
+ROOTHIDE_RESULT := $(BUILD_WORK)/libroothide-xcode
+roothide-xcode-check: .SHELLFLAGS=-e -o pipefail -c
+roothide-xcode-check:
+	mkdir -p "$(ROOTHIDE_RESULT)"
+	tar -xf "$(ROOTHIDE_XCODE_INPUT)" -C "$(ROOTHIDE_RESULT)"
+	test "$$($(ROOTHIDE_INPUT_ID))" = "$$(cat "$(ROOTHIDE_RESULT)/input-id")" || { echo 'libroothide Xcode input does not match this recipe/target; rebuild roothide-xcode-export.' >&2; exit 1; }
+	cd "$(ROOTHIDE_RESULT)" && sha256sum -c SHA256SUMS
+	for lib in roothideinit libroothide libvroot libvrootapi; do $(LIPO) "$(ROOTHIDE_RESULT)/$$lib.dylib" -verify_arch arm64 arm64e; done
+roothide: roothide-xcode-check
+else
+ROOTHIDE_RESULT := $(BUILD_WORK)/libroothide
+endif
 
 ifneq ($(wildcard $(BUILD_WORK)/roothide/.build_complete),)
 roothide:
@@ -58,19 +94,21 @@ endif
 	mkdir -p $(BUILD_STAGE)/roothide/$(MEMO_PREFIX)/System/Library/CoreServices/
 	$(LN_S) $(MEMO_ROOTFS)/System/Library/CoreServices/SystemVersion.plist $(BUILD_STAGE)/roothide/$(MEMO_PREFIX)/System/Library/CoreServices/SystemVersion.plist
 
+ifeq ($(ROOTHIDE_XCODE_INPUT),)
 	$(MAKE) -C $(BUILD_WORK)/libroothide clean
-	CFLAGS="$(CFLAGS) -DLIBIOSEXEC_INTERNAL" LDFLAGS="$(subst,-liosexec,,$(LDFLAGS))" $(MAKE) -C $(BUILD_WORK)/libroothide all
+	CFLAGS="$(CFLAGS) -DLIBIOSEXEC_INTERNAL" LDFLAGS="$(filter-out -liosexec,$(LDFLAGS))" $(MAKE) -C $(BUILD_WORK)/libroothide all
+endif
 
-	cp -a $(BUILD_WORK)/libroothide/roothideinit.dylib	$(BUILD_STAGE)/roothide/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
-	cp -a $(BUILD_WORK)/libroothide/libroothide.dylib	$(BUILD_STAGE)/roothide/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
-	cp -a $(BUILD_WORK)/libroothide/libvroot.dylib	$(BUILD_STAGE)/roothide/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
-	cp -a $(BUILD_WORK)/libroothide/libvrootapi.dylib	$(BUILD_STAGE)/roothide/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
-	cp -a $(BUILD_WORK)/libroothide/updatelink	$(BUILD_STAGE)/roothide/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/libexec/
-	cp -a $(BUILD_WORK)/libroothide/updatelinks.sh	$(BUILD_STAGE)/roothide/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/libexec/
-	cp -a $(BUILD_WORK)/libroothide/jbrand	$(BUILD_STAGE)/roothide/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/
-	cp -a $(BUILD_WORK)/libroothide/jbroot	$(BUILD_STAGE)/roothide/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/
-	cp -a $(BUILD_WORK)/libroothide/rootfs	$(BUILD_STAGE)/roothide/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/
-	cp -a $(BUILD_WORK)/libroothide/symredirect	$(BUILD_STAGE)/roothide/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/
+	cp -a $(ROOTHIDE_RESULT)/roothideinit.dylib	$(BUILD_STAGE)/roothide/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+	cp -a $(ROOTHIDE_RESULT)/libroothide.dylib	$(BUILD_STAGE)/roothide/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+	cp -a $(ROOTHIDE_RESULT)/libvroot.dylib	$(BUILD_STAGE)/roothide/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+	cp -a $(ROOTHIDE_RESULT)/libvrootapi.dylib	$(BUILD_STAGE)/roothide/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+	cp -a $(ROOTHIDE_RESULT)/updatelink	$(BUILD_STAGE)/roothide/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/libexec/
+	cp -a $(ROOTHIDE_RESULT)/updatelinks.sh	$(BUILD_STAGE)/roothide/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/libexec/
+	cp -a $(ROOTHIDE_RESULT)/jbrand	$(BUILD_STAGE)/roothide/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/
+	cp -a $(ROOTHIDE_RESULT)/jbroot	$(BUILD_STAGE)/roothide/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/
+	cp -a $(ROOTHIDE_RESULT)/rootfs	$(BUILD_STAGE)/roothide/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/
+	cp -a $(ROOTHIDE_RESULT)/symredirect	$(BUILD_STAGE)/roothide/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/
 
 	$(call AFTER_BUILD,,,,NO-VROOT)
 endif
@@ -103,4 +141,4 @@ roothide-package: roothide-stage
 	# roothide.mk Build cleanup
 	rm -rf $(BUILD_DIST)/roothide{,-dev}
 
-.PHONY: roothide roothide-package
+.PHONY: roothide roothide-package roothide-compile roothide-xcode-export roothide-xcode-check

@@ -56,6 +56,24 @@ make MEMO_TARGET=iphoneos-arm64-roothide MEMO_CFVER=1900 package
 make MEMO_TARGET=iphoneos-arm64-roothide MEMO_CFVER=1900 bootstrap
 ```
 
+libroothide requires Xcode's arm64e ABI support. For Linux builds, first run
+the following in the same source revision on macOS, after host preparation:
+
+```sh
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer \
+make MEMO_TARGET=iphoneos-arm64-roothide MEMO_CFVER=1900 roothide-xcode-export
+```
+
+Copy `build_work/iphoneos-arm64-roothide/1900/libroothide-xcode.tar` into the
+Linux checkout, then pass its absolute path as `ROOTHIDE_XCODE_INPUT` to the
+normal `bootstrap` or `package` command. The input contains source-built,
+unpackaged libroothide binaries, target/recipe fingerprints, checksums and
+toolchain identification. Linux validates it and performs the normal staging,
+RootHide processing, signing and packaging. No existing Debs are imported.
+Re-export after changing the target, libroothide recipe, patches or supporting
+headers. Use a fresh build directory or `rebuild-roothide-package` when replacing
+an input already used in a completed build.
+
 `package` builds the complete applicable collection, including LLVM/Swift.
 `bootstrap` builds `STRAPPROJECTS` and assembles the binary members listed in
 the main Makefile. Relaxin's current Bootstrap uses 71 packages: its original
