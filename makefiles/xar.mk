@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS += xar
 XAR_VERSION := 487.100.1
-DEB_XAR_V   ?= 1.8.0.$(XAR_VERSION)-2
+DEB_XAR_V   ?= 1.8.0.$(XAR_VERSION)-3
 
 xar-setup: setup
 	$(call GITHUB_ARCHIVE,apple-oss-distributions,xar,$(XAR_VERSION),xar-$(XAR_VERSION))
@@ -33,6 +33,13 @@ xar: xar-setup openssl
 		CFLAGS="$(CFLAGS) -I$(BUILD_WORK)/xar/lib"
 	+$(MAKE) -C $(BUILD_WORK)/xar install \
 		DESTDIR=$(BUILD_STAGE)/xar
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# The source already separates static objects from the installed LTO dylibs.
+	rm -f $(BUILD_WORK)/xar/lib/*.static.o $(BUILD_WORK)/xar/lib/libxar.a
+	+$(MAKE) -C $(BUILD_WORK)/xar lib_static \
+		CFLAGS="$$(sed -n 's/^CFLAGS := //p' $(BUILD_WORK)/xar/Makefile) -I$(BUILD_WORK)/xar/lib -fno-lto"
+	cp -a $(BUILD_WORK)/xar/lib/libxar.a $(BUILD_STAGE)/xar/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	$(call AFTER_BUILD,copy)
 endif
 
