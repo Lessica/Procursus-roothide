@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS   += libfs
 LIBFS_VERSION := 1.0.8
-DEB_LIBFS_V   ?= $(LIBFS_VERSION)
+DEB_LIBFS_V   ?= $(LIBFS_VERSION)-1
 
 libfs-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://xorg.freedesktop.org/archive/individual/lib/libFS-$(LIBFS_VERSION).tar.gz{$(comma).sig})
@@ -22,6 +22,14 @@ libfs: libfs-setup xorgproto xtrans
 	+$(MAKE) -C $(BUILD_WORK)/libfs
 	+$(MAKE) -C $(BUILD_WORK)/libfs install \
 		DESTDIR=$(BUILD_STAGE)/libfs
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Preserve installed LTO outputs and configured static compiler flags.
+	+$(MAKE) -C $(BUILD_WORK)/libfs/src clean
+	+$(MAKE) -C $(BUILD_WORK)/libfs/src libFS.la \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/libfs/src/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/libfs/src/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -static"
+	cp -a $(BUILD_WORK)/libfs/src/.libs/libFS.a $(BUILD_STAGE)/libfs/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	$(call AFTER_BUILD,copy)
 endif
 
