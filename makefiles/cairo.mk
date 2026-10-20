@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS   += cairo
 CAIRO_VERSION := 1.16.0
-DEB_CAIRO_V   ?= $(CAIRO_VERSION)-3
+DEB_CAIRO_V   ?= $(CAIRO_VERSION)-4
 
 cairo-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://cairographics.org/releases/cairo-$(CAIRO_VERSION).tar.xz)
@@ -30,6 +30,28 @@ cairo: cairo-setup freetype gettext fontconfig glib2.0 libpng16 liblzo2 libpixma
 		CFLAGS="$(CFLAGS) -I$(BUILD_BASE)$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/glib-2.0/include"
 	+$(MAKE) -C $(BUILD_WORK)/cairo install \
 		DESTDIR=$(BUILD_STAGE)/cairo
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Rebuild public archives and their configured C++ convenience objects.
+	# Keep the installed LTO runtime and the explicit GLib include flag.
+	+$(MAKE) -C $(BUILD_WORK)/cairo/src clean
+	+$(MAKE) -C $(BUILD_WORK)/cairo/src libcairo.la \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/cairo/src/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -I$(BUILD_BASE)$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/glib-2.0/include -fno-lto" \
+		CXXFLAGS="$$(sed -n 's/^CXXFLAGS = //p' $(BUILD_WORK)/cairo/src/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/cairo/src/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -static"
+	cp -a $(BUILD_WORK)/cairo/src/.libs/libcairo.a $(BUILD_STAGE)/cairo/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+	+$(MAKE) -C $(BUILD_WORK)/cairo/util/cairo-gobject clean
+	+$(MAKE) -C $(BUILD_WORK)/cairo/util/cairo-gobject libcairo-gobject.la \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/cairo/util/cairo-gobject/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -I$(BUILD_BASE)$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/glib-2.0/include -fno-lto" \
+		CXXFLAGS="$$(sed -n 's/^CXXFLAGS = //p' $(BUILD_WORK)/cairo/util/cairo-gobject/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/cairo/util/cairo-gobject/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -static"
+	cp -a $(BUILD_WORK)/cairo/util/cairo-gobject/.libs/libcairo-gobject.a $(BUILD_STAGE)/cairo/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+	+$(MAKE) -C $(BUILD_WORK)/cairo/util/cairo-script clean
+	+$(MAKE) -C $(BUILD_WORK)/cairo/util/cairo-script libcairo-script-interpreter.la \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/cairo/util/cairo-script/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -I$(BUILD_BASE)$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/glib-2.0/include -fno-lto" \
+		CXXFLAGS="$$(sed -n 's/^CXXFLAGS = //p' $(BUILD_WORK)/cairo/util/cairo-script/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/cairo/util/cairo-script/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -static"
+	cp -a $(BUILD_WORK)/cairo/util/cairo-script/.libs/libcairo-script-interpreter.a $(BUILD_STAGE)/cairo/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	$(call AFTER_BUILD,copy)
 endif
 

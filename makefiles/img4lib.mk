@@ -5,7 +5,7 @@ endif
 SUBPROJECTS     += img4lib
 IMG4LIB_COMMIT  := 69772c72f3c08f021ec9fa4c386f2b3df60a38b7
 IMG4LIB_VERSION := 1.0+git20211128.$(shell echo $(IMG4LIB_COMMIT) | cut -c -7)
-DEB_IMG4LIB_V   ?= $(IMG4LIB_VERSION)
+DEB_IMG4LIB_V   ?= $(IMG4LIB_VERSION)-1
 
 img4lib-setup: setup
 	$(call GITHUB_ARCHIVE,xerub,img4lib,v$(IMG4LIB_COMMIT),$(IMG4LIB_COMMIT))
@@ -23,7 +23,8 @@ img4lib: img4lib-setup openssl
 	cp -a $(BUILD_WORK)/img4lib/img4 $(BUILD_STAGE)/img4lib/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin
 	cp -a $(BUILD_WORK)/img4lib/libDER/*.h $(BUILD_STAGE)/img4lib/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include/libDER
 	cp -a $(BUILD_WORK)/img4lib/libvfs/*.h $(BUILD_STAGE)/img4lib/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include/libvfs
-	cp -a $(BUILD_WORK)/img4lib/libimg4.a $(BUILD_STAGE)/img4lib/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib
+	+$(MAKE) -C $(BUILD_WORK)/img4lib libimg4-native.a
+	cp -a $(BUILD_WORK)/img4lib/libimg4-native.a $(BUILD_STAGE)/img4lib/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/libimg4.a
 	$(call AFTER_BUILD,copy)
 endif
 

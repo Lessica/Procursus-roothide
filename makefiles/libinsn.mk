@@ -5,7 +5,7 @@ endif
 SUBPROJECTS     += libinsn
 LIBINSN_VERSION := 35
 LIBINSN_COMMIT  := 64124fd2b1b57d7b76a0e2b0c06434a7048758d2
-DEB_LIBINSN_V   ?= $(LIBINSN_VERSION)-1
+DEB_LIBINSN_V   ?= $(LIBINSN_VERSION)-2
 
 libinsn-setup: setup
 	$(call GITHUB_ARCHIVE,tihmstar,libinsn,$(LIBINSN_COMMIT),$(LIBINSN_COMMIT))
@@ -24,6 +24,17 @@ libinsn: libinsn-setup libgeneral
 	+$(MAKE) -C $(BUILD_WORK)/libinsn
 	+$(MAKE) -C $(BUILD_WORK)/libinsn install \
 		DESTDIR="$(BUILD_STAGE)/libinsn"
+ifneq ($(filter -flto%,$(CXXFLAGS)),)
+	# Keep normal installed LTO runtime; replace only the public C++ archive.
+	find $(BUILD_WORK)/libinsn/libinsn -name '*.lo' -type f -delete
+	rm -f $(BUILD_WORK)/libinsn/libinsn/libinsn.la
+	+$(MAKE) -C $(BUILD_WORK)/libinsn/libinsn libinsn.la \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/libinsn/libinsn/Makefile) -fno-lto" \
+		CXXFLAGS="$$(sed -n 's/^CXXFLAGS = //p' $(BUILD_WORK)/libinsn/libinsn/Makefile) -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/libinsn/libinsn/Makefile) -fno-lto -static"
+	cp -a $(BUILD_WORK)/libinsn/libinsn/.libs/libinsn.a \
+		$(BUILD_STAGE)/libinsn/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	$(call AFTER_BUILD,copy)
 endif
 

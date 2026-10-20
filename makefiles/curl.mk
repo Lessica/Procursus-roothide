@@ -4,12 +4,13 @@ endif
 
 SUBPROJECTS  += curl
 CURL_VERSION := 8.7.1
-DEB_CURL_V   ?= $(CURL_VERSION)
+DEB_CURL_V   ?= $(CURL_VERSION)-1
 
 curl-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://curl.haxx.se/download/curl-$(CURL_VERSION).tar.xz{$(comma).asc})
 	$(call PGP_VERIFY,curl-$(CURL_VERSION).tar.xz,asc)
 	$(call EXTRACT_TAR,curl-$(CURL_VERSION).tar.xz,curl-$(CURL_VERSION),curl)
+	$(call DO_PATCH,curl,curl,-p1)
 	sed -i '/CURL_VERIFY_RUNTIMELIBS/d' $(BUILD_WORK)/curl/configure.ac
 
 ifneq ($(wildcard $(BUILD_WORK)/curl/.build_complete),)
@@ -35,6 +36,16 @@ curl: curl-setup gettext openssl libc-ares libssh2 nghttp2 libidn2 brotli zstd r
 	+$(MAKE) -C $(BUILD_WORK)/curl
 	+$(MAKE) -C $(BUILD_WORK)/curl install \
 		DESTDIR="$(BUILD_STAGE)/curl"
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Keep the normal installed LTO runtime/program; rebuild only libcurl.a.
+	find $(BUILD_WORK)/curl/lib -name '*.lo' -type f -delete
+	rm -f $(BUILD_WORK)/curl/lib/libcurl.la
+	+$(MAKE) -C $(BUILD_WORK)/curl/lib libcurl.la \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/curl/lib/Makefile) -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/curl/lib/Makefile) -fno-lto -static"
+	cp -a $(BUILD_WORK)/curl/lib/.libs/libcurl.a \
+		$(BUILD_STAGE)/curl/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	$(call AFTER_BUILD,copy)
 endif
 
