@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS    += file
 FILE_VERSION   := 5.45
-DEB_FILE_V     ?= $(FILE_VERSION)
+DEB_FILE_V     ?= $(FILE_VERSION)-1
 
 file-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://astron.com/pub/file/file-$(FILE_VERSION).tar.gz{$(comma).asc})
@@ -30,6 +30,15 @@ file: file-setup xz
 		FILE_COMPILE="$(BUILD_WORK)/file/native/src/file"
 	+$(MAKE) -C $(BUILD_WORK)/file install \
 		DESTDIR="$(BUILD_STAGE)/file"
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Keep installed LTO runtime; rebuild only the public archive in this configuration.
+	find $(BUILD_WORK)/file/src -name '*.lo' -type f -delete
+	rm -f $(BUILD_WORK)/file/src/libmagic.la
+	+$(MAKE) -C $(BUILD_WORK)/file/src libmagic.la \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/file/src/Makefile) -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/file/src/Makefile) -fno-lto -static"
+	cp -a $(BUILD_WORK)/file/src/.libs/libmagic.a $(BUILD_STAGE)/file/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	$(call AFTER_BUILD,copy)
 endif
 
