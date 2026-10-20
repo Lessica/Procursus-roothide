@@ -18,13 +18,13 @@ capstone:
 else
 capstone: capstone-setup
 	+$(MAKE) -C $(BUILD_WORK)/capstone \
-		PREFIX="$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)" \
+		PREFIX="$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)" IS_APPLE=1 OS=Darwin \
 		LIBARCHS="$(MEMO_ARCH)"
 	+$(MAKE) -C $(BUILD_WORK)/capstone install \
-		PREFIX="$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)" \
+		PREFIX="$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)" IS_APPLE=1 OS=Darwin \
 		DESTDIR=$(BUILD_STAGE)/capstone
 	+$(MAKE) -C $(BUILD_WORK)/capstone libcapstone-native.a \
-		PREFIX="$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)" \
+		PREFIX="$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)" IS_APPLE=1 OS=Darwin \
 		LIBARCHS="$(MEMO_ARCH)"
 	cp $(BUILD_WORK)/capstone/libcapstone-native.a $(BUILD_STAGE)/capstone/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/libcapstone.a
 	$(call AFTER_BUILD,copy)
