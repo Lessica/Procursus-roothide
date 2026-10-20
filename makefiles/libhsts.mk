@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS     += libhsts
 LIBHSTS_VERSION := 0.1.0
-DEB_LIBHSTS_V   ?= $(LIBHSTS_VERSION)
+DEB_LIBHSTS_V   ?= $(LIBHSTS_VERSION)-1
 
 libhsts-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://gitlab.com/rockdaboot/libhsts/-/archive/libhsts-$(LIBHSTS_VERSION)/libhsts-libhsts-$(LIBHSTS_VERSION).tar.gz)
@@ -27,6 +27,15 @@ libhsts: libhsts-setup
 	+$(MAKE) -C $(BUILD_WORK)/libhsts
 	+$(MAKE) -C $(BUILD_WORK)/libhsts install \
 		DESTDIR="$(BUILD_STAGE)/libhsts"
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Retain installed LTO output and generated preload/header inputs.
+	rm -f $(BUILD_WORK)/libhsts/src/*.lo $(BUILD_WORK)/libhsts/src/libhsts.la
+	+$(MAKE) -C $(BUILD_WORK)/libhsts/src libhsts.la \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/libhsts/src/Makefile) -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/libhsts/src/Makefile) -fno-lto -static"
+	cp -a $(BUILD_WORK)/libhsts/src/.libs/libhsts.a \
+		$(BUILD_STAGE)/libhsts/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	$(call AFTER_BUILD,copy)
 endif
 
