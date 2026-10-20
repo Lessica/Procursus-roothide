@@ -1,0 +1,128 @@
+diff --git a/rules/build-prog.mk b/rules/build-prog.mk
+--- a/rules/build-prog.mk
++++ b/rules/build-prog.mk
+@@ -197,7 +197,9 @@ ifneq "$$(BINDIST)" "YES"
+ # The quadrupled $'s here are because the _<way>_LIB variables aren't
+ # necessarily set when this part of the makefile is read
+ $1/$2/build/tmp/$$($1_$2_PROG) $1/$2/build/tmp/$$($1_$2_PROG).dll : \
+-    $$(foreach dep,$$($1_$2_TRANSITIVE_DEP_COMPONENT_IDS),\
++    $$(foreach dep,$$(if $$($1_$2_PROGRAM_DEP_COMPONENT_IDS),\
++        $$($1_$2_PROGRAM_DEP_COMPONENT_IDS),\
++        $$($1_$2_TRANSITIVE_DEP_COMPONENT_IDS)),\
+         $$$$($$(dep)_dist-$(if $(filter 0,$3),boot,install)_PROGRAM_DEP_LIB))
+ # Workaround: We use TRANSITIVE_DEP_COMPONENT_IDS here as a workaround for
+ # #12078.
+diff --git a/rules/package-config.mk b/rules/package-config.mk
+--- a/rules/package-config.mk
++++ b/rules/package-config.mk
+@@ -39,6 +39,14 @@ $1_$2_GHC_PKG_OPTS = --package-db=$$(BOOTSTRAPPING_CONF)
+ $1_$2_CONFIGURE_OPTS += --package-db=$$(TOP)/$$(BOOTSTRAPPING_CONF)
+ $1_$2_MORE_HC_OPTS += -no-user-package-db
+ $1_$2_MORE_HC_OPTS += -rtsopts
++# These stage0 helpers use only packages installed with the bootstrap GHC.
++# Keep their compile/configuration DB isolated from in-tree boot libraries.
++ifneq "$$(filter $1_$2,utils/hsc2hs_dist utils/deriveConstants_dist)" ""
++$1_$2_BOOTSTRAP_GLOBAL_PACKAGE_DB = $$(shell $$(GHC_STAGE0) --print-global-package-db)
++$1_$2_HC_PKGCONF = -clear-package-db -package-db $$($1_$2_BOOTSTRAP_GLOBAL_PACKAGE_DB)
++$1_$2_GHC_PKG_OPTS = --package-db=$$($1_$2_BOOTSTRAP_GLOBAL_PACKAGE_DB)
++$1_$2_CONFIGURE_OPTS = --package-db=global
++endif
+ else
+ $1_$2_HC_PKGCONF = 
+ $1_$2_HC_CONFIG = $$(TOP)/$$(GHC_STAGE1)
+diff --git a/utils/hsc2hs/ghc.mk
+--- a/utils/hsc2hs/ghc.mk
++++ b/utils/hsc2hs/ghc.mk
+@@ -17,6 +17,10 @@ else
+ utils/hsc2hs_dist-install_INSTALL = YES
+ endif
+ 
++# This stage0 helper links against the bootstrap package database. Do not make
++# it wait for the in-tree template-haskell library during dependency discovery.
++utils/hsc2hs_dist_PROGRAM_DEP_COMPONENT_IDS = $(filter-out template-haskell-%,$(utils/hsc2hs_dist_TRANSITIVE_DEP_COMPONENT_IDS))
++
+ $(eval $(call build-prog,utils/hsc2hs,dist,0))
+ $(eval $(call build-prog,utils/hsc2hs,dist-install,1))
+ 
+diff --git a/utils/deriveConstants/ghc.mk b/utils/deriveConstants/ghc.mk
+--- a/utils/deriveConstants/ghc.mk
++++ b/utils/deriveConstants/ghc.mk
+@@ -16,4 +16,8 @@ utils/deriveConstants_dist_PROGNAME        = deriveConstants
+ utils/deriveConstants_dist_INSTALL         = NO
+ utils/deriveConstants_dist_INSTALL_INPLACE = YES
+ 
++# This stage0 helper links against the bootstrap package database. Do not make
++# it wait for the in-tree template-haskell library during dependency discovery.
++utils/deriveConstants_dist_PROGRAM_DEP_COMPONENT_IDS = $(filter-out template-haskell-%,$(utils/deriveConstants_dist_TRANSITIVE_DEP_COMPONENT_IDS))
++
+ $(eval $(call build-prog,utils/deriveConstants,dist,0))
+diff --git a/mk/config.mk.in b/mk/config.mk.in
+--- a/mk/config.mk.in
++++ b/mk/config.mk.in
+@@ -623,4 +623,9 @@ ifneq "$(Windows_Host)" "YES"
+ SRC_HSC2HS_OPTS += --cross-safe
+ endif
+-SRC_HSC2HS_OPTS += $(foreach d,$(GMP_INCLUDE_DIRS),-I$(d))
++ifeq "$(CrossCompiling)" "YES"
++SRC_HSC2HS_OPTS_STAGE1 += $(foreach d,$(GMP_INCLUDE_DIRS),-I$(d))
++SRC_HSC2HS_OPTS_STAGE2 += $(foreach d,$(GMP_INCLUDE_DIRS),-I$(d))
++else
++SRC_HSC2HS_OPTS += $(foreach d,$(GMP_INCLUDE_DIRS),-I$(d))
++endif
+
+diff --git a/compiler/ghc.cabal.in b/compiler/ghc.cabal.in
+--- a/compiler/ghc.cabal.in
++++ b/compiler/ghc.cabal.in
+@@ -89,7 +89,7 @@
+ 
+     if flag(internal-interpreter)
+         CPP-Options: -DHAVE_INTERNAL_INTERPRETER
+-        Include-Dirs: ../rts/dist/build @FFIIncludeDir@
++        Include-Dirs: ../rts/dist/build
+ 
+     -- if no dynamic system linker is available, don't try DLLs.
+     if flag(dynamic-system-linker)
+
+diff --git a/libraries/ghci/ghci.cabal.in b/libraries/ghci/ghci.cabal.in
+--- a/libraries/ghci/ghci.cabal.in
++++ b/libraries/ghci/ghci.cabal.in
+@@ -58,6 +58,5 @@ library
+         GHCi.TH
+ 
+-    include-dirs: @FFIIncludeDir@
+ 
+     exposed-modules:
+         GHCi.BreakArray
+diff --git a/rules/build-package.mk b/rules/build-package.mk
+--- a/rules/build-package.mk
++++ b/rules/build-package.mk
+@@ -99,6 +99,13 @@ ifneq "$$(NO_INCLUDE_PKGDATA)" "YES"
+ $1_$2_PKGDATA_DEP = $1/$2/package-data.mk
+ endif
+ 
++# Stage0 libraries compile against transitive interfaces as well as direct
++# package dependencies. Wait for in-tree boot libraries whose interfaces
++# those packages expose (for example bytestring's Template Haskell instances).
++ifeq "$3" "0"
++$1_$2_HC_DEP += $$(foreach dep,$$($1_$2_TRANSITIVE_DEP_COMPONENT_IDS),$$($$(dep)_dist-boot_v_LIB))
++endif
++
+ $(call hs-sources,$1,$2)
+ $(call c-sources,$1,$2)
+ $(call includes-sources,$1,$2)
+diff --git a/rules/build-prog.mk b/rules/build-prog.mk
+--- a/rules/build-prog.mk
++++ b/rules/build-prog.mk
+@@ -137,6 +137,12 @@ ifneq "$$(NO_INCLUDE_PKGDATA)" "YES"
+ endif
+ endif
+ endif
+ 
++# Stage0 program objects may import interfaces from transitive boot packages
++# even though only their libraries are prerequisites of the final executable.
++ifeq "$3" "0"
++$1_$2_HC_DEP += $$(foreach dep,$$(if $$($1_$2_PROGRAM_DEP_COMPONENT_IDS),$$($1_$2_PROGRAM_DEP_COMPONENT_IDS),$$($1_$2_TRANSITIVE_DEP_COMPONENT_IDS)),$$($$(dep)_dist-boot_v_LIB))
++endif
++
+ $(call all-target,$1,all_$1_$2)
+ $(call all-target,$1_$2,$1/$2/build/tmp/$$($1_$2_PROG))

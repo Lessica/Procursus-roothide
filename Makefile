@@ -856,6 +856,7 @@ DO_PATCH    = cd $(BUILD_PATCH)/$(1); \
 
 ifeq (,$(findstring darwin,$(MEMO_TARGET)))
 SIGN = 	for file in $$(find $(BUILD_DIST)/$(1) -type f -exec sh -c "file -ib '{}' | grep -q 'x-mach-binary; charset=binary'" \; -print); do \
+			$(OTOOL) -arch all -hv "$$file" | awk '/^MH_/ { seen=1; if ($$0 !~ /[[:space:]](EXECUTE|DYLIB|BUNDLE)[[:space:]]/) bad=1 } END { exit (!seen || bad) }' || continue; \
 			if [ $${file\#\#*.} != "a" ]; then \
 				if [ $${file\#\#*.} = "dylib" ] || [ $${file\#\#*.} = "bundle" ] || [ $${file\#\#*.} = "so" ]; then \
 					$(LDID) -S $$file || exit 1; \
@@ -876,6 +877,7 @@ SIGN = 	CODESIGN_FLAGS="--sign $(CODESIGN_IDENTITY) --force --deep "; \
 			fi; \
 		fi; \
 		for file in $$(find $(BUILD_DIST)/$(1) -type f -exec sh -c "file -ib '{}' | grep -q 'x-mach-binary; charset=binary'" \; -print); do \
+			$(OTOOL) -arch all -hv "$$file" | awk '/^MH_/ { seen=1; if ($$0 !~ /[[:space:]](EXECUTE|DYLIB|BUNDLE)[[:space:]]/) bad=1 } END { exit (!seen || bad) }' || continue; \
 			codesign --remove $$file &> /dev/null; \
 			codesign $(MEMO_CODESIGN_EXTRA_FLAGS) $$CODESIGN_FLAGS $$file &> /dev/null; \
 		done
@@ -897,6 +899,7 @@ AFTER_BUILD = \
 	if [ ! -z "$(MEMO_ROOTLESS)" ] && [ -d "$(BUILD_STAGE)/$$pkg/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)" ]; then \
 		rm -f $(BUILD_STAGE)/$$pkg/._lib_cache && touch $(BUILD_STAGE)/$$pkg/._lib_cache; \
 		for file in $$(find $(BUILD_STAGE)/$$pkg -type f -exec sh -c "file -ib '{}' | grep -q 'x-mach-binary; charset=binary'" \; -print); do \
+			$(OTOOL) -arch all -hv "$$file" | awk '/^MH_/ { seen=1; if ($$0 !~ /[[:space:]](EXECUTE|DYLIB|BUNDLE)[[:space:]]/) bad=1 } END { exit (!seen || bad) }' || continue; \
 			if [ $${file\#\#*.} != "a" ] && [ $${file\#\#*.} != "dSYM" ]; then \
 				INSTALL_NAME=$$($(OTOOL) -D $$file | grep -v -e ":$$" -e "^Archive :" | head -n1); \
 				if [ ! -z "$$INSTALL_NAME" ] && ( ( echo "$$INSTALL_NAME" | grep -q ^$(MEMO_PREFIX)/ ) || ! ( echo "$$INSTALL_NAME" | grep -q / ) ); then \
@@ -908,6 +911,7 @@ AFTER_BUILD = \
 		done; \
 	fi; \
 	for file in $$(find $(BUILD_STAGE)/$$pkg -type f -exec sh -c "file -ib '{}' | grep -q 'x-mach-binary; charset=binary'" \; -print); do \
+		$(OTOOL) -arch all -hv "$$file" | awk '/^MH_/ { seen=1; if ($$0 !~ /[[:space:]](EXECUTE|DYLIB|BUNDLE)[[:space:]]/) bad=1 } END { exit (!seen || bad) }' || continue; \
 		if [ $${file\#\#*.} != "a" ] && [ $${file\#\#*.} != "dSYM" ]; then \
 			chmod +w $$file; echo "some packages may be installed into the BUILD_STAGE with 0555 permission, for example: berkeleydb" > /dev/null; \
 			$(I_N_T) -add_rpath "$(MEMO_LINK_PREFIX)$(MEMO_SUB_PREFIX)$(MEMO_ALT_PREFIX)/lib" $$file || exit 1; \
