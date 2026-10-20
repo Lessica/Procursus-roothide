@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS   += libxss
 LIBXSS_VERSION := 1.2.3
-DEB_LIBXSS_V   ?= $(LIBXSS_VERSION)
+DEB_LIBXSS_V   ?= $(LIBXSS_VERSION)-1
 
 libxss-setup: setup
 	$(call DOWNLOAD_FILE,$(BUILD_SOURCE)/libxss-$(LIBXSS_VERSION).tar.bz2, \
@@ -22,6 +22,14 @@ libxss: libxss-setup libx11 libxext util-macros
 	+$(MAKE) -C $(BUILD_WORK)/libxss
 	+$(MAKE) -C $(BUILD_WORK)/libxss install \
 		DESTDIR=$(BUILD_STAGE)/libxss
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Preserve installed LTO outputs and configured static compiler flags.
+	+$(MAKE) -C $(BUILD_WORK)/libxss/src clean
+	+$(MAKE) -C $(BUILD_WORK)/libxss/src libXss.la \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/libxss/src/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/libxss/src/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -static"
+	cp -a $(BUILD_WORK)/libxss/src/.libs/libXss.a $(BUILD_STAGE)/libxss/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	$(call AFTER_BUILD,copy)
 endif
 

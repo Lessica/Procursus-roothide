@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS        += libxxf86vm
 LIBXXF86VM_VERSION := 1.1.4
-DEB_LIBXXF86VM_V   ?= $(LIBXXF86VM_VERSION)
+DEB_LIBXXF86VM_V   ?= $(LIBXXF86VM_VERSION)-1
 
 libxxf86vm-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://xorg.freedesktop.org/archive/individual/lib/libXxf86vm-$(LIBXXF86VM_VERSION).tar.gz{$(comma).sig})
@@ -22,6 +22,14 @@ libxxf86vm: libxxf86vm-setup xorgproto libx11 libxext
 	+$(MAKE) -C $(BUILD_WORK)/libxxf86vm
 	+$(MAKE) -C $(BUILD_WORK)/libxxf86vm install \
 		DESTDIR=$(BUILD_STAGE)/libxxf86vm
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Preserve installed LTO outputs and configured static compiler flags.
+	+$(MAKE) -C $(BUILD_WORK)/libxxf86vm/src clean
+	+$(MAKE) -C $(BUILD_WORK)/libxxf86vm/src libXxf86vm.la \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/libxxf86vm/src/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/libxxf86vm/src/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -static"
+	cp -a $(BUILD_WORK)/libxxf86vm/src/.libs/libXxf86vm.a $(BUILD_STAGE)/libxxf86vm/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	$(call AFTER_BUILD,copy)
 endif
 

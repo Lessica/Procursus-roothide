@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS     += libxtst
 LIBXTST_VERSION := 1.2.3
-DEB_LIBXTST_V   ?= $(LIBXTST_VERSION)
+DEB_LIBXTST_V   ?= $(LIBXTST_VERSION)-1
 
 libxtst-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://xorg.freedesktop.org/archive/individual/lib/libXtst-$(LIBXTST_VERSION).tar.gz{$(comma).sig})
@@ -21,6 +21,14 @@ libxtst: libxtst-setup xorgproto libx11 libxi
 	+$(MAKE) -C $(BUILD_WORK)/libxtst
 	+$(MAKE) -C $(BUILD_WORK)/libxtst install \
 		DESTDIR=$(BUILD_STAGE)/libxtst
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Preserve installed LTO outputs and configured static compiler flags.
+	+$(MAKE) -C $(BUILD_WORK)/libxtst/src clean
+	+$(MAKE) -C $(BUILD_WORK)/libxtst/src libXtst.la \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/libxtst/src/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/libxtst/src/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -static"
+	cp -a $(BUILD_WORK)/libxtst/src/.libs/libXtst.a $(BUILD_STAGE)/libxtst/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	$(call AFTER_BUILD,copy)
 endif
 
