@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS    += libvde
 LIBVDE_VERSION := 2.3.2
-DEB_LIBVDE_V   ?= $(LIBVDE_VERSION)-1
+DEB_LIBVDE_V   ?= $(LIBVDE_VERSION)-2
 
 libvde-setup: setup file-setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://downloads.sourceforge.net/project/vde/vde2/$(LIBVDE_VERSION)/vde2-$(LIBVDE_VERSION).tar.gz)
@@ -28,6 +28,23 @@ ifneq (,$(findstring roothide,$(MEMO_TARGET)))
 endif
 	unset MAKEFLAGS && $(MAKE) -C $(BUILD_WORK)/libvde install \
 		DESTDIR="$(BUILD_STAGE)/libvde"
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Rebuild the convenience objects and installed static libraries after the original install.
+	rm -f $(BUILD_WORK)/libvde/src/common/*.lo $(BUILD_WORK)/libvde/src/common/libvdecommon.la
+	+$(MAKE) -C $(BUILD_WORK)/libvde/src/common libvdecommon.la \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/libvde/src/common/Makefile) -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/libvde/src/common/Makefile) -fno-lto -static"
+	rm -f $(BUILD_WORK)/libvde/src/lib/*.lo $(BUILD_WORK)/libvde/src/lib/libvdemgmt.la $(BUILD_WORK)/libvde/src/lib/libvdesnmp.la $(BUILD_WORK)/libvde/src/lib/libvdeplug.la $(BUILD_WORK)/libvde/src/lib/libvdehist.la
+	# Resolve the old automake path-alias dependency before the remaining library targets.
+	+$(MAKE) -C $(BUILD_WORK)/libvde/src/lib libvdemgmt.la \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/libvde/src/lib/Makefile) -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/libvde/src/lib/Makefile) -fno-lto -static"
+	+$(MAKE) -C $(BUILD_WORK)/libvde/src/lib libvdesnmp.la libvdeplug.la libvdehist.la \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/libvde/src/lib/Makefile) -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/libvde/src/lib/Makefile) -fno-lto -static"
+	cp -a $(BUILD_WORK)/libvde/src/lib/.libs/libvde{mgmt,snmp,plug,hist}.a \
+		$(BUILD_STAGE)/libvde/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	$(call AFTER_BUILD,copy)
 endif
 
