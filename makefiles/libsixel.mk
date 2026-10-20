@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS      += libsixel
 LIBSIXEL_VERSION := 1.8.6
-DEB_LIBSIXEL_V   ?= $(LIBSIXEL_VERSION)
+DEB_LIBSIXEL_V   ?= $(LIBSIXEL_VERSION)-1
 
 libsixel-setup: setup
 	$(call GITHUB_ARCHIVE,saitoha,libsixel,$(LIBSIXEL_VERSION),v$(LIBSIXEL_VERSION))
@@ -29,6 +29,14 @@ libsixel: libsixel-setup libpng16 libjpeg-turbo curl libgd
 	+$(MAKE) -C $(BUILD_WORK)/libsixel
 	+$(MAKE) -C $(BUILD_WORK)/libsixel install \
 		DESTDIR="$(BUILD_STAGE)/libsixel"
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Retain installed LTO binaries and rebuild only the public static library.
+	+$(MAKE) -C $(BUILD_WORK)/libsixel/src clean
+	+$(MAKE) -C $(BUILD_WORK)/libsixel/src libsixel.la \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/libsixel/src/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/libsixel/src/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -static"
+	cp -a $(BUILD_WORK)/libsixel/src/.libs/libsixel.a $(BUILD_STAGE)/libsixel/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	$(call AFTER_BUILD,copy)
 endif
 
