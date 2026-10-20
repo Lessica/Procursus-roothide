@@ -1,0 +1,19 @@
+diff --git a/meson.build b/meson.build
+--- a/meson.build
++++ b/meson.build
+@@ -39,10 +39,15 @@
+ if host_machine.system() == 'freebsd'
+   libs += '-lexecinfo' # For backtrace()
+ endif
+ 
++ld64_link_args = libs
++if host_machine.system() == 'darwin'
++  ld64_link_args += ['-Wl,-stack_size,0x02000000']
++endif
++
+ ld64 = executable(get_option('program-prefix') + 'ld64', srcs,
+   include_directories : incdirs,
+-  link_args: libs,
++  link_args: ld64_link_args,
+   dependencies: deps,
+   install : true)

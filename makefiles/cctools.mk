@@ -8,14 +8,16 @@ LD64_COMMIT     := eac639ff5e0104c57343a0342650294ad37fa510
 CCTOOLS_VERSION := 1010.6
 LD64_VERSION    := 951.9
 DEB_CCTOOLS_V   ?= $(CCTOOLS_VERSION)-1
-DEB_LD64_V      ?= $(LD64_VERSION)-3
+DEB_LD64_V      ?= $(LD64_VERSION)-4
 
 cctools-setup: setup
 	$(call GITHUB_ARCHIVE,ProcursusTeam,cctools,$(CCTOOLS_COMMIT),$(CCTOOLS_COMMIT))
 	$(call GITHUB_ARCHIVE,ProcursusTeam,ld64,$(LD64_COMMIT),$(LD64_COMMIT))
 	$(call EXTRACT_TAR,cctools-$(CCTOOLS_COMMIT).tar.gz,cctools-$(CCTOOLS_COMMIT),cctools)
+	$(call DO_PATCH,cctools-llvm-headers,cctools,-p1)
 	mkdir -p $(BUILD_WORK)/cctools/subprojects
 	$(call EXTRACT_TAR,ld64-$(LD64_COMMIT).tar.gz,ld64-$(LD64_COMMIT),cctools/subprojects/ld64)
+	$(call DO_PATCH,ld64-stack,cctools/subprojects/ld64,-p1)
 	mkdir -p $(BUILD_WORK)/cctools/build
 	# The iOS SDK omits the x86 relocation formats that this cross-linker reads.
 	mkdir -p $(BUILD_WORK)/cctools/subprojects/ld64/EXTERNAL_HEADERS/darwin/mach-o/x86_64
@@ -34,7 +36,6 @@ cctools-setup: setup
 	[binaries]\n \
 	c = '$(CC)'\n \
 	cpp = '$(CXX)'\n \
-	llvm-config = '$(shell command -v llvm-config)'\n \
 	cmake = '$(shell command -v cmake)'\n \
 	pkgconfig = '$(BUILD_TOOLS)/cross-pkg-config'\n" > $(BUILD_WORK)/cctools/build/cross.txt
 	sed -i 's|\[_trieBytes|[-1+_trieBytes|g' $(BUILD_WORK)/cctools/subprojects/ld64/src/mach_o/ExportsTrie.cpp
@@ -45,8 +46,10 @@ cctools:
 	@echo "Using previously built cctools."
 else
 cctools: cctools-setup llvm uuid tapi xar
-	cd $(BUILD_WORK)/cctools/build && CMAKE_PREFIX_PATH="$(BUILD_BASE)$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/llvm-$(LLVM_MAJOR_V):$${CMAKE_PREFIX_PATH}" LIBRARY_PATH="$(TARGET_SYSROOT)/usr/lib:$(BUILD_BASE)$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib" meson setup \
+	cd $(BUILD_WORK)/cctools/build && LIBRARY_PATH="$(TARGET_SYSROOT)/usr/lib:$(BUILD_BASE)$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib" meson setup \
 		--cross-file cross.txt \
+		-Dllvm-include-dir="$(BUILD_BASE)$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/llvm-$(LLVM_MAJOR_V)/include" \
+		-Dld64:llvm-include-dir="$(BUILD_BASE)$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/llvm-$(LLVM_MAJOR_V)/include" \
 		-Dld64:supported-archs="x86_64,x86_64h,i386,armv4t,armv5,armv6,armv7,armv7f,armv7k,armv7s,armv6m,armv7m,armv7em,armv8,arm64,arm64e,arm64v8,arm64_32,riscv" \
 		..
 	meson compile -C $(BUILD_WORK)/cctools/build -j$(CORE_COUNT)
