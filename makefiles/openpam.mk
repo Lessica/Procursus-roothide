@@ -6,7 +6,7 @@ ifeq (,$(findstring darwin,$(MEMO_TARGET)))
 
 STRAPPROJECTS   += openpam
 OPENPAM_VERSION := 20230627
-DEB_OPENPAM_V   ?= $(OPENPAM_VERSION)
+DEB_OPENPAM_V   ?= $(OPENPAM_VERSION)-1
 
 openpam-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://downloads.sourceforge.net/openpam/openpam-$(OPENPAM_VERSION).tar.gz)
@@ -27,6 +27,15 @@ openpam: openpam-setup
 		CPPFLAGS="$(CPPFLAGS) -DSYSCONFDIR=\\\"$(MEMO_PREFIX)/etc\\\""
 	+$(MAKE) -C $(BUILD_WORK)/openpam install \
 		DESTDIR="$(BUILD_STAGE)/openpam"
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Preserve the installed LTO PAM runtime; rebuild only the public archive.
+	find $(BUILD_WORK)/openpam/lib/libpam -maxdepth 1 -name '*.lo' -type f -delete
+	rm -f $(BUILD_WORK)/openpam/lib/libpam/libpam.la
+	+$(MAKE) -C $(BUILD_WORK)/openpam/lib/libpam libpam.la \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/openpam/lib/libpam/Makefile) -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/openpam/lib/libpam/Makefile) -fno-lto -static"
+	cp -a $(BUILD_WORK)/openpam/lib/libpam/.libs/libpam.a $(BUILD_STAGE)/openpam/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	$(call AFTER_BUILD,copy)
 endif
 

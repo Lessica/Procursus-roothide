@@ -5,7 +5,7 @@ endif
 SUBPROJECTS    += x265
 X265_SOVERSION := 199
 X265_VERSION   := 3.5
-DEB_X265_V     ?= $(X265_VERSION)
+DEB_X265_V     ?= $(X265_VERSION)-1
 
 # aarch64 asm seems broken. try again next version.
 
@@ -55,6 +55,27 @@ x265: x265-setup
 
 	+$(MAKE) -C $(BUILD_WORK)/x265/8bit install \
 		DESTDIR=$(BUILD_STAGE)/x265
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Retain installed LTO runtime; rebuild static objects in each existing depth.
+	for depth in 10 12 8; do \
+		for flags in $$(find $(BUILD_WORK)/x265/$${depth}bit -type f -name flags.make \
+			! -path '*/CMakeFiles/x265-shared.dir/*' ! -path '*/CMakeFiles/hdr10plus-shared.dir/*' ! -path '*/CMakeFiles/cli.dir/*'); do \
+			cp -p "$$flags" "$$flags.lto"; \
+			sed -E '/^(C|CXX)_FLAGS[^=]* =/ { s/(^|[[:space:]])-flto(=[^[:space:]]*)?//g; s/$$/ -fno-lto/; }' "$$flags.lto" > "$$flags"; \
+			touch -r "$$flags.lto" "$$flags"; \
+			find "$$(dirname "$$flags")" -type f \
+				\( -name '*.c.o' -o -name '*.cc.o' -o -name '*.cpp.o' -o -name '*.cxx.o' \) -delete; \
+		done; \
+		rm -f $(BUILD_WORK)/x265/$${depth}bit/libx265.a; \
+		$(MAKE) -C $(BUILD_WORK)/x265/$${depth}bit x265-static || exit $$?; \
+		if [ "$$depth" = 8 ]; then suffix=; else suffix=$$depth; fi; \
+		mv $(BUILD_WORK)/x265/$${depth}bit/libx265.a $(BUILD_WORK)/x265/8bit/libx265_main$${suffix}.a; \
+		for flags in $$(find $(BUILD_WORK)/x265/$${depth}bit -type f -name flags.make.lto); do mv "$$flags" "$${flags%.lto}"; done; \
+	done
+	cd $(BUILD_WORK)/x265/8bit && $(LIBTOOL) -static -o libx265.a \
+		libx265_main.a libx265_main10.a libx265_main12.a
+	cp -a $(BUILD_WORK)/x265/8bit/libx265.a $(BUILD_STAGE)/x265/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	$(call AFTER_BUILD,copy)
 endif
 
