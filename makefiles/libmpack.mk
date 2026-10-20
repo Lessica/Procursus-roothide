@@ -15,14 +15,21 @@ libmpack:
 	@echo "Using previously built libmpack."
 else
 libmpack: libmpack-setup
+	mkdir -p $(BUILD_WORK)/libmpack/libtool
+	printf '%s\n' 'AC_INIT([dummy],[1.0])' 'LT_INIT' 'AC_PROG_LIBTOOL' 'AC_OUTPUT' > $(BUILD_WORK)/libmpack/libtool/configure.ac
+	cd $(BUILD_WORK)/libmpack/libtool && LIBTOOLIZE="$(LIBTOOLIZE) -i" autoreconf -fi
+	cd $(BUILD_WORK)/libmpack/libtool && ./configure -C $(DEFAULT_CONFIGURE_FLAGS)
+	+$(MAKE) -C $(BUILD_WORK)/libmpack clean
 	+$(MAKE) -C $(BUILD_WORK)/libmpack install \
 		PREFIX=$(MEMO_PREFIX)$(MEMO_SUB_PREFIX) \
+		LIBTOOL="$(BUILD_WORK)/libmpack/libtool/libtool" \
 		DESTDIR=$(BUILD_STAGE)/libmpack
 ifneq ($(filter -flto%,$(CFLAGS)),)
 	# Preserve the installed LTO dylib; rebuild only its public static target.
 	+$(MAKE) -C $(BUILD_WORK)/libmpack clean
 	+$(MAKE) -C $(BUILD_WORK)/libmpack build/debug/libmpack.la \
 		PREFIX=$(MEMO_PREFIX)$(MEMO_SUB_PREFIX) \
+		LIBTOOL="$(BUILD_WORK)/libmpack/libtool/libtool" \
 		CFLAGS="$(filter-out -flto%,$(CFLAGS)) -fno-lto" \
 		LDFLAGS="$(filter-out -flto%,$(LDFLAGS)) -static"
 	cp -a $(BUILD_WORK)/libmpack/build/debug/.libs/libmpack.a \
