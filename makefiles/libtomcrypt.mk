@@ -4,7 +4,7 @@ endif
 
 SUBPPROJECTS        += libtomcrypt
 LIBTOMCRYPT_VERSION := 1.18.2
-DEB_LIBTOMCRYPT_V   ?= $(LIBTOMCRYPT_VERSION)-1
+DEB_LIBTOMCRYPT_V   ?= $(LIBTOMCRYPT_VERSION)-2
 
 libtomcrypt-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://github.com/libtom/libtomcrypt/releases/download/v$(LIBTOMCRYPT_VERSION)/crypt-$(LIBTOMCRYPT_VERSION).tar.xz)
@@ -26,12 +26,25 @@ libtomcrypt: libtomcrypt-setup libgmp10 libtommath
 	+$(MAKE) -C $(BUILD_WORK)/libtomcrypt -f makefile.shared \
 		PREFIX="$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)" \
 		EXTRALIBS="-lgmp -ltommath" \
-		LIBTOOL="$(BUILD_WORK)/libtommath/libtool/libtool" \
+		LIBTOOL="$(BUILD_WORK)/libtomcrypt/libtool/libtool" \
 		CFLAGS="$(CFLAGS) -DGMP_DESC -DLTM_DESC -DUSE_LTM"
 	+$(MAKE) -C $(BUILD_WORK)/libtomcrypt -f makefile.shared install \
-		LIBTOOL="$(BUILD_WORK)/libtommath/libtool/libtool" \
+		LIBTOOL="$(BUILD_WORK)/libtomcrypt/libtool/libtool" \
 		PREFIX="$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)" \
 		DESTDIR="$(BUILD_STAGE)/libtomcrypt"
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Keep the installed LTO runtime; use the same descriptor macros and library-only target.
+	find $(BUILD_WORK)/libtomcrypt/src -type f \( -name '*.o' -o -name '*.lo' \) -delete
+	rm -f $(BUILD_WORK)/libtomcrypt/libtomcrypt.la
+	+$(MAKE) -C $(BUILD_WORK)/libtomcrypt -f makefile.shared libtomcrypt.la \
+		PREFIX="$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)" \
+		EXTRALIBS="-lgmp -ltommath" \
+		LIBTOOL="$(BUILD_WORK)/libtomcrypt/libtool/libtool" \
+		CFLAGS="$(CFLAGS) -DGMP_DESC -DLTM_DESC -DUSE_LTM -fno-lto" \
+		LDFLAGS="$(LDFLAGS) -fno-lto -static"
+	cp -a $(BUILD_WORK)/libtomcrypt/.libs/libtomcrypt.a \
+		$(BUILD_STAGE)/libtomcrypt/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	$(call AFTER_BUILD,copy)
 endif
 
