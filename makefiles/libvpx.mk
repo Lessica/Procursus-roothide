@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS    += libvpx
 LIBVPX_VERSION := 1.11.0
-DEB_LIBVPX_V   ?= $(LIBVPX_VERSION)-1
+DEB_LIBVPX_V   ?= $(LIBVPX_VERSION)-2
 
 ifneq (,$(findstring arm64,$(MEMO_TARGET)))
 ifneq (,$(findstring darwin,$(MEMO_TARGET)))
@@ -49,6 +49,21 @@ libvpx: libvpx-setup
 		$(I_N_T) -change libvpx.7.dylib $(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/libvpx.7.dylib $$bin; \
 	done
 	$(I_N_T) -id $(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/libvpx.7.dylib $(BUILD_STAGE)/libvpx/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/libvpx.7.dylib
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Keep the installed LTO runtime and original assembly objects.
+	# Preserve per-object CPU options by changing only generated base C/C++ flags.
+	for flags in $(BUILD_WORK)/libvpx/libs-*.mk; do \
+		cp -p "$$flags" "$$flags.lto"; \
+		sed -E '/^(C|CXX)FLAGS[[:space:]]*=/ { s/(^|[[:space:]])-flto(=[^[:space:]]*)?//g; s/$$/ -fno-lto/; }' "$$flags.lto" > "$$flags"; \
+		touch -r "$$flags.lto" "$$flags"; \
+	done
+	find $(BUILD_WORK)/libvpx -type f \
+		\( -name '*.c.o' -o -name '*.cc.o' -o -name '*.cpp.o' \) -delete
+	rm -f $(BUILD_WORK)/libvpx/libvpx{,_g}.a
+	+$(MAKE) -C $(BUILD_WORK)/libvpx target=libs libvpx.a
+	cp -a $(BUILD_WORK)/libvpx/libvpx.a $(BUILD_STAGE)/libvpx/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+	for flags in $(BUILD_WORK)/libvpx/libs-*.mk.lto; do mv "$$flags" "$${flags%.lto}"; done
+endif
 	$(call AFTER_BUILD,copy)
 endif
 
