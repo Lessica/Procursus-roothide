@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS       += leptonica
 LEPTONICA_VERSION := 1.80.0
-DEB_LEPTONICA_V   ?= $(LEPTONICA_VERSION)
+DEB_LEPTONICA_V   ?= $(LEPTONICA_VERSION)-1
 
 leptonica-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://github.com/DanBloomberg/leptonica/releases/download/$(LEPTONICA_VERSION)/leptonica-$(LEPTONICA_VERSION).tar.gz)
@@ -22,6 +22,16 @@ leptonica: leptonica-setup libgif libjpeg-turbo libpng16 libtiff openjpeg libweb
 	+$(MAKE) -C $(BUILD_WORK)/leptonica
 	+$(MAKE) -C $(BUILD_WORK)/leptonica install \
 		DESTDIR="$(BUILD_STAGE)/leptonica"
+	# pkg-config private link flags must refer to target paths.
+	sed -i 's|$(BUILD_BASE)||g' $(BUILD_STAGE)/leptonica/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/pkgconfig/lept.pc
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Keep normal installed LTO programs/dylib; use the same configured library.
+	+$(MAKE) -C $(BUILD_WORK)/leptonica/src clean
+	+$(MAKE) -C $(BUILD_WORK)/leptonica/src liblept.la \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/leptonica/src/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/leptonica/src/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -static"
+	cp -a $(BUILD_WORK)/leptonica/src/.libs/liblept.a $(BUILD_STAGE)/leptonica/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	rm -rf $(BUILD_BASE)$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/libleptonica*
 	$(call AFTER_BUILD,copy)
 endif
