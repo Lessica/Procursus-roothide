@@ -1,0 +1,14 @@
+--- a/Makefile.in
++++ b/Makefile.in
+@@ -278,6 +278,11 @@
+ 	mini-gmp.h asm.m4 m4-utils.m4 \
+ 	nettle.texinfo nettle.info nettle.html nettle.pdf sha-example.c
+ 
++.PHONY: native-static-c-clean
++native-static-c-clean:
++	rm -f $(nettle_SOURCES:.c=.$(OBJEXT)) $(OPT_NETTLE_SOURCES:.c=.$(OBJEXT)) \
++		$(hogweed_SOURCES:.c=.$(OBJEXT)) @IF_MINI_GMP@ mini-gmp.$(OBJEXT)
++
+ # Rules building static libraries
+ nettle_OBJS = $(nettle_SOURCES:.c=.$(OBJEXT)) \
+ 	      $(OPT_NETTLE_SOURCES:.c=.$(OBJEXT)) $(OPT_NETTLE_OBJS)

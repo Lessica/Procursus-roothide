@@ -4,12 +4,13 @@ endif
 
 STRAPPROJECTS  += nettle
 NETTLE_VERSION := 3.9.1
-DEB_NETTLE_V   ?= $(NETTLE_VERSION)
+DEB_NETTLE_V   ?= $(NETTLE_VERSION)-1
 
 nettle-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://ftpmirror.gnu.org/nettle/nettle-$(NETTLE_VERSION).tar.gz{$(comma).sig})
 	$(call PGP_VERIFY,nettle-$(NETTLE_VERSION).tar.gz)
 	$(call EXTRACT_TAR,nettle-$(NETTLE_VERSION).tar.gz,nettle-$(NETTLE_VERSION),nettle)
+	$(call DO_PATCH,nettle,nettle,-p1)
 
 ifneq ($(wildcard $(BUILD_WORK)/nettle/.build_complete),)
 nettle:
@@ -23,6 +24,15 @@ nettle: nettle-setup libgmp10
 	+$(MAKE) -C $(BUILD_WORK)/nettle
 	+$(MAKE) -C $(BUILD_WORK)/nettle install \
 		DESTDIR=$(BUILD_STAGE)/nettle
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Preserve configured assembler objects and the original installed LTO runtime.
+	+$(MAKE) -C $(BUILD_WORK)/nettle native-static-c-clean
+	rm -f $(BUILD_WORK)/nettle/lib{nettle,hogweed}.a
+	+$(MAKE) -C $(BUILD_WORK)/nettle libnettle.a libhogweed.a \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/nettle/config.make) -fno-lto"
+	cp -a $(BUILD_WORK)/nettle/lib{nettle,hogweed}.a \
+		$(BUILD_STAGE)/nettle/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	$(call AFTER_BUILD,copy)
 endif
 
