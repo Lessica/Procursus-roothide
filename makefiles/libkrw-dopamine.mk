@@ -5,15 +5,10 @@ endif
 ifeq (,$(findstring darwin,$(MEMO_TARGET)))
 ifeq ($(shell [ "$(MEMO_CFVER)" -ge 1800 ] && echo 1),1)
 
+# This provider requires the ordinary Dopamine 2 libjailbreak ABI.
+# RootHide/Relaxin uses the explicitly selected provider in libkrw-relaxin.mk.
+ifeq (,$(findstring roothide,$(MEMO_TARGET)))
 SUBPROJECTS             += libkrw-dopamine
-ifneq (,$(findstring roothide,$(MEMO_TARGET)))
-RELAXIN_PROVIDER_COMMIT := 88548b8033a0302536321206bd2d1411772cd031
-LIBKRW_DOPAMINE_VERSION := 2.0.6
-DEB_LIBKRW_DOPAMINE_V   ?= 0:$(LIBKRW_DOPAMINE_VERSION):compat
-LIBKRW_DOPAMINE_PLUGIN  := libkrw-relaxin
-LIBKRW_DOPAMINE_PACKAGE := libkrw-relaxin
-LIBKRW_DOPAMINE_LINKDIR := $(BUILD_WORK)/libkrw-dopamine/lib
-else
 DOPAMINE_VERSION        := 2.0.11
 CHOMA_COMMIT            := 54fedaf26175d5db27246d66b55d540ff6bcb83d
 LIBKRW_DOPAMINE_VERSION := 2.0.1
@@ -21,14 +16,9 @@ DEB_LIBKRW_DOPAMINE_V   ?= $(LIBKRW_DOPAMINE_VERSION)-1
 LIBKRW_DOPAMINE_PLUGIN  := libkrw-dopamine
 LIBKRW_DOPAMINE_PACKAGE  = libkrw$(LIBKRW_SOVERSION)-dopamine
 LIBKRW_DOPAMINE_LINKDIR := $(BUILD_MISC)/libjailbreak-dopamine2
-endif
 LIBKRW_DOPAMINE_LIBS    := -ljailbreak -framework Foundation
 
 libkrw-dopamine-setup: setup
-ifneq (,$(findstring roothide,$(MEMO_TARGET)))
-	$(call EXTRACT_TAR,libkrw-relaxin-$(RELAXIN_PROVIDER_COMMIT).tar.gz,libkrw-relaxin-$(RELAXIN_PROVIDER_COMMIT),libkrw-dopamine)
-	$(call DO_PATCH,libkrw-relaxin,libkrw-dopamine,-p1)
-else
 	$(call GITHUB_ARCHIVE,opa334,Dopamine,$(DOPAMINE_VERSION),$(DOPAMINE_VERSION),Dopamine)
 	$(call EXTRACT_TAR,Dopamine-$(DOPAMINE_VERSION).tar.gz,Dopamine-$(DOPAMINE_VERSION),libkrw-dopamine/Dopamine)
 	$(call GITHUB_ARCHIVE,opa334,ChOma,$(CHOMA_COMMIT),$(CHOMA_COMMIT),ChOma)
@@ -40,7 +30,6 @@ else
 	cp -a $(BUILD_WORK)/libkrw-dopamine/ChOma/src/*.h $(BUILD_WORK)/libkrw-dopamine/include/choma
 	sed -i 's/krw_plugin_initializer_t krw_initializer/int krw_initializer/' $(BUILD_WORK)/libkrw-dopamine/src/main.c
 	rm -rf $(BUILD_WORK)/libkrw-dopamine/{Dopamine,ChOma}
-endif
 	mkdir -p $(BUILD_STAGE)/libkrw-dopamine/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/libkrw
 
 ifneq ($(wildcard $(BUILD_WORK)/libkrw-dopamine/.build_complete),)
@@ -79,6 +68,14 @@ libkrw-dopamine-package: libkrw-dopamine-stage
 	rm -rf $(BUILD_DIST)/$(LIBKRW_DOPAMINE_PACKAGE)
 
 .PHONY: libkrw-dopamine libkrw-dopamine-package
+
+else
+.PHONY: libkrw-dopamine libkrw-dopamine-setup libkrw-dopamine-package
+libkrw-dopamine libkrw-dopamine-setup libkrw-dopamine-package:
+	@echo "libkrw-dopamine requires the ordinary Dopamine 2 libjailbreak ABI; it is not a generic RootHide provider." >&2
+	@echo "For the paired Relaxin runtime, explicitly request libkrw-relaxin-package." >&2
+	@exit 1
+endif
 
 endif
 endif

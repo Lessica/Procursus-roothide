@@ -3,7 +3,7 @@ Name: libkrw Plug-in (Relaxin)
 Author: OwnGoal Studio
 Maintainer: @DEB_MAINTAINER@
 Architecture: @DEB_ARCH@
-Version: @DEB_LIBKRW_DOPAMINE_V@
+Version: @DEB_LIBKRW_RELAXIN_V@
 Provides: libkrw0-plugin
 Conflicts: libkrw0-relaxin
 Replaces: libkrw0-relaxin

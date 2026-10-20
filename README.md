@@ -53,6 +53,26 @@ patch -d "$HOST_TOOL_ROOT/src/libroothide" -p1 < "$CHECKOUT/build_patch/roothide
 
 Host compilation needs a host C++ toolchain and, for `ldid`, host OpenSSL/libcrypto and libplist headers and libraries. Select the compiler, macOS SDK and dependency prefixes explicitly; keep the login `HOME` and place generated tools in `$HOST_TOOL_ROOT/bin`, then prepend that directory to `PATH`. Do not use the iOS libraries or package-install targets to prepare host tools. The commands above prepare sources only; host dependency installation and compilation remain manual. The Linux setup script builds pinned, patched `ldid`; `symredirect` and the remaining host-tool preparation are still separate steps.
 
+## Jailbreak-specific libkrw providers
+
+`libkrw-dopamine` targets the ordinary Dopamine 2 `libjailbreak` ABI. It is
+excluded from RootHide aggregate builds; its ABI headers must not be substituted
+for the paired RootHide runtime headers.
+
+The Relaxin provider is an optional integration, excluded from both `package`
+and `strapprojects`. Select it explicitly with your usual SDK and host-tool
+settings:
+
+```sh
+gmake libkrw-relaxin-package MEMO_TARGET=iphoneos-arm64-roothide MEMO_CFVER=1900
+```
+
+Its pinned source, ABI headers and link stub are in `source-repo/`. It requires
+the matching Relaxin runtime and `dopamine-basebin-link`; the link stub does not
+supply that runtime. The existing package identity `libkrw0-dopamine` and version
+`0:2.0.6:compat` are retained for compatibility. The separate `libkrw-relaxin`
+build directory prevents reuse of an ordinary Dopamine provider build.
+
 ## Credits
 Build system created by [Diatrus](https://twitter.com/Diatrus) and [Kirb](https://twitter.com/hbkirb). Built better by all our wonderful contributors. Made worth it by people like you!
 
