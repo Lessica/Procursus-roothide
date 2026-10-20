@@ -539,6 +539,8 @@ CC_FOR_BUILD  := $(shell command -v cc) $(CFLAGS_FOR_BUILD)
 CPP_FOR_BUILD := $(shell command -v cc) -E $(CPPFLAGS_FOR_BUILD)
 CXX_FOR_BUILD := $(shell command -v c++) $(CXXFLAGS_FOR_BUILD)
 AR_FOR_BUILD  := $(shell command -v ar)
+LD_FOR_BUILD  := $(shell command -v ld)
+NM_FOR_BUILD  := $(shell command -v nm)
 RANLIB_FOR_BUILD := $(shell command -v ranlib)
 STRIP_FOR_BUILD := $(shell command -v strip)
 export CC_FOR_BUILD CPP_FOR_BUILD CXX_FOR_BUILD AR_FOR_BUILD
@@ -694,6 +696,8 @@ BUILD_CONFIGURE_FLAGS := \
 	CXX="$(CXX_FOR_BUILD)" \
 	CPP="$(CPP_FOR_BUILD)" \
 	AR="$(AR_FOR_BUILD)" \
+	LD="$(LD_FOR_BUILD)" \
+	NM="$(NM_FOR_BUILD)" \
 	RANLIB="$(RANLIB_FOR_BUILD)" \
 	STRIP="$(STRIP_FOR_BUILD)" \
 	CFLAGS="$(CFLAGS_FOR_BUILD)" \
