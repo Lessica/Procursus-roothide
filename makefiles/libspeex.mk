@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS      += libspeex
 LIBSPEEX_VERSION := 1.2.0
-DEB_LIBSPEEX_V   ?= $(LIBSPEEX_VERSION)
+DEB_LIBSPEEX_V   ?= $(LIBSPEEX_VERSION)-1
 
 libspeex-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE), \
@@ -24,6 +24,15 @@ libspeex: libspeex-setup libogg
 	+$(MAKE) -C $(BUILD_WORK)/libspeex
 	+$(MAKE) -C $(BUILD_WORK)/libspeex install \
 		DESTDIR=$(BUILD_STAGE)/libspeex
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Preserve the installed LTO libraries/programs; rebuild only public static targets.
+	rm -f $(BUILD_WORK)/libspeex/libspeex/*.lo $(BUILD_WORK)/libspeex/libspeex/libspeex.la
+	+$(MAKE) -C $(BUILD_WORK)/libspeex/libspeex libspeex.la \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/libspeex/libspeex/Makefile) -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/libspeex/libspeex/Makefile) -fno-lto -static"
+	cp -a $(BUILD_WORK)/libspeex/libspeex/.libs/libspeex.a \
+		$(BUILD_STAGE)/libspeex/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	$(call AFTER_BUILD,copy)
 endif
 

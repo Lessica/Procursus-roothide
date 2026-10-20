@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS       += libtheora
 LIBTHEORA_VERSION := 1.1.1
-DEB_LIBTHEORA_V   ?= $(LIBTHEORA_VERSION)
+DEB_LIBTHEORA_V   ?= $(LIBTHEORA_VERSION)-1
 
 libtheora-setup: setup file-setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://downloads.xiph.org/releases/theora/libtheora-$(LIBTHEORA_VERSION).tar.xz)
@@ -27,6 +27,15 @@ libtheora: libtheora-setup libogg
 	+$(MAKE) -C $(BUILD_WORK)/libtheora
 	+$(MAKE) -C $(BUILD_WORK)/libtheora install \
 		DESTDIR=$(BUILD_STAGE)/libtheora
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Preserve the installed LTO libraries/programs; rebuild only public static targets.
+	rm -f $(BUILD_WORK)/libtheora/lib/*.lo $(BUILD_WORK)/libtheora/lib/libtheoradec.la $(BUILD_WORK)/libtheora/lib/libtheoraenc.la $(BUILD_WORK)/libtheora/lib/libtheora.la
+	+$(MAKE) -C $(BUILD_WORK)/libtheora/lib libtheoradec.la libtheoraenc.la libtheora.la \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/libtheora/lib/Makefile) -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/libtheora/lib/Makefile) -fno-lto -static"
+	cp -a $(BUILD_WORK)/libtheora/lib/.libs/libtheoradec.a $(BUILD_WORK)/libtheora/lib/.libs/libtheoraenc.a $(BUILD_WORK)/libtheora/lib/.libs/libtheora.a \
+		$(BUILD_STAGE)/libtheora/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	$(call AFTER_BUILD,copy)
 endif
 
