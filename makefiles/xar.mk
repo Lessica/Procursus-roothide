@@ -20,6 +20,7 @@ else
 xar: xar-setup openssl
 	cd $(BUILD_WORK)/xar && SDKROOT="$(TARGET_SYSROOT)" ./autogen.sh \
 		$(DEFAULT_CONFIGURE_FLAGS) \
+		AR="$(shell command -v $(AR))" RANLIB="$(shell command -v $(RANLIB))" \
 		ac_cv_header_openssl_evp_h=yes \
 		ac_cv_lib_crypto_OPENSSL_init_crypto=yes \
 		ac_cv_header_libxml_xmlwriter_h=yes \
