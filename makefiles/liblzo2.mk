@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS     += liblzo2
 LIBLZO2_VERSION := 2.10
-DEB_LIBLZO2_V   ?= $(LIBLZO2_VERSION)
+DEB_LIBLZO2_V   ?= $(LIBLZO2_VERSION)-1
 
 liblzo2-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://www.oberhumer.com/opensource/lzo/download/lzo-$(LIBLZO2_VERSION).tar.gz)
@@ -22,6 +22,15 @@ liblzo2: liblzo2-setup
 	+$(MAKE) -C $(BUILD_WORK)/liblzo2
 	+$(MAKE) -C $(BUILD_WORK)/liblzo2 install \
 		DESTDIR=$(BUILD_STAGE)/liblzo2
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Keep installed LTO outputs and all configured LZO optimization flags.
+	+$(MAKE) -C $(BUILD_WORK)/liblzo2 clean
+	+$(MAKE) -C $(BUILD_WORK)/liblzo2 src/liblzo2.la \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/liblzo2/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/liblzo2/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -static"
+	cp -a $(BUILD_WORK)/liblzo2/src/.libs/liblzo2.a \
+		$(BUILD_STAGE)/liblzo2/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	$(call AFTER_BUILD,copy)
 endif
 

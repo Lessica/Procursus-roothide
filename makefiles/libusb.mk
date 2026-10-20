@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS    += libusb
 LIBUSB_VERSION := 1.0.26
-DEB_LIBUSB_V   ?= $(LIBUSB_VERSION)
+DEB_LIBUSB_V   ?= $(LIBUSB_VERSION)-1
 
 libusb-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://github.com/libusb/libusb/releases/download/v$(LIBUSB_VERSION)/libusb-$(LIBUSB_VERSION).tar.bz2)
@@ -21,6 +21,16 @@ libusb: libusb-setup
 		$(DEFAULT_CONFIGURE_FLAGS)
 	+$(MAKE) -C $(BUILD_WORK)/libusb install \
 		DESTDIR="$(BUILD_STAGE)/libusb"
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Preserve the installed LTO dylib and configured Darwin/backend headers.
+	find $(BUILD_WORK)/libusb/libusb -name '*.lo' -type f -delete
+	rm -f $(BUILD_WORK)/libusb/libusb/libusb-1.0.la
+	+$(MAKE) -C $(BUILD_WORK)/libusb/libusb libusb-1.0.la \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/libusb/libusb/Makefile) -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/libusb/libusb/Makefile) -fno-lto -static"
+	cp -a $(BUILD_WORK)/libusb/libusb/.libs/libusb-1.0.a \
+		$(BUILD_STAGE)/libusb/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	$(call AFTER_BUILD,copy)
 endif
 
