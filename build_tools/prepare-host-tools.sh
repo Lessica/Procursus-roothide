@@ -257,6 +257,19 @@ if [[ $HOST_PLATFORM == linux ]]; then
     fi
     "$CARGO_HOME/bin/rustup" toolchain install 1.79.0 --profile minimal --target aarch64-apple-ios --no-self-update
     "$CARGO_HOME/bin/rustup" default 1.79.0
+    case $rust_host in
+        aarch64-*) go_arch=arm64; go_sha=a8e177c354d2e4a1b61020aca3562e27ea3e8f8247eca3170e3fa1e0c2f9e771 ;;
+        x86_64-*) go_arch=amd64; go_sha=ba79d4526102575196273416239cca418a651e049c2b099f3159db85e7bade7d ;;
+    esac
+    go_archive="$HOST_TOOL_ROOT/cache/go1.22.4.linux-$go_arch.tar.gz"
+    if [[ ! -f $go_archive ]]; then
+        curl --fail --location --retry 3 -o "$go_archive.part" "https://go.dev/dl/go1.22.4.linux-$go_arch.tar.gz"
+        mv "$go_archive.part" "$go_archive"
+    fi
+    printf '%s  %s\n' "$go_sha" "$go_archive" | sha256sum -c -
+    mkdir -p "$HOST_TOOL_ROOT/go1.22.4"
+    tar -xf "$go_archive" --strip-components=1 -C "$HOST_TOOL_ROOT/go1.22.4"
+    "$HOST_TOOL_ROOT/go1.22.4/bin/go" version
 fi
 # Source from bash/zsh; retain caller PATH and real HOME.
 {
@@ -269,9 +282,10 @@ fi
     if [[ $HOST_PLATFORM == macos ]]; then printf 'export LIBTOOLIZE=glibtoolize\n'; fi
     if [[ $HOST_PLATFORM == linux ]]; then
         printf 'export CARGO_HOME=%q\nexport RUSTUP_HOME=%q\n' "$CARGO_HOME" "$RUSTUP_HOME"
+        printf 'export GOPATH=%q\nexport GOCACHE=%q\nexport GOROOT_BOOTSTRAP=%q\n' "$HOST_TOOL_ROOT/go-work" "$HOST_TOOL_ROOT/cache/go-build" "$HOST_TOOL_ROOT/go1.22.4"
     fi
     printf 'export PATH=%q:%q:' "$HOST_TOOL_ROOT/bin" "$HOST_TOOL_ROOT/venv/bin"
-    if [[ $HOST_PLATFORM == linux ]]; then printf '%q:' "$CARGO_HOME/bin"; fi
+    if [[ $HOST_PLATFORM == linux ]]; then printf '%q:%q:' "$CARGO_HOME/bin" "$HOST_TOOL_ROOT/go1.22.4/bin"; fi
     if [[ $HOST_PLATFORM == macos && -n ${host_gnu_paths[*]:-} ]]; then
         for host_gnu_path in "${host_gnu_paths[@]}"; do printf '%q:' "$host_gnu_path"; done
     fi
