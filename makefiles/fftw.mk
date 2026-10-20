@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS   += fftw
 FFTW_VERSION := 3.3.10
-DEB_FFTW_V   ?= $(FFTW_VERSION)
+DEB_FFTW_V   ?= $(FFTW_VERSION)-1
 
 fftw-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://fftw.org/fftw-$(FFTW_VERSION).tar.gz)
@@ -26,6 +26,23 @@ fftw: fftw-setup openmp
 		OPENMP_CFLAGS="-Xpreprocessor -fopenmp -lomp"
 	+$(MAKE) -C $(BUILD_WORK)/fftw install \
 		DESTDIR=$(BUILD_STAGE)/fftw
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Preserve this precision's installed LTO libraries and tools.
+	find $(BUILD_WORK)/fftw -name '*.lo' -type f -delete
+	find $(BUILD_WORK)/fftw -name '*.la' -type f -delete
+	+for dir in kernel simd-support dft rdft reodft api; do \
+		$(MAKE) -C $(BUILD_WORK)/fftw/$$dir \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/fftw/Makefile) -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/fftw/Makefile) -fno-lto -static" || exit $$?; done
+	+$(MAKE) -C $(BUILD_WORK)/fftw libfftw3f.la \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/fftw/Makefile) -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/fftw/Makefile) -fno-lto -static"
+	+$(MAKE) -C $(BUILD_WORK)/fftw/threads libfftw3f_threads.la libfftw3f_omp.la \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/fftw/Makefile) -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/fftw/Makefile) -fno-lto -static" \
+		OPENMP_CFLAGS="-Xpreprocessor -fopenmp -lomp"
+	cp -a $(BUILD_WORK)/fftw/.libs/libfftw3f.a $(BUILD_WORK)/fftw/threads/.libs/libfftw3f_{threads,omp}.a $(BUILD_STAGE)/fftw/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	+$(MAKE) -C $(BUILD_WORK)/fftw clean
 	cd $(BUILD_WORK)/fftw && ./configure -C \
 		$(DEFAULT_CONFIGURE_FLAGS) \
@@ -38,6 +55,23 @@ fftw: fftw-setup openmp
 		OPENMP_CFLAGS="-Xpreprocessor -fopenmp -lomp"
 	+$(MAKE) -C $(BUILD_WORK)/fftw install \
 		DESTDIR=$(BUILD_STAGE)/fftw
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Preserve this precision's installed LTO libraries and tools.
+	find $(BUILD_WORK)/fftw -name '*.lo' -type f -delete
+	find $(BUILD_WORK)/fftw -name '*.la' -type f -delete
+	+for dir in kernel simd-support dft rdft reodft api; do \
+		$(MAKE) -C $(BUILD_WORK)/fftw/$$dir \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/fftw/Makefile) -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/fftw/Makefile) -fno-lto -static" || exit $$?; done
+	+$(MAKE) -C $(BUILD_WORK)/fftw libfftw3.la \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/fftw/Makefile) -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/fftw/Makefile) -fno-lto -static"
+	+$(MAKE) -C $(BUILD_WORK)/fftw/threads libfftw3_threads.la libfftw3_omp.la \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/fftw/Makefile) -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/fftw/Makefile) -fno-lto -static" \
+		OPENMP_CFLAGS="-Xpreprocessor -fopenmp -lomp"
+	cp -a $(BUILD_WORK)/fftw/.libs/libfftw3.a $(BUILD_WORK)/fftw/threads/.libs/libfftw3_{threads,omp}.a $(BUILD_STAGE)/fftw/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	+$(MAKE) -C $(BUILD_WORK)/fftw clean
 	cd $(BUILD_WORK)/fftw && ./configure -C \
 		$(DEFAULT_CONFIGURE_FLAGS) \
@@ -50,6 +84,23 @@ fftw: fftw-setup openmp
 		OPENMP_CFLAGS="-Xpreprocessor -fopenmp -lomp"
 	+$(MAKE) -C $(BUILD_WORK)/fftw install \
 		DESTDIR=$(BUILD_STAGE)/fftw
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Preserve this precision's installed LTO libraries and tools.
+	find $(BUILD_WORK)/fftw -name '*.lo' -type f -delete
+	find $(BUILD_WORK)/fftw -name '*.la' -type f -delete
+	+for dir in kernel simd-support dft rdft reodft api; do \
+		$(MAKE) -C $(BUILD_WORK)/fftw/$$dir \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/fftw/Makefile) -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/fftw/Makefile) -fno-lto -static" || exit $$?; done
+	+$(MAKE) -C $(BUILD_WORK)/fftw libfftw3l.la \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/fftw/Makefile) -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/fftw/Makefile) -fno-lto -static"
+	+$(MAKE) -C $(BUILD_WORK)/fftw/threads libfftw3l_threads.la libfftw3l_omp.la \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/fftw/Makefile) -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/fftw/Makefile) -fno-lto -static" \
+		OPENMP_CFLAGS="-Xpreprocessor -fopenmp -lomp"
+	cp -a $(BUILD_WORK)/fftw/.libs/libfftw3l.a $(BUILD_WORK)/fftw/threads/.libs/libfftw3l_{threads,omp}.a $(BUILD_STAGE)/fftw/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	+$(MAKE) -C $(BUILD_WORK)/fftw clean
 	$(call AFTER_BUILD,copy)
 endif
