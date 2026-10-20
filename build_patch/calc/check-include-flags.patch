@@ -1,0 +1,119 @@
+Use target compiler flags consistently for target header probes.
+
+--- a/Makefile
++++ b/Makefile
+@@ -2409,7 +2409,7 @@
+ all: check_include ${BLD_TYPE} CHANGES
+ 
+ check_include:
+-	${Q} if ! echo '#include <stdio.h>' | ${CC} -E - >/dev/null 2>&1; then \
++	${Q} if ! echo '#include <stdio.h>' | ${CC} ${CPPFLAGS} ${CFLAGS} -E - >/dev/null 2>&1; then \
+ 	    echo "ERROR: Missing critical <stdio.h> include file." 1>&2; \
+ 	    echo "Without critical include files, we cannot compile." 1>&2; \
+ 	    echo "Perhaps your system isn't setup to compile C source?" 1>&2; \
+@@ -2699,15 +2699,15 @@
+ 	${Q} echo '' >> $@
+ 	${Q} echo '/* what byte order are we? */' >> $@
+ 	-${Q} if [ X"${CALC_BYTE_ORDER}" = X ]; then \
+-	    if echo '#include <endian.h>' | ${CC} -E - ${S}; then \
++	    if echo '#include <endian.h>' | ${CC} ${CPPFLAGS} ${CFLAGS} -E - ${S}; then \
+ 		echo '#include <endian.h>' >> $@; \
+ 		echo '#define CALC_BYTE_ORDER BYTE_ORDER' >> $@; \
+ 	    elif echo '#include <machine/endian.h>' | \
+-		 ${CC} -E - ${S}; then \
++		 ${CC} ${CPPFLAGS} ${CFLAGS} -E - ${S}; then \
+ 		echo '#include <machine/endian.h>' >> $@; \
+ 		echo '#define CALC_BYTE_ORDER BYTE_ORDER' >> $@; \
+ 	    elif echo '#include <sys/endian.h>' | \
+-		 ${CC} -E- ${S}; then \
++		 ${CC} ${CPPFLAGS} ${CFLAGS} -E - ${S}; then \
+ 		echo '#include <sys/endian.h>' >> $@; \
+ 		echo '#define CALC_BYTE_ORDER BYTE_ORDER' >> $@; \
+ 	    else \
+@@ -2784,7 +2784,7 @@
+ 	    echo '#define HAVE_TIMES_H	/* yes */' >> $@; \
+ 	elif [ X"${HAVE_TIMES_H}" = X"NO" ]; then \
+ 	    echo '#undef HAVE_TIMES_H  /* no */' >> $@; \
+-	elif echo '#include <times.h>' | ${CC} -E - ${S}; then \
++	elif echo '#include <times.h>' | ${CC} ${CPPFLAGS} ${CFLAGS} -E - ${S}; then \
+ 	    echo '#define HAVE_TIMES_H	/* yes */' >> $@; \
+ 	else \
+ 	    echo '#undef HAVE_TIMES_H  /* no */' >> $@; \
+@@ -2794,7 +2794,7 @@
+ 	    echo '#define HAVE_SYS_TIMES_H	/* yes */' >> $@; \
+ 	elif [ X"${HAVE_SYS_TIMES_H}" = X"NO" ]; then \
+ 	    echo '#undef HAVE_SYS_TIMES_H  /* no */' >> $@; \
+-	elif echo '#include <sys/times.h>' | ${CC} -E - ${S}; then \
++	elif echo '#include <sys/times.h>' | ${CC} ${CPPFLAGS} ${CFLAGS} -E - ${S}; then \
+ 	    echo '#define HAVE_SYS_TIMES_H  /* yes */' >> $@; \
+ 	else \
+ 	    echo '#undef HAVE_SYS_TIMES_H  /* no */' >> $@; \
+@@ -2804,7 +2804,7 @@
+ 	    echo '#define HAVE_TIME_H	/* yes */' >> $@; \
+ 	elif [ X"${HAVE_TIME_H}" = X"NO" ]; then \
+ 	    echo '#undef HAVE_TIME_H  /* no */' >> $@; \
+-	elif echo '#include <time.h>' | ${CC} -E - ${S}; then \
++	elif echo '#include <time.h>' | ${CC} ${CPPFLAGS} ${CFLAGS} -E - ${S}; then \
+ 	    echo '#define HAVE_TIME_H  /* yes */' >> $@; \
+ 	else \
+ 	    echo '#undef HAVE_TIME_H  /* no */' >> $@; \
+@@ -2814,7 +2814,7 @@
+ 	    echo '#define HAVE_SYS_TIME_H	/* yes */' >> $@; \
+ 	elif [ X"${HAVE_SYS_TIME_H}" = X"NO" ]; then \
+ 	    echo '#undef HAVE_SYS_TIME_H  /* no */' >> $@; \
+-	elif echo '#include <sys/time.h>' | ${CC} -E - ${S}; then \
++	elif echo '#include <sys/time.h>' | ${CC} ${CPPFLAGS} ${CFLAGS} -E - ${S}; then \
+ 	    echo '#define HAVE_SYS_TIME_H  /* yes */' >> $@; \
+ 	else \
+ 	    echo '#undef HAVE_SYS_TIME_H  /* no */' >> $@; \
+@@ -2850,7 +2850,7 @@
+ 	    echo '#define HAVE_STDLIB_H	/* yes */' >> have_stdlib.h; \
+ 	elif [ X"${HAVE_STDLIB_H}" = X"NO" ]; then \
+ 	    echo '#undef HAVE_STDLIB_H  /* no */' >> have_stdlib.h; \
+-	elif echo '#include <stdlib.h>' | ${CC} -E - ${S}; then \
++	elif echo '#include <stdlib.h>' | ${CC} ${CPPFLAGS} ${CFLAGS} -E - ${S}; then \
+ 	    echo '#define HAVE_STDLIB_H	 /* yes */' >> have_stdlib.h; \
+ 	else \
+ 	    echo '#undef HAVE_STDLIB_H	/* no */' >> have_stdlib.h; \
+@@ -2886,7 +2886,7 @@
+ 	    echo '#define HAVE_UNISTD_H	/* yes */' >> $@; \
+ 	elif [ X"${HAVE_UNISTD_H}" = X"NO" ]; then \
+ 	    echo '#undef HAVE_UNISTD_H  /* no */' >> $@; \
+-	elif echo '#include <unistd.h>' | ${CC} -E - ${S}; then \
++	elif echo '#include <unistd.h>' | ${CC} ${CPPFLAGS} ${CFLAGS} -E - ${S}; then \
+ 	    echo '#define HAVE_UNISTD_H	 /* yes */' >> $@; \
+ 	else \
+ 	    echo '#undef HAVE_UNISTD_H	/* no */' >> $@; \
+@@ -2922,7 +2922,7 @@
+ 	    echo '#define HAVE_STRING_H	/* yes */' >> $@; \
+ 	elif [ X"${HAVE_STRING_H}" = X"NO" ]; then \
+ 	    echo '#undef HAVE_STRING_H  /* no */' >> $@; \
+-	elif echo '#include <string.h>' | ${CC} -E - ${S}; then \
++	elif echo '#include <string.h>' | ${CC} ${CPPFLAGS} ${CFLAGS} -E - ${S}; then \
+ 	    echo '#define HAVE_STRING_H	 /* yes */' >> $@; \
+ 	else \
+ 	    echo '#undef HAVE_STRING_H	/* no */' >> $@; \
+@@ -2962,12 +2962,12 @@
+ 	    echo '#undef USE_TERMIOS   /* <termios.h> */' >> $@; \
+ 	    echo '#undef USE_TERMIO    /* <termio.h> */' >> $@; \
+ 	    echo '#undef USE_SGTTY     /* <sys/ioctl.h> */' >> $@; \
+-	elif echo '#include <termios.h>' | ${CC} -E - ${S}; then \
++	elif echo '#include <termios.h>' | ${CC} ${CPPFLAGS} ${CFLAGS} -E - ${S}; then \
+ 	    echo '/* use termios */' >> $@; \
+ 	    echo '#define USE_TERMIOS  /* <termios.h> */' >> $@; \
+ 	    echo '#undef USE_TERMIO    /* <termio.h> */' >> $@; \
+ 	    echo '#undef USE_SGTTY     /* <sys/ioctl.h> */' >> $@; \
+-	elif echo '#include <termio.h>' | ${CC} -E - ${S}; then \
++	elif echo '#include <termio.h>' | ${CC} ${CPPFLAGS} ${CFLAGS} -E - ${S}; then \
+ 	    echo '/* use termio */' >> $@; \
+ 	    echo '#undef USE_TERMIOS   /* <termios.h> */' >> $@; \
+ 	    echo '#define USE_TERMIO   /* <termio.h> */' >> $@; \
+@@ -3439,7 +3439,7 @@
+ 	${Q} echo '' >> $@
+ 	${Q} echo '/* do we have or want ustat()? */' >> $@
+ 	${Q} ${RM} -f have_ustat.o have_ustat${EXT}
+-	-${Q} if echo '#include <ustat.h>' | ${CC} -E - ${S}; then \
++	-${Q} if echo '#include <ustat.h>' | ${CC} ${CPPFLAGS} ${CFLAGS} -E - ${S}; then \
+ 	    ${Q} ${LCC} ${ICFLAGS} ${HAVE_USTAT} have_ustat.c -c ${S}; \
+ 	    ${Q} ${LCC} ${ILDFLAGS} have_ustat.o -o have_ustat${EXT} ${S}; \
+ 	    ${Q} ./have_ustat${EXT} > ustat_tmp ${E}; \

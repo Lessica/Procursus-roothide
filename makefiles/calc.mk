@@ -10,6 +10,7 @@ CALC_TARGET_CFLAGS = $(CFLAGS) -DCALC_SRC -DCUSTOMHELPDIR=\"\\\"$(MEMO_PREFIX)$(
 calc-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://github.com/lcn2/calc/releases/download/v$(CALC_VERSION)/calc-$(CALC_VERSION).tar.bz2)
 	$(call EXTRACT_TAR,calc-$(CALC_VERSION).tar.bz2,calc-$(CALC_VERSION),calc)
+	$(call DO_PATCH,calc,calc,-p1)
 	sed -i '/#include <stdio.h>/a #include <string.h>' $(BUILD_WORK)/calc/have_memmv.c
 	sed -i '/#include <stdio.h>/a #include <string.h>' $(BUILD_WORK)/calc/have_newstr.c
 	sed -i '/#include <stdio.h>/a #include <unistd.h>' $(BUILD_WORK)/calc/have_posscl.c
@@ -23,7 +24,7 @@ calc: calc-setup ncurses readline
 		LCC="$(CC_FOR_BUILD)" \
 		ICFLAGS="$(CFLAGS_FOR_BUILD)" \
 		ILDFLAGS="$(LDFLAGS_FOR_BUILD)" \
-		CC="$(CC)" \
+		CC="$(CC)" AR="$(AR)" RANLIB="$(RANLIB)" \
 		CFLAGS="$(CALC_TARGET_CFLAGS)" \
 		LDFLAGS="$(LDFLAGS)" \
 		target="Darwin" \
@@ -45,7 +46,7 @@ ifneq ($(filter -flto%,$(CFLAGS)),)
 	rm -f $(BUILD_WORK)/calc/{libcalc,libcustcalc}.a $(BUILD_WORK)/calc/custom/libcustcalc.a
 	+$(MAKE) -C $(BUILD_WORK)/calc libcalc.a libcustcalc.a \
 		LCC="$(CC_FOR_BUILD)" ICFLAGS="$(CFLAGS_FOR_BUILD)" ILDFLAGS="$(LDFLAGS_FOR_BUILD)" \
-		CC="$(CC)" CFLAGS="$(CALC_TARGET_CFLAGS) -fno-lto" LDFLAGS="$(LDFLAGS) -fno-lto" \
+		CC="$(CC)" AR="$(AR)" RANLIB="$(RANLIB)" CFLAGS="$(CALC_TARGET_CFLAGS) -fno-lto" LDFLAGS="$(LDFLAGS) -fno-lto" \
 		USE_READLINE="-DUSE_READLINE" READLINE_LIB="-lreadline" \
 		READLINE_EXTRAS="-L$(BUILD_BASE)$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib -lncursesw" \
 		target="Darwin" BLD_TYPE="calc-static-only" -j1
