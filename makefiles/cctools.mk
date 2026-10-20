@@ -7,7 +7,7 @@ CCTOOLS_COMMIT  := 6262802c55660436c49c52f323c2db9900a900ae
 LD64_COMMIT     := eac639ff5e0104c57343a0342650294ad37fa510
 CCTOOLS_VERSION := 1010.6
 LD64_VERSION    := 951.9
-DEB_CCTOOLS_V   ?= $(CCTOOLS_VERSION)-1
+DEB_CCTOOLS_V   ?= $(CCTOOLS_VERSION)-2
 DEB_LD64_V      ?= $(LD64_VERSION)-4
 
 cctools-setup: setup
@@ -15,6 +15,7 @@ cctools-setup: setup
 	$(call GITHUB_ARCHIVE,ProcursusTeam,ld64,$(LD64_COMMIT),$(LD64_COMMIT))
 	$(call EXTRACT_TAR,cctools-$(CCTOOLS_COMMIT).tar.gz,cctools-$(CCTOOLS_COMMIT),cctools)
 	$(call DO_PATCH,cctools-llvm-headers,cctools,-p1)
+	$(call DO_PATCH,cctools-openssl,cctools,-p1)
 	mkdir -p $(BUILD_WORK)/cctools/subprojects
 	$(call EXTRACT_TAR,ld64-$(LD64_COMMIT).tar.gz,ld64-$(LD64_COMMIT),cctools/subprojects/ld64)
 	$(call DO_PATCH,ld64-stack,cctools/subprojects/ld64,-p1)

@@ -1,0 +1,25 @@
+--- a/EXTERNAL_HEADERS/libcodedirectory.c
++++ b/EXTERNAL_HEADERS/libcodedirectory.c
+@@ -474,15 +474,15 @@
+ no_ccdigest_hash_stuff(int algo, const void *data, size_t len, unsigned char *hash)
+ {
+     if (algo == CS_HASHTYPE_SHA1) {
+-        SHA_CTX *ctx = NULL;
+-        SHA1_Init(ctx);
+-        SHA1_Update(ctx, data, len);
+-        SHA1_Final(hash, ctx);
++        SHA_CTX ctx;
++        SHA1_Init(&ctx);
++        SHA1_Update(&ctx, data, len);
++        SHA1_Final(hash, &ctx);
+     } else if (algo == CS_HASHTYPE_SHA256) {
+-        SHA256_CTX *ctx = NULL;
+-        SHA256_Init(ctx);
+-        SHA256_Update(ctx, data, len);
+-        SHA256_Final(hash, ctx);
++        SHA256_CTX ctx;
++        SHA256_Init(&ctx);
++        SHA256_Update(&ctx, data, len);
++        SHA256_Final(hash, &ctx);
+     }
+ }

@@ -2,7 +2,7 @@ Package: ghc
 Maintainer: @DEB_MAINTAINER@
 Architecture: @DEB_ARCH@
 Version: @DEB_GHC_V@
-Depends: libffi8, libffi-dev, libgmp10, libgmp-dev, libncursesw6, libncurses-dev, c-compiler, odcctools
+Depends: libffi8, libffi-dev, libgmp10, libgmp-dev, libncursesw6, libncurses-dev, c-compiler, odcctools (>= 1010.6-2)
 Section: Development
 Description: The Glasgow Haskell Compilation system
  The Glorious Glasgow Haskell Compilation system (GHC) is a compiler for
