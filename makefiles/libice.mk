@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS    += libice
 LIBICE_VERSION := 1.0.10
-DEB_LIBICE_V   ?= $(LIBICE_VERSION)
+DEB_LIBICE_V   ?= $(LIBICE_VERSION)-1
 
 libice-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://xorg.freedesktop.org/archive/individual/lib/libICE-$(LIBICE_VERSION).tar.gz{$(comma).sig})
@@ -24,6 +24,14 @@ libice: libice-setup xtrans xorgproto
 	+$(MAKE) -C $(BUILD_WORK)/libice
 	+$(MAKE) -C $(BUILD_WORK)/libice install \
 		DESTDIR=$(BUILD_STAGE)/libice
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Preserve installed LTO outputs and configured static compiler flags.
+	+$(MAKE) -C $(BUILD_WORK)/libice/src clean
+	+$(MAKE) -C $(BUILD_WORK)/libice/src libICE.la \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/libice/src/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/libice/src/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -static"
+	cp -a $(BUILD_WORK)/libice/src/.libs/libICE.a $(BUILD_STAGE)/libice/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	$(call AFTER_BUILD,copy)
 endif
 
