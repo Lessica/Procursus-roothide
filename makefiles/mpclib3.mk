@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS     += mpclib3
 MPCLIB3_VERSION := 1.2.1
-DEB_MPCLIB3_V   ?= $(MPCLIB3_VERSION)
+DEB_MPCLIB3_V   ?= $(MPCLIB3_VERSION)-1
 
 mpclib3-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://ftp.gnu.org/gnu/mpc/mpc-$(MPCLIB3_VERSION).tar.gz)
@@ -20,6 +20,15 @@ mpclib3: mpclib3-setup libgmp10 mpfr4
 	+$(MAKE) -C $(BUILD_WORK)/mpclib3
 	+$(MAKE) -C $(BUILD_WORK)/mpclib3 install \
 		DESTDIR="$(BUILD_STAGE)/mpclib3"
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Keep the installed LTO runtime; rebuild only the public static library.
+	rm -f $(BUILD_WORK)/mpclib3/src/*.lo $(BUILD_WORK)/mpclib3/src/libmpc.la
+	+$(MAKE) -C $(BUILD_WORK)/mpclib3/src libmpc.la \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/mpclib3/src/Makefile) -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/mpclib3/src/Makefile) -fno-lto -static"
+	cp -a $(BUILD_WORK)/mpclib3/src/.libs/libmpc.a \
+		$(BUILD_STAGE)/mpclib3/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	$(call AFTER_BUILD,copy)
 endif
 

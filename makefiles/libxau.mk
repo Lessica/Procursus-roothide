@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS    += libxau
 LIBXAU_VERSION := 1.0.9
-DEB_LIBXAU_V   ?= $(LIBXAU_VERSION)-1
+DEB_LIBXAU_V   ?= $(LIBXAU_VERSION)-2
 
 libxau-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://xorg.freedesktop.org/archive/individual/lib/libXau-$(LIBXAU_VERSION).tar.gz{$(comma).sig})
@@ -21,6 +21,14 @@ libxau: libxau-setup xorgproto
 	+$(MAKE) -C $(BUILD_WORK)/libxau
 	+$(MAKE) -C $(BUILD_WORK)/libxau install \
 		DESTDIR=$(BUILD_STAGE)/libxau
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Preserve installed LTO outputs and configured static compiler flags.
+	+$(MAKE) -C $(BUILD_WORK)/libxau clean
+	+$(MAKE) -C $(BUILD_WORK)/libxau libXau.la \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/libxau/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/libxau/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -static"
+	cp -a $(BUILD_WORK)/libxau/.libs/libXau.a $(BUILD_STAGE)/libxau/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	$(call AFTER_BUILD,copy)
 endif
 

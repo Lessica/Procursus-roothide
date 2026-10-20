@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS      += libxdmcp
 LIBXDMCP_VERSION := 1.1.3
-DEB_LIBXDMCP_V   ?= $(LIBXDMCP_VERSION)
+DEB_LIBXDMCP_V   ?= $(LIBXDMCP_VERSION)-1
 
 libxdmcp-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://www.x.org/archive/individual/lib/libXdmcp-$(LIBXDMCP_VERSION).tar.bz2)
@@ -20,6 +20,14 @@ libxdmcp: libxdmcp-setup xorgproto
 		--enable-docs=no
 	+$(MAKE) -C $(BUILD_WORK)/libxdmcp install \
 		DESTDIR="$(BUILD_STAGE)/libxdmcp"
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Preserve installed LTO outputs and configured static compiler flags.
+	+$(MAKE) -C $(BUILD_WORK)/libxdmcp clean
+	+$(MAKE) -C $(BUILD_WORK)/libxdmcp libXdmcp.la \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/libxdmcp/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/libxdmcp/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -static"
+	cp -a $(BUILD_WORK)/libxdmcp/.libs/libXdmcp.a $(BUILD_STAGE)/libxdmcp/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	$(call AFTER_BUILD,copy)
 endif
 

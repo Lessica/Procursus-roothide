@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS   += mpfr4
 MPFR4_VERSION := 4.1.0
-DEB_MPFR4_V   ?= $(MPFR4_VERSION)
+DEB_MPFR4_V   ?= $(MPFR4_VERSION)-1
 
 mpfr4-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://ftp.gnu.org/gnu/mpfr/mpfr-$(MPFR4_VERSION).tar.xz)
@@ -20,6 +20,15 @@ mpfr4: mpfr4-setup libgmp10
 	+$(MAKE) -C $(BUILD_WORK)/mpfr4
 	+$(MAKE) -C $(BUILD_WORK)/mpfr4 install \
 		DESTDIR="$(BUILD_STAGE)/mpfr4"
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Keep the installed LTO runtime; rebuild only the public static library.
+	rm -f $(BUILD_WORK)/mpfr4/src/*.lo $(BUILD_WORK)/mpfr4/src/libmpfr.la
+	+$(MAKE) -C $(BUILD_WORK)/mpfr4/src libmpfr.la \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/mpfr4/src/Makefile) -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/mpfr4/src/Makefile) -fno-lto -static"
+	cp -a $(BUILD_WORK)/mpfr4/src/.libs/libmpfr.a \
+		$(BUILD_STAGE)/mpfr4/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	$(call AFTER_BUILD,copy)
 endif
 
