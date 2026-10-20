@@ -7,7 +7,7 @@ ifeq (,$(findstring darwin,$(MEMO_TARGET)))
 STRAPPROJECTS      += libiosexec
 LIBIOSEXEC_COMMIT  := 54a0866ed9b25adf252d20b9e0366280be4e29d3
 LIBIOSEXEC_VERSION := 1.3.1-2
-DEB_LIBIOSEXEC_V   ?= $(LIBIOSEXEC_VERSION)
+DEB_LIBIOSEXEC_V   ?= 1.3.1-3
 export DEB_LIBIOSEXEC_V
 
 ifneq (,$(findstring rootless,$(MEMO_TARGET)))
@@ -23,6 +23,7 @@ endif
 libiosexec-setup: setup
 	$(call GITHUB_ARCHIVE,roothide,libiosexec,$(LIBIOSEXEC_COMMIT),$(LIBIOSEXEC_COMMIT))
 	$(call EXTRACT_TAR,libiosexec-$(LIBIOSEXEC_COMMIT).tar.gz,libiosexec-$(LIBIOSEXEC_COMMIT),libiosexec)
+	cd $(BUILD_WORK)/libiosexec && patch -p1 < $(BUILD_PATCH)/libiosexec/0001-darwin-nobody-group.patch
 	sed -i 's/$$(shell uname -s)/Darwin/g' $(BUILD_WORK)/libiosexec/Makefile
 
 ifneq ($(wildcard $(BUILD_WORK)/libiosexec/.build_complete),)
