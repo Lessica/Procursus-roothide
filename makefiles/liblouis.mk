@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS       += liblouis
 LIBLOUIS_VERSION  := 3.17.0
-DEB_LIBLOUIS_V    ?= $(LIBLOUIS_VERSION)
+DEB_LIBLOUIS_V    ?= $(LIBLOUIS_VERSION)-1
 
 liblouis-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://github.com/liblouis/liblouis/releases/download/v$(LIBLOUIS_VERSION)/liblouis-$(LIBLOUIS_VERSION).tar.gz)
@@ -21,6 +21,18 @@ liblouis: liblouis-setup libyaml
 	+$(MAKE) -C $(BUILD_WORK)/liblouis all
 	+$(MAKE) -C $(BUILD_WORK)/liblouis install \
 		DESTDIR=$(BUILD_STAGE)/liblouis
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Preserve installed LTO programs and dylib; rebuild the static library only.
+	+$(MAKE) -C $(BUILD_WORK)/liblouis/gnulib clean
+	+$(MAKE) -C $(BUILD_WORK)/liblouis/gnulib libgnu.la \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/liblouis/gnulib/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/liblouis/gnulib/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -static"
+	+$(MAKE) -C $(BUILD_WORK)/liblouis/liblouis clean
+	+$(MAKE) -C $(BUILD_WORK)/liblouis/liblouis liblouis.la \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/liblouis/liblouis/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/liblouis/liblouis/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -static"
+	cp -a $(BUILD_WORK)/liblouis/liblouis/.libs/liblouis.a $(BUILD_STAGE)/liblouis/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	$(call AFTER_BUILD,copy)
 endif
 liblouis-package: liblouis-stage
