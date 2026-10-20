@@ -25,12 +25,12 @@ iokittools:
 	@echo "Using previously built iokittools."
 else
 iokittools: iokittools-setup
-	cd $(BUILD_WORK)/iokittools; \
+	set -e; cd $(BUILD_WORK)/iokittools; \
 	for bin in ioalloccount ioclasscount; do \
 		case $$bin in \
 			ioclasscount) LDFLAGS_extra="-F$(BUILD_MISC)/PrivateFrameworks -framework CoreSymbolication -framework perfdata"; \
 		esac; \
-		$(CC) $${LDFLAGS_extra} $(LDFLAGS) $(CFLAGS) -framework CoreFoundation -framework IOKit -o $(BUILD_STAGE)/iokittools/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/$$bin $$bin.tproj/*.c; \
+		$(CC) $${LDFLAGS_extra} $(LDFLAGS) $(CFLAGS) -DkIOMainPortDefault=kIOMasterPortDefault -framework CoreFoundation -framework IOKit -o $(BUILD_STAGE)/iokittools/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/$$bin $$bin.tproj/*.c; \
 		$(INSTALL) -m644 $(BUILD_WORK)/iokittools/$$bin.tproj/$$bin.8 $(BUILD_STAGE)/iokittools/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share/man/man8/$$bin.8 ;\
 	done; \
 	$(INSTALL) -m644 $(BUILD_WORK)/iokittools/ioreg.tproj/ioreg.8 $(BUILD_STAGE)/iokittools/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share/man/man8/ioreg.8

@@ -21,6 +21,7 @@ else
 unicorn: unicorn-setup
 	cd $(BUILD_WORK)/unicorn/build && cmake . \
 		$(DEFAULT_CMAKE_FLAGS) \
+		-Dlib_tool="$$(command -v $(LIBTOOL))" \
 		..
 	+$(MAKE) -C $(BUILD_WORK)/unicorn/build
 	+$(MAKE) -C $(BUILD_WORK)/unicorn/build install \
