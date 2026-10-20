@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS      += sqlite3
 SQLITE3_VERSION  := 3.34.1
-DEB_SQLITE3_V    ?= $(SQLITE3_VERSION)
+DEB_SQLITE3_V    ?= $(SQLITE3_VERSION)-1
 
 sqlite3-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),http://deb.debian.org/debian/pool/main/s/sqlite3/sqlite3_$(SQLITE3_VERSION).orig.tar.xz)
@@ -36,6 +36,14 @@ sqlite3: sqlite3-setup ncurses readline
 	cp -a $(BUILD_WORK)/sqlite3/.libs/sqldiff $(BUILD_STAGE)/sqlite3/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin
 	mkdir -p $(BUILD_STAGE)/sqlite3/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share/lemon
 	cp -a $(BUILD_WORK)/sqlite3/lempar.c $(BUILD_STAGE)/sqlite3/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share/lemon
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Preserve the installed LTO shell, utilities and shared library.
+	rm -f $(BUILD_WORK)/sqlite3/sqlite3.lo $(BUILD_WORK)/sqlite3/libsqlite3.la
+	+$(MAKE) -C $(BUILD_WORK)/sqlite3 libsqlite3.la \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/sqlite3/Makefile) -fno-lto" \
+		LTLINK="$$(sed -n 's/^LTLINK = //p' $(BUILD_WORK)/sqlite3/Makefile) -fno-lto -static"
+	cp -a $(BUILD_WORK)/sqlite3/.libs/libsqlite3.a $(BUILD_STAGE)/sqlite3/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	$(call AFTER_BUILD,copy)
 endif
 sqlite3-package: sqlite3-stage

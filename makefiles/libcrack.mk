@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS      += libcrack
 LIBCRACK_VERSION := 2.9.7
-DEB_LIBCRACK_V   ?= $(LIBCRACK_VERSION)-1
+DEB_LIBCRACK_V   ?= $(LIBCRACK_VERSION)-2
 
 libcrack-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://github.com/cracklib/cracklib/releases/download/v$(LIBCRACK_VERSION)/cracklib-$(LIBCRACK_VERSION).tar.gz)
@@ -25,6 +25,15 @@ libcrack: libcrack-setup gettext
 	+$(MAKE) -C $(BUILD_WORK)/libcrack
 	+$(MAKE) -C $(BUILD_WORK)/libcrack install \
 		DESTDIR=$(BUILD_STAGE)/libcrack
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Keep the installed LTO runtime and password utilities.
+	find $(BUILD_WORK)/libcrack/lib -maxdepth 1 -name '*.lo' -type f -delete
+	rm -f $(BUILD_WORK)/libcrack/lib/libcrack.la
+	+$(MAKE) -C $(BUILD_WORK)/libcrack/lib libcrack.la \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/libcrack/lib/Makefile) -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/libcrack/lib/Makefile) -fno-lto -static"
+	cp -a $(BUILD_WORK)/libcrack/lib/.libs/libcrack.a $(BUILD_STAGE)/libcrack/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	$(INSTALL) -Dm 644 $(BUILD_WORK)/libcrack/dicts/libcrack-words -t "$(BUILD_STAGE)/libcrack/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share/libcrack"
 	$(call AFTER_BUILD)
 endif
