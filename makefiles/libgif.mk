@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS    += libgif
 LIBGIF_VERSION := 5.2.1
-DEB_LIBGIF_V   ?= $(LIBGIF_VERSION)-1
+DEB_LIBGIF_V   ?= $(LIBGIF_VERSION)-2
 
 libgif-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE), \
@@ -24,6 +24,15 @@ libgif: libgif-setup
 	+$(MAKE) -C $(BUILD_WORK)/libgif install -j1 \
 		PREFIX=$(MEMO_PREFIX)$(MEMO_SUB_PREFIX) \
 		DESTDIR=$(BUILD_STAGE)/libgif
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Runtime/tools are already installed; only rebuild the public archive.
+	+$(MAKE) -C $(BUILD_WORK)/libgif clean
+	+$(MAKE) -C $(BUILD_WORK)/libgif libgif.a -j1 \
+		PREFIX=$(MEMO_PREFIX)$(MEMO_SUB_PREFIX) \
+		CFLAGS="$(filter-out -flto%,$(CFLAGS)) -fno-lto" \
+		LDFLAGS="$(filter-out -flto%,$(LDFLAGS))"
+	cp -a $(BUILD_WORK)/libgif/libgif.a $(BUILD_STAGE)/libgif/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	$(call AFTER_BUILD,copy)
 endif
 

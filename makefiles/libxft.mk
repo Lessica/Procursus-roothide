@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS    += libxft
 LIBXFT_VERSION := 2.3.3
-DEB_LIBXFT_V   ?= $(LIBXFT_VERSION)
+DEB_LIBXFT_V   ?= $(LIBXFT_VERSION)-1
 
 libxft-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://www.x.org/archive/individual/lib/libXft-$(LIBXFT_VERSION).tar.gz{$(comma).sig})
@@ -21,6 +21,14 @@ libxft: libxft-setup libx11 libxrender xorgproto fontconfig freetype
 	+$(MAKE) -C $(BUILD_WORK)/libxft
 	+$(MAKE) -C $(BUILD_WORK)/libxft install \
 		DESTDIR=$(BUILD_STAGE)/libxft
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Preserve installed LTO outputs and configured static compiler flags.
+	+$(MAKE) -C $(BUILD_WORK)/libxft/src clean
+	+$(MAKE) -C $(BUILD_WORK)/libxft/src libXft.la \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/libxft/src/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/libxft/src/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -static"
+	cp -a $(BUILD_WORK)/libxft/src/.libs/libXft.a $(BUILD_STAGE)/libxft/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	$(call AFTER_BUILD,copy)
 endif
 
