@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS += ucl
 UCL_VERSION := 1.03
-DEB_UCL_V   ?= $(UCL_VERSION)
+DEB_UCL_V   ?= $(UCL_VERSION)-1
 
 ucl-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://www.oberhumer.com/opensource/ucl/download/ucl-$(UCL_VERSION).tar.gz)
@@ -25,6 +25,14 @@ ucl: ucl-setup
 	+$(MAKE) -C $(BUILD_WORK)/ucl all
 	+$(MAKE) -C $(BUILD_WORK)/ucl install \
 		DESTDIR=$(BUILD_STAGE)/ucl
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Preserve installed LTO outputs and all configured static compiler flags.
+	+$(MAKE) -C $(BUILD_WORK)/ucl/src clean
+	+$(MAKE) -C $(BUILD_WORK)/ucl/src libucl.la \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/ucl/src/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/ucl/src/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -static"
+	cp -a $(BUILD_WORK)/ucl/src/.libs/libucl.a $(BUILD_STAGE)/ucl/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	$(call AFTER_BUILD,copy)
 endif
 
