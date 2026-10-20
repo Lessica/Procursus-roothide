@@ -6,6 +6,14 @@ set -x
 IOS_SDK_VERSION=16.5 #from https://github.com/theos/sdks/releases/tag/master-146e41f
 MACOSX_SDK_VERSION=11.3 #from https://github.com/phracker/MacOSX-SDKs/releases/tag/11.3
 
+# Resolve the checkout before changing to the login home directory.
+PROJDIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+
+if [ -e "$HOME/ldid" ] || [ -L "$HOME/ldid" ]; then
+    echo "*** host ldid path already exists at $HOME/ldid; move it aside before preparing the pinned, patched host ldid"
+    exit 1
+fi
+
 cd ~
 
 if ! eval $(echo "echo $PATH") || echo "$PATH" | grep -qE '[[:space:]]|[^[:print:]]' ; then
@@ -14,7 +22,6 @@ if ! eval $(echo "echo $PATH") || echo "$PATH" | grep -qE '[[:space:]]|[^[:print
     exit
 fi
 
-PROJDIR=$(dirname "$0")
 TEST_INODE_1=$(touch "$PROJDIR/.inode_test_file_1"; stat -c %i "$PROJDIR/.inode_test_file_1"; rm -f "$PROJDIR/.inode_test_file_1")
 TEST_INODE_2=$(touch "$PROJDIR/.inode_test_file_2"; stat -c %i "$PROJDIR/.inode_test_file_2"; rm -f "$PROJDIR/.inode_test_file_2")
 if [ "$TEST_INODE_1" = "$TEST_INODE_2" ]; then
@@ -165,17 +172,17 @@ mkdir -p ~/cctools/SDK
 tar -xf MacOSX$MACOSX_SDK_VERSION.sdk.tar.xz -C ~/cctools/SDK/
 mv ~/cctools/SDK/MacOSX$MACOSX_SDK_VERSION.sdk ~/cctools/SDK/MacOSX.sdk
 
-if [ ! -f ./ldid/.build_complete ]; then
-    rm -rf ldid
-    echo "Building ldid"
-    sudo apt install -y libssl-dev libplist-dev libplist++-dev
-    git clone https://github.com/ProcursusTeam/ldid.git
-    cd ldid
-    make -j$(nproc)
-    sudo make -j$(nproc) install
-    cd ..
-    touch ./ldid/.build_complete
-fi
+echo "Building patched Procursus ldid v2.1.5-procursus7"
+sudo apt install -y libssl-dev libplist-dev libplist++-dev
+git clone --depth 1 --branch v2.1.5-procursus7 https://github.com/ProcursusTeam/ldid.git ./ldid
+for patch in bundle-code-signing-flags.patch entitlement-memory.patch preserve-linkedit-extent.patch; do
+    patch -d ./ldid -p1 < "$PROJDIR/build_patch/ldid/$patch"
+done
+cd ldid
+make -j$(nproc)
+sudo make -j$(nproc) install
+cd ..
+touch ./ldid/.build_complete
 
 echo '*** All done ***, now you can add
 

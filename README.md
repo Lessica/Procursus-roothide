@@ -51,7 +51,7 @@ patch -d "$HOST_TOOL_ROOT/src/libroothide" -p1 < "$CHECKOUT/build_patch/roothide
 )
 ```
 
-Host compilation needs a host C++ toolchain and, for `ldid`, host OpenSSL/libcrypto and libplist headers and libraries. Select the compiler, macOS SDK and dependency prefixes explicitly; keep the login `HOME` and place generated tools in `$HOST_TOOL_ROOT/bin`, then prepend that directory to `PATH`. Do not use the iOS libraries or package-install targets to prepare host tools. These instructions prepare the patched sources; host dependency installation and compilation remain manual. The Linux setup script still clones `ldid` HEAD and does not supply these pinned, patched tools.
+Host compilation needs a host C++ toolchain and, for `ldid`, host OpenSSL/libcrypto and libplist headers and libraries. Select the compiler, macOS SDK and dependency prefixes explicitly; keep the login `HOME` and place generated tools in `$HOST_TOOL_ROOT/bin`, then prepend that directory to `PATH`. Do not use the iOS libraries or package-install targets to prepare host tools. The commands above prepare sources only; host dependency installation and compilation remain manual. The Linux setup script builds pinned, patched `ldid`; `symredirect` and the remaining host-tool preparation are still separate steps.
 
 ## Credits
 Build system created by [Diatrus](https://twitter.com/Diatrus) and [Kirb](https://twitter.com/hbkirb). Built better by all our wonderful contributors. Made worth it by people like you!
