@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS     += libwebp
 LIBWEBP_VERSION := 1.2.2
-DEB_LIBWEBP_V   ?= $(LIBWEBP_VERSION)
+DEB_LIBWEBP_V   ?= $(LIBWEBP_VERSION)-1
 
 libwebp-setup: setup
 	$(call DOWNLOAD_FILE,$(BUILD_SOURCE)/libwebp-$(LIBWEBP_VERSION).tar.gz, \
@@ -25,6 +25,16 @@ libwebp: libwebp-setup libpng16 libgif libtiff libjpeg-turbo
 	+$(MAKE) -C $(BUILD_WORK)/libwebp
 	+$(MAKE) -C $(BUILD_WORK)/libwebp install \
 		DESTDIR="$(BUILD_STAGE)/libwebp"
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Recursively rebuild all folded dec/enc/dsp/utils convenience objects.
+	# Runtime/tools/extras were installed with their original LTO settings.
+	+$(MAKE) -C $(BUILD_WORK)/libwebp/src clean
+	+$(MAKE) -C $(BUILD_WORK)/libwebp/src all \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/libwebp/src/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/libwebp/src/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -static"
+	cp -a $(BUILD_WORK)/libwebp/src/.libs/libwebp{,decoder}.a \
+		$(BUILD_WORK)/libwebp/src/{mux,demux}/.libs/*.a $(BUILD_STAGE)/libwebp/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	$(call AFTER_BUILD,copy)
 endif
 

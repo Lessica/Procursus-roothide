@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS    += imlib2
 IMLIB2_VERSION := 1.7.1
-DEB_IMLIB2_V   ?= $(IMLIB2_VERSION)
+DEB_IMLIB2_V   ?= $(IMLIB2_VERSION)-1
 
 imlib2-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://downloads.sourceforge.net/project/enlightenment/imlib2-src/$(IMLIB2_VERSION)/imlib2-$(IMLIB2_VERSION).tar.bz2)
@@ -14,14 +14,24 @@ ifneq ($(wildcard $(BUILD_WORK)/imlib2/.build_complete),)
 imlib2:
 	@echo "Using previously built imlib2."
 else
-imlib2: imlib2-setup freetype libgif libjpeg-turbo libpng16 libtiff libx11 libxcb libxext
+imlib2: imlib2-setup freetype libgif libjpeg-turbo libpng16 libtiff libwebp libx11 libxcb libxext
 	cd $(BUILD_WORK)/imlib2 && ./configure -C \
 		$(DEFAULT_CONFIGURE_FLAGS) \
 		--without-id3 \
+		--with-webp \
 		--enable-amd64=no
+	grep -q '^WEBP_L[[:space:]]*=[[:space:]]*webp.la' $(BUILD_WORK)/imlib2/src/modules/loaders/Makefile
 	+$(MAKE) -C $(BUILD_WORK)/imlib2
 	+$(MAKE) -C $(BUILD_WORK)/imlib2 install \
 		DESTDIR=$(BUILD_STAGE)/imlib2
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Installed loader/filter modules remain LTO and do not deliver archives.
+	+$(MAKE) -C $(BUILD_WORK)/imlib2/src/lib clean
+	+$(MAKE) -C $(BUILD_WORK)/imlib2/src/lib libImlib2.la \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/imlib2/src/lib/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/imlib2/src/lib/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -static"
+	cp -a $(BUILD_WORK)/imlib2/src/lib/.libs/libImlib2.a $(BUILD_STAGE)/imlib2/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	$(call AFTER_BUILD,copy)
 endif
 

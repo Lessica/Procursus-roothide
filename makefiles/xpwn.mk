@@ -7,7 +7,7 @@ XPWN_COMMIT  := c89fba5f7390fde9bb0443d0c7be81ccc17f02ff
 XPWN_VERSION := 0.5.8+git20220711.$(shell echo $(XPWN_COMMIT) | cut -c -7)
 LIBUSB_COMPAT_VERSION := 0.1.9
 LIBUSB_COMPAT_COMMIT := 4831748a1439aec81e9cbb9984b1b0289c1c7051
-DEB_XPWN_V   ?= $(XPWN_VERSION)-2
+DEB_XPWN_V   ?= $(XPWN_VERSION)-3
 
 xpwn-setup: setup
 	$(call GITHUB_ARCHIVE,OothecaPickle,xpwn,$(XPWN_COMMIT),$(XPWN_COMMIT))
@@ -46,7 +46,21 @@ xpwn: xpwn-setup libpng16 openssl libusb
 	mv $(BUILD_STAGE)/xpwn/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/ipsw $(BUILD_STAGE)/xpwn/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/ipsw-xpwn
 	mkdir -p {$(BUILD_BASE),$(BUILD_STAGE)/xpwn}/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/{include/xpwn,lib/xpwn}
 	cp -a $(BUILD_WORK)/xpwn/includes/* $(BUILD_STAGE)/xpwn/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include/xpwn
-	cp -a $(BUILD_WORK)/xpwn/{ipsw-patch/libxpwn,minizip/libminizip,common/libcommon,hfs/libhfs,dmg/libdmg}.a $(BUILD_STAGE)/xpwn/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/xpwn
+	+$(MAKE) -C $(BUILD_WORK)/xpwn xpwn-native minizip-native common-native hfs-native dmg-native
+	set -e; for entry in ipsw-patch:xpwn minizip:minizip common:common hfs:hfs dmg:dmg; do \
+		sub=$${entry%:*}; name=$${entry##*:}; \
+		cp -a $(BUILD_WORK)/xpwn/$$sub/lib$$name-native.a $(BUILD_STAGE)/xpwn/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/xpwn/lib$$name.a; \
+	done
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# libusb-compat is also public, but its original LTO archive was already
+	# consumed by the normal installed xpwn programs above.
+	find $(BUILD_WORK)/libusb-compat/libusb -name '*.lo' -type f -delete
+	rm -f $(BUILD_WORK)/libusb-compat/libusb/libusb.la
+	+$(MAKE) -C $(BUILD_WORK)/libusb-compat/libusb libusb.la \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/libusb-compat/libusb/Makefile) -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/libusb-compat/libusb/Makefile) -fno-lto -static"
+	cp -a $(BUILD_WORK)/libusb-compat/libusb/.libs/libusb.a $(BUILD_STAGE)/libusb-compat$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	$(call AFTER_BUILD,copy)
 endif
 
