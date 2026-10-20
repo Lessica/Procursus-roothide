@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS         += xcb-util-wm
 XCB-UTIL-WM_VERSION := 0.4.0
-DEB_XCB-UTIL-WM_V   ?= $(XCB-UTIL-WM_VERSION)
+DEB_XCB-UTIL-WM_V   ?= $(XCB-UTIL-WM_VERSION)-1
 
 xcb-util-wm-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://www.x.org/archive/individual/xcb/xcb-util-wm-$(XCB-UTIL-WM_VERSION).tar.gz)
@@ -20,6 +20,19 @@ xcb-util-wm: xcb-util-wm-setup libxcb xcb-util
 	+$(MAKE) -C $(BUILD_WORK)/xcb-util-wm
 	+$(MAKE) -C $(BUILD_WORK)/xcb-util-wm install \
 		DESTDIR=$(BUILD_STAGE)/xcb-util-wm
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Preserve installed LTO outputs and both configured static libraries.
+	+$(MAKE) -C $(BUILD_WORK)/xcb-util-wm/icccm clean
+	+$(MAKE) -C $(BUILD_WORK)/xcb-util-wm/icccm libxcb-icccm.la \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/xcb-util-wm/icccm/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/xcb-util-wm/icccm/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -static"
+	cp -a $(BUILD_WORK)/xcb-util-wm/icccm/.libs/libxcb-icccm.a $(BUILD_STAGE)/xcb-util-wm/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+	+$(MAKE) -C $(BUILD_WORK)/xcb-util-wm/ewmh clean
+	+$(MAKE) -C $(BUILD_WORK)/xcb-util-wm/ewmh all \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/xcb-util-wm/ewmh/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/xcb-util-wm/ewmh/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -static"
+	cp -a $(BUILD_WORK)/xcb-util-wm/ewmh/.libs/libxcb-ewmh.a $(BUILD_STAGE)/xcb-util-wm/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	$(call AFTER_BUILD,copy)
 endif
 

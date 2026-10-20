@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS              += xcb-util-keysyms
 XCB-UTIL-KEYSYMS_VERSION := 0.4.0
-DEB_XCB-UTIL-KEYSYMS_V   ?= $(XCB-UTIL-KEYSYMS_VERSION)
+DEB_XCB-UTIL-KEYSYMS_V   ?= $(XCB-UTIL-KEYSYMS_VERSION)-1
 
 xcb-util-keysyms-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://www.x.org/archive/individual/xcb/xcb-util-keysyms-$(XCB-UTIL-KEYSYMS_VERSION).tar.gz)
@@ -20,6 +20,14 @@ xcb-util-keysyms: xcb-util-keysyms-setup libxcb xcb-util
 	+$(MAKE) -C $(BUILD_WORK)/xcb-util-keysyms
 	+$(MAKE) -C $(BUILD_WORK)/xcb-util-keysyms install \
 		DESTDIR=$(BUILD_STAGE)/xcb-util-keysyms
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Preserve installed LTO outputs and configured static compiler flags.
+	+$(MAKE) -C $(BUILD_WORK)/xcb-util-keysyms/keysyms clean
+	+$(MAKE) -C $(BUILD_WORK)/xcb-util-keysyms/keysyms libxcb-keysyms.la \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/xcb-util-keysyms/keysyms/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/xcb-util-keysyms/keysyms/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -static"
+	cp -a $(BUILD_WORK)/xcb-util-keysyms/keysyms/.libs/libxcb-keysyms.a $(BUILD_STAGE)/xcb-util-keysyms/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	$(call AFTER_BUILD,copy)
 endif
 
