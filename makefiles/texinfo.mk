@@ -4,9 +4,9 @@ endif
 
 SUBPROJECTS     += texinfo
 TEXINFO_VERSION := 6.7
-DEB_TEXINFO_V   ?= $(TEXINFO_VERSION)-2
+DEB_TEXINFO_V   ?= $(TEXINFO_VERSION)-3
 PERL_HOST       ?= /usr/bin/perl
-PERL_TARGET_CORE = $(BUILD_BASE)/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/perl5/$(PERL_MAJOR)/CORE
+PERL_TARGET_CORE = $(BUILD_STAGE)/perl/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/perl5/$(PERL_MAJOR)/CORE
 
 ## This is super broken, someone should fix it
 
@@ -19,7 +19,7 @@ ifneq ($(wildcard $(BUILD_WORK)/texinfo/.build_complete),)
 texinfo:
 	@echo "Using previously built texinfo."
 else
-texinfo: texinfo-setup perl
+texinfo: texinfo-setup perl ncurses
 	$(call DO_PATCH,texinfo,texinfo,-p1)
 	cd $(BUILD_WORK)/texinfo && ./configure -C \
 		$(DEFAULT_CONFIGURE_FLAGS) \
@@ -33,6 +33,18 @@ texinfo: texinfo-setup perl
 	+$(MAKE) -C $(BUILD_WORK)/texinfo install \
 		DESTDIR=$(BUILD_STAGE)/texinfo \
 		PERL_INC=$(PERL_TARGET_CORE)
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Keep installed LTO commands/XS modules; rebuild their public archives only.
+	find $(BUILD_WORK)/texinfo/tp/Texinfo/XS -name '*.lo' -type f -delete
+	rm -f $(BUILD_WORK)/texinfo/tp/Texinfo/XS/{gnulib/lib/libgnu,XSParagraph,MiscXS,Parsetexi}.la
+	+$(MAKE) -C $(BUILD_WORK)/texinfo/tp/Texinfo/XS/gnulib/lib libgnu.la \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/texinfo/tp/Texinfo/XS/gnulib/lib/Makefile) -fno-lto"
+	+$(MAKE) -C $(BUILD_WORK)/texinfo/tp/Texinfo/XS XSParagraph.la MiscXS.la Parsetexi.la \
+		PERL_INC=$(PERL_TARGET_CORE) \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/texinfo/tp/Texinfo/XS/Makefile) -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/texinfo/tp/Texinfo/XS/Makefile) -fno-lto -static"
+	cp -a $(BUILD_WORK)/texinfo/tp/Texinfo/XS/.libs/{XSParagraph,MiscXS,Parsetexi}.a $(BUILD_STAGE)/texinfo/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/texinfo/
+endif
 	$(call AFTER_BUILD)
 endif
 
