@@ -4,7 +4,7 @@ endif
 
 STRAPPROJECTS += libgmp10
 GMP_VERSION   := 6.3.0
-DEB_GMP_V     ?= $(GMP_VERSION)-3
+DEB_GMP_V     ?= $(GMP_VERSION)-4
 
 libgmp10-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://ftp.gnu.org/gnu/gmp/gmp-$(GMP_VERSION).tar.xz{$(comma).sig})
@@ -28,6 +28,23 @@ libgmp10: libgmp10-setup
 	+$(MAKE) -C $(BUILD_WORK)/libgmp10 V=1
 	+$(MAKE) -C $(BUILD_WORK)/libgmp10 install \
 		DESTDIR=$(BUILD_STAGE)/libgmp10
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Rebuild the library object groups only; retain the original installed LTO runtime.
+	for dir in mpn mpz mpq mpf printf scanf rand cxx; do \
+		rm -f $(BUILD_WORK)/libgmp10/$$dir/*.lo $(BUILD_WORK)/libgmp10/$$dir/*.la; \
+		$(MAKE) -C $(BUILD_WORK)/libgmp10/$$dir all \
+			CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/libgmp10/$$dir/Makefile) -fno-lto" \
+			CXXFLAGS="$$(sed -n 's/^CXXFLAGS = //p' $(BUILD_WORK)/libgmp10/$$dir/Makefile) -fno-lto" \
+			LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/libgmp10/$$dir/Makefile) -fno-lto -static" || exit 1; \
+	done
+	rm -f $(BUILD_WORK)/libgmp10/*.lo $(BUILD_WORK)/libgmp10/libgmp{,xx}.la
+	+$(MAKE) -C $(BUILD_WORK)/libgmp10 libgmp.la libgmpxx.la \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/libgmp10/Makefile) -fno-lto" \
+		CXXFLAGS="$$(sed -n 's/^CXXFLAGS = //p' $(BUILD_WORK)/libgmp10/Makefile) -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/libgmp10/Makefile) -fno-lto -static"
+	cp -a $(BUILD_WORK)/libgmp10/.libs/libgmp{,xx}.a \
+		$(BUILD_STAGE)/libgmp10/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	$(call AFTER_BUILD,copy)
 endif
 

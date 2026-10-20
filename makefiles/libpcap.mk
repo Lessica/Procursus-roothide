@@ -4,11 +4,12 @@ endif
 
 SUBPROJECTS     += libpcap
 LIBPCAP_VERSION := 1.10.4
-DEB_LIBPCAP_V   ?= $(LIBPCAP_VERSION)
+DEB_LIBPCAP_V   ?= $(LIBPCAP_VERSION)-1
 
 libpcap-setup: setup
 	$(call GITHUB_ARCHIVE,the-tcpdump-group,libpcap,$(LIBPCAP_VERSION),libpcap-$(LIBPCAP_VERSION))
 	$(call EXTRACT_TAR,libpcap-$(LIBPCAP_VERSION).tar.gz,libpcap-libpcap-$(LIBPCAP_VERSION),libpcap)
+	$(call DO_PATCH,libpcap,libpcap,-p1)
 	mkdir -p $(BUILD_WORK)/libpcap/build
 	sed -i 's/cmake_policy(SET CMP0042 OLD)/cmake_policy(SET CMP0042 NEW)/' $(BUILD_WORK)/libpcap/CMakeLists.txt
 	sed -i '1s/^/\#include \<sys\/_endian\.h\>/' $(BUILD_WORK)/libpcap/*.c
@@ -38,6 +39,10 @@ libpcap-package: libpcap-stage
 	cp -a $(BUILD_STAGE)/libpcap/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/libpcap.*.dylib $(BUILD_DIST)/libpcapa/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
 
 	# libpcap.mk Prep libpcapa-dev
+	# Keep target SSL dependencies without the private build-stage library search path.
+	sed -i 's|-L$(BUILD_BASE)$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib ||g' \
+		$(BUILD_STAGE)/libpcap/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/pcap-config \
+		$(BUILD_STAGE)/libpcap/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/pkgconfig/libpcap.pc
 	cp -a $(BUILD_STAGE)/libpcap/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/{bin,include,share} $(BUILD_DIST)/libpcapa-dev/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)
 	cp -a $(BUILD_STAGE)/libpcap/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/!(libpcap.*.dylib) $(BUILD_DIST)/libpcapa-dev/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib
 

@@ -1,0 +1,11 @@
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -2814,6 +2814,9 @@
+ )
+ add_dependencies(${LIBRARY_NAME}_static SerializeTarget)
++# Public static archives must remain consumable without a matching LTO plugin.
++set_target_properties(${LIBRARY_NAME}_static PROPERTIES INTERPROCEDURAL_OPTIMIZATION FALSE)
++target_compile_options(${LIBRARY_NAME}_static PRIVATE -fno-lto)
+ set_target_properties(${LIBRARY_NAME}_static PROPERTIES
+     COMPILE_DEFINITIONS BUILDING_PCAP)
+ 

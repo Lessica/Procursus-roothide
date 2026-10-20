@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS             += libopencore-amr
 LIBOPENCORE-AMR_VERSION := 0.1.5
-DEB_LIBOPENCORE-AMR_V   ?= $(LIBOPENCORE-AMR_VERSION)
+DEB_LIBOPENCORE-AMR_V   ?= $(LIBOPENCORE-AMR_VERSION)-1
 
 libopencore-amr-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://downloads.sourceforge.net/project/opencore-amr/opencore-amr/opencore-amr-$(LIBOPENCORE-AMR_VERSION).tar.gz)
@@ -21,6 +21,21 @@ libopencore-amr: libopencore-amr-setup
 	+$(MAKE) -C $(BUILD_WORK)/libopencore-amr
 	+$(MAKE) -C $(BUILD_WORK)/libopencore-amr install \
 		DESTDIR=$(BUILD_STAGE)/libopencore-amr
+ifneq ($(filter -flto%,$(CFLAGS) $(CXXFLAGS)),)
+	# Rebuild only the two static library targets with their configured flags.
+	+$(MAKE) -C $(BUILD_WORK)/libopencore-amr/amrnb clean
+	+$(MAKE) -C $(BUILD_WORK)/libopencore-amr/amrnb libopencore-amrnb.la \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/libopencore-amr/amrnb/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -fno-lto" \
+		CXXFLAGS="$$(sed -n 's/^CXXFLAGS = //p' $(BUILD_WORK)/libopencore-amr/amrnb/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/libopencore-amr/amrnb/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -static"
+	cp -a $(BUILD_WORK)/libopencore-amr/amrnb/.libs/libopencore-amrnb.a $(BUILD_STAGE)/libopencore-amr/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+	+$(MAKE) -C $(BUILD_WORK)/libopencore-amr/amrwb clean
+	+$(MAKE) -C $(BUILD_WORK)/libopencore-amr/amrwb libopencore-amrwb.la \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/libopencore-amr/amrwb/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -fno-lto" \
+		CXXFLAGS="$$(sed -n 's/^CXXFLAGS = //p' $(BUILD_WORK)/libopencore-amr/amrwb/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/libopencore-amr/amrwb/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -static"
+	cp -a $(BUILD_WORK)/libopencore-amr/amrwb/.libs/libopencore-amrwb.a $(BUILD_STAGE)/libopencore-amr/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	$(call AFTER_BUILD,copy)
 endif
 
