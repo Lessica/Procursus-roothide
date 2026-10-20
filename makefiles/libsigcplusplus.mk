@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS             += libsigcplusplus
 LIBSIGCPLUSPLUS_VERSION := 2.10.3
-DEB_LIBSIGCPLUSPLUS_V   ?= $(LIBSIGCPLUSPLUS_VERSION)
+DEB_LIBSIGCPLUSPLUS_V   ?= $(LIBSIGCPLUSPLUS_VERSION)-1
 
 libsigcplusplus-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://download.gnome.org/sources/libsigc++/2.10/libsigc++-$(LIBSIGCPLUSPLUS_VERSION).tar.xz)
@@ -23,6 +23,14 @@ libsigcplusplus: libsigcplusplus-setup
 	+$(MAKE) -C $(BUILD_WORK)/libsigcplusplus
 	+$(MAKE) -C $(BUILD_WORK)/libsigcplusplus install \
 		DESTDIR=$(BUILD_STAGE)/libsigcplusplus
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Preserve installed LTO dylib; rebuild only the public C++ archive.
+	+$(MAKE) -C $(BUILD_WORK)/libsigcplusplus/sigc++ clean
+	+$(MAKE) -C $(BUILD_WORK)/libsigcplusplus/sigc++ libsigc-2.0.la \
+		CXXFLAGS="$$(sed -n 's/^CXXFLAGS = //p' $(BUILD_WORK)/libsigcplusplus/sigc++/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/libsigcplusplus/sigc++/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -static"
+	cp -a $(BUILD_WORK)/libsigcplusplus/sigc++/.libs/libsigc-2.0.a $(BUILD_STAGE)/libsigcplusplus/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	$(call AFTER_BUILD,copy)
 endif
 
