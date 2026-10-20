@@ -63,20 +63,6 @@ the main Makefile. Relaxin's current Bootstrap uses 71 packages: its original
 remains opt-in with `SSH_STRAP=1`. Firmware, the selected package manager and
 the matching libkrw plugin are supplied by Relaxin's installation sequence.
 
-To reuse accepted Debs instead of compiling them for a local Bootstrap:
-
-```sh
-make bootstrap BOOTSTRAP_CANDIDATES=/absolute/path/to/candidates.json \
-  BOOTSTRAP_BASELINE=/absolute/path/to/previous-bootstrap.tar.zst
-```
-
-The explicit manifest contains `artifacts` with `path`, `size`, and `sha256`;
-relative paths resolve from the checkout. The optional baseline checks package
-version floors. This input replaces only `strapprojects`' build step; the member
-list, `prep_bootstrap.sh`, RootHide relocation and tar creation are shared with
-the source-build path. Neither a candidate manifest nor an old Bootstrap is
-required by a clean source build.
-
 RootHide defaults to `https://procursus.owngoal.dev/`, suite `1900`, component
 `main`. `MEMO_REPO_URI` overrides the URL. Set `MEMO_PGP_SIGN_KEY` to an existing
 GPG key to sign the archive, and optionally `BOOTSTRAP_APT_KEYRING` to an exported

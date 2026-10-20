@@ -35,7 +35,7 @@ This branch updates the full RootHide package collection, including development 
 
 The Relaxin integration is optional. Bender requires a compatible libhooker environment. Build and runtime validation does not constitute a published repository or Bootstrap release.
 
-The existing `bootstrap` target produces the Relaxin Bootstrap directly. It can optionally reuse accepted packages through `BOOTSTRAP_CANDIDATES`; normal source builds do not require that input.
+The existing `bootstrap` target builds the required packages from source and produces the Relaxin Bootstrap directly.
 
 ## Credits
 Build system created by [Diatrus](https://twitter.com/Diatrus) and [Kirb](https://twitter.com/hbkirb). Built better by all our wonderful contributors. Made worth it by people like you!

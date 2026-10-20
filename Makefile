@@ -1,34 +1,3 @@
-# Candidate input reuses the Bootstrap assembler below, without loading the
-# compiler/SDK setup or entering any package build target.
-ifneq ($(strip $(BOOTSTRAP_CANDIDATES)),)
-ifneq ($(filter-out bootstrap strapprojects,$(MAKECMDGOALS)),)
-$(error BOOTSTRAP_CANDIDATES is only supported for bootstrap/strapprojects)
-endif
-SHELL := /usr/bin/env bash
-ifneq ($(shell umask),0022)
-$(error Please run `umask 022` before running this)
-endif
-MEMO_TARGET ?= iphoneos-arm64-roothide
-MEMO_CFVER ?= 1900
-ifneq ($(MEMO_TARGET)/$(MEMO_CFVER),iphoneos-arm64-roothide/1900)
-$(error Candidate Bootstrap currently supports iphoneos-arm64-roothide/1900)
-endif
-MEMO_ROOTLESS := 1
-MEMO_PREFIX :=
-MEMO_SUB_PREFIX := /usr
-MEMO_ALT_PREFIX := /local
-MEMO_ROOTFS := /rootfs
-MEMO_REPO_URI ?= https://procursus.owngoal.dev
-MEMO_PGP_SIGN_KEY ?=
-BOOTSTRAP_NAME ?= bootstrap_1900.tar.zst
-REPO_BASE := $(CURDIR)
-BUILD_ROOT ?= $(CURDIR)
-BUILD_INFO ?= $(REPO_BASE)/build_info
-BUILD_MISC ?= $(REPO_BASE)/build_misc
-BUILD_STRAP := $(BUILD_ROOT)/build_strap/$(MEMO_TARGET)/$(MEMO_CFVER)
-BUILD_STAGE := $(BUILD_ROOT)/build_stage/$(MEMO_TARGET)/$(MEMO_CFVER)
-BUILD_DIST := $(BUILD_ROOT)/build_dist/$(MEMO_TARGET)/$(MEMO_CFVER)/work
-else
 ifeq ($(firstword $(subst ., ,$(MAKE_VERSION))),3)
 $(error Install latest make from Procursus - sudo apt install make)
 endif
@@ -1325,7 +1294,6 @@ ramdisk:
 	rm -rf $(BUILD_DIST)/strap
 
 package:: $(SUBPROJECTS:%=%-package)
-endif # source build setup
 
 ifneq (,$(findstring darwin,$(MEMO_TARGET)))
 BOOTSTRAP_PKGS := apt/apt_*.deb brotli/libbrotli1_*.deb cacerts/ca-certificates_*.deb coreutils/coreutils_*.deb darwintools/darwintools_*.deb dpkg/dpkg_*.deb gnupg/gpgv_*.deb apt/libapt-pkg6.0_*.deb libassuan/libassuan0_*.deb libffi/libffi8_*.deb libgcrypt/libgcrypt20_*.deb libgmp10/libgmp10_*.deb gnutls/libgnutls30_*.deb libgpg-error/libgpg-error0_*.deb nettle/libhogweed6_*.deb libidn2/libidn2-0_*.deb gettext/libintl8_*.deb lz4/liblz4-1_*.deb xz/liblzma5_*.deb libmd/libmd0_*.deb nettle/libnettle8_*.deb npth/libnpth0_*.deb p11-kit/libp11-kit0_*.deb openssl/libssl3_*.deb libtasn1/libtasn1-6_*.deb libunistring/libunistring5_*.deb xxhash/libxxhash0_*.deb zlib-ng/libz-ng2_*.deb zstd/libzstd1_*.deb keyring/procursus-keyring_*.deb tar/tar_*.deb
@@ -1339,21 +1307,12 @@ BOOTSTRAP_PKGS := $(filter-out openssh/%,$(BOOTSTRAP_PKGS))
 endif
 endif
 
-ifeq ($(strip $(BOOTSTRAP_CANDIDATES)),)
 strapprojects:: export BUILD_DIST=$(BUILD_STRAP)/work/
 strapprojects:: $(STRAPPROJECTS:%=%-package)
-else
-strapprojects::
-	python3 $(BUILD_MISC)/bootstrap_candidates.py --candidates "$(BOOTSTRAP_CANDIDATES)" \
-		--destination "$(BUILD_STRAP)" --packages "$(BOOTSTRAP_PKGS)" \
-		--baseline "$(BOOTSTRAP_BASELINE)" --manifest "$(BUILD_STRAP)/candidates.json"
-endif
 bootstrap:: .SHELLFLAGS=-e -o pipefail -O extglob -c
 bootstrap:: strapprojects
-ifeq ($(strip $(BOOTSTRAP_CANDIDATES)),)
 	mkdir -p $(BUILD_DIST)
 	cp -a $(BUILD_STRAP)/* $(BUILD_DIST)
-endif
 	mkdir -p $(BUILD_STAGE)
 	rm -rf $(BUILD_STRAP)/strap
 	rm -f $(BUILD_STAGE)/.fakeroot_bootstrap
@@ -1361,7 +1320,6 @@ endif
 	mkdir -p $(BUILD_STRAP)/strap/$(MEMO_PREFIX)/Library/dpkg/info
 	touch $(BUILD_STRAP)/strap/$(MEMO_PREFIX)/Library/dpkg/{status,available}
 	set -e; PKGS="$(BOOTSTRAP_PKGS)"; \
-	if [ -n "$(BOOTSTRAP_CANDIDATES)" ]; then PKGS=$$(cat "$(BUILD_STRAP)/selected-packages.list"); fi; \
 	export FAKEROOT='fakeroot -i $(BUILD_STAGE)/.fakeroot_bootstrap -s $(BUILD_STAGE)/.fakeroot_bootstrap --'; \
 	cd $(BUILD_STRAP); for DEB in $$PKGS; do \
 		if [ ! -f $$DEB ]; then echo "Missing Bootstrap member: $$DEB" >&2; exit 1; fi; \
@@ -1526,7 +1484,6 @@ endif
 	echo "$(BUILD_STRAP)/$${BOOTSTRAP}"
 endif # ($(MEMO_ROOTLESS),)
 
-ifeq ($(strip $(BOOTSTRAP_CANDIDATES)),)
 %-package: FAKEROOT=fakeroot -i $(BUILD_STAGE)/.fakeroot_$$(echo $@ | sed 's/\(.*\)-package/\1/') -s $(BUILD_STAGE)/.fakeroot_$$(echo $@ | sed 's/\(.*\)-package/\1/') --
 %-package: .SHELLFLAGS=-O extglob -c
 %-stage: %
@@ -1832,4 +1789,3 @@ print-%:
 	BUILD_BASE="$(BUILD_BASE)" BUILD_DIST="$(BUILD_DIST)" BUILD_WORK="$(BUILD_WORK)" DEB_ARCH="$(DEB_ARCH)" MACOSX_SUITE_NAME="$(MACOSX_SUITE_NAME)" MAKE="$(MAKE)" MEMO_CFVER="$(MEMO_CFVER)" MEMO_TARGET="$(MEMO_TARGET)" $(BUILD_TOOLS)/setup_base.sh '$*'
 
 .PHONY: clean setup
-endif # source build targets
