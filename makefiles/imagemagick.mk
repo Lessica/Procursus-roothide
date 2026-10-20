@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS         += imagemagick
 IMAGEMAGICK_VERSION := 7.0.10-60
-DEB_IMAGEMAGICK_V   ?= $(shell echo $(IMAGEMAGICK_VERSION) | sed s/-/./)-1
+DEB_IMAGEMAGICK_V   ?= $(shell echo $(IMAGEMAGICK_VERSION) | sed s/-/./)-2
 
 ###
 #
@@ -52,6 +52,17 @@ imagemagick: imagemagick-setup openexr fontconfig freetype glib2.0 ghostscript l
 	+$(MAKE) -C $(BUILD_WORK)/imagemagick
 	+$(MAKE) -C $(BUILD_WORK)/imagemagick install \
 		DESTDIR=$(BUILD_STAGE)/imagemagick
+ifneq ($(filter -flto%,$(CFLAGS) $(CXXFLAGS)),)
+	# Preserve installed LTO tools/coders; replace the three development archives.
+	find $(BUILD_WORK)/imagemagick/{MagickCore,MagickWand,Magick++/lib} -name '*.lo' -type f -delete
+	rm -f $(BUILD_WORK)/imagemagick/{MagickCore/libMagickCore,MagickWand/libMagickWand,Magick++/lib/libMagick++}-7.Q16HDRI.la
+	+$(MAKE) -C $(BUILD_WORK)/imagemagick \
+		MagickCore/libMagickCore-7.Q16HDRI.la MagickWand/libMagickWand-7.Q16HDRI.la Magick++/lib/libMagick++-7.Q16HDRI.la \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/imagemagick/Makefile) -fno-lto" \
+		CXXFLAGS="$$(sed -n 's/^CXXFLAGS = //p' $(BUILD_WORK)/imagemagick/Makefile) -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/imagemagick/Makefile) -fno-lto -static"
+	cp -a $(BUILD_WORK)/imagemagick/{MagickCore/.libs/libMagickCore,MagickWand/.libs/libMagickWand,Magick++/lib/.libs/libMagick++}-7.Q16HDRI.a $(BUILD_STAGE)/imagemagick/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	$(call AFTER_BUILD,copy)
 endif
 

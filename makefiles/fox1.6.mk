@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS    += fox1.6
 FOX1.6_VERSION := 1.6.56
-DEB_FOX1.6_V   ?= $(FOX1.6_VERSION)-1
+DEB_FOX1.6_V   ?= $(FOX1.6_VERSION)-2
 
 fox1.6-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),http://fox-toolkit.org/ftp/fox-1.6.56.tar.gz)
@@ -36,6 +36,18 @@ fox1.6: fox1.6-setup libxft mesa libglu libx11 libxcursor libxext libxrender lib
 		CXXFLAGS+=\ -I$(BUILD_BASE)/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include/freetype2
 	+$(MAKE) -C $(BUILD_WORK)/fox1.6 install \
  		DESTDIR=$(BUILD_STAGE)/fox1.6
+ifneq ($(filter -flto%,$(CXXFLAGS)),)
+	# Preserve installed LTO tools/dylibs; rebuild the two public archives.
+	find $(BUILD_WORK)/fox1.6/src $(BUILD_WORK)/fox1.6/chart -name '*.lo' -type f -delete
+	rm -f $(BUILD_WORK)/fox1.6/src/libFOX-1.6.la $(BUILD_WORK)/fox1.6/chart/libCHART-1.6.la
+	+$(MAKE) -C $(BUILD_WORK)/fox1.6/src libFOX-1.6.la \
+		CXXFLAGS="$(CXXFLAGS) -I$(BUILD_BASE)/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include/freetype2 -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/fox1.6/src/Makefile) -fno-lto -static"
+	+$(MAKE) -C $(BUILD_WORK)/fox1.6/chart libCHART-1.6.la \
+		CXXFLAGS="$(CXXFLAGS) -I$(BUILD_BASE)/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include/freetype2 -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/fox1.6/chart/Makefile) -fno-lto -static"
+	cp -a $(BUILD_WORK)/fox1.6/src/.libs/libFOX-1.6.a $(BUILD_WORK)/fox1.6/chart/.libs/libCHART-1.6.a $(BUILD_STAGE)/fox1.6/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	$(call AFTER_BUILD,copy)
 endif
 

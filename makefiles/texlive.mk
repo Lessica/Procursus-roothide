@@ -8,7 +8,7 @@ TEXLIVE_COMMIT := cf0f89c44f5d409c6d1bc0592a808af278611428
 TEXLIVE_INSTALLER_COMMIT := d141dbf36a93c17b7984f142bfebdc670eb45eee
 TEXLIVE_REPOSITORY := https://ftp.math.utah.edu/pub/tex/historic/systems/texlive/2024/tlnet-final
 TEXLIVE_BUILD_PKG_CONFIG_PATH ?=
-DEB_TEXLIVE_V   ?= $(TEXLIVE_VERSION)
+DEB_TEXLIVE_V   ?= $(TEXLIVE_VERSION)-1
 
 TLROOT=$(BUILD_STAGE)/texlive$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share/texlive
 ORIGINAL_BIN_DIR=$(BUILD_STAGE)/texlive$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin
@@ -160,6 +160,22 @@ texlive: texlive-setup cairo fontconfig freetype graphite2 harfbuzz icu4c libgd 
 		if [ -f "$$profile" ]; then sed -i 's|$(TLROOT)|$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share/texlive|g' "$$profile"; fi; \
 	done
 
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Preserve installed LTO engines and data; rebuild the five public archives only.
+	+cd $(BUILD_WORK)/texlive/target && for pair in texk/kpathsea:libkpathsea texk/ptexenc:libptexenc libs/lua53:libtexlua53 libs/luajit:libtexluajit texk/web2c:libsynctex; do \
+		dir=$${pair%:*}; lib=$${pair#*:}; \
+		if test "$$lib" = libsynctex; then \
+			find "$$dir/synctexdir" -name 'libsynctex_la-*.lo' -delete; \
+		else \
+			find "$$dir" -name '*.lo' ! -name lj_vm_asm.lo -delete; \
+		fi; \
+		$(MAKE) -C "$$dir" "$$lib.la" \
+			CFLAGS="$$(sed -n 's/^CFLAGS = //p' "$$dir/Makefile" | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -fno-lto" \
+			CXXFLAGS="$$(sed -n 's/^CXXFLAGS = //p' "$$dir/Makefile" | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -fno-lto" \
+			LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' "$$dir/Makefile" | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -static" || exit $$?; \
+		cp -a "$$dir/.libs/$$lib.a" $(BUILD_STAGE)/texlive/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/; \
+	done
+endif
 	$(call AFTER_BUILD)
 endif
 

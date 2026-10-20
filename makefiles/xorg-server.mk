@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS         += xorg-server
 XORG-SERVER_VERSION := 1.20.11
-DEB_XORG-SERVER_V   ?= $(XORG-SERVER_VERSION)
+DEB_XORG-SERVER_V   ?= $(XORG-SERVER_VERSION)-1
 
 xorg-server-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://www.x.org/archive//individual/xserver/xorg-server-$(XORG-SERVER_VERSION).tar.gz{$(comma).sig})
@@ -38,6 +38,18 @@ xorg-server: xorg-server-setup libmd libx11 libxau libxmu xorgproto font-util li
 	+$(MAKE) -C $(BUILD_WORK)/xorg-server
 	+$(MAKE) -C $(BUILD_WORK)/xorg-server install \
 		DESTDIR=$(BUILD_STAGE)/xorg-server
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Keep installed LTO servers/modules; rebuild only public module archives.
+	find $(BUILD_WORK)/xorg-server/exa $(BUILD_WORK)/xorg-server/fb $(BUILD_WORK)/xorg-server/hw/xfree86/fbdevhw $(BUILD_WORK)/xorg-server/miext/shadow $(BUILD_WORK)/xorg-server/hw/xfree86/shadowfb $(BUILD_WORK)/xorg-server/hw/xfree86/exa $(BUILD_WORK)/xorg-server/hw/xfree86/dixmods -name '*.lo' -type f -delete
+	+set -e; for spec in exa:libexa fb:libfb fb:libwfb miext/shadow:libshadow hw/xfree86/exa:libexa hw/xfree86/dixmods:libfb hw/xfree86/dixmods:libwfb hw/xfree86/dixmods:libshadow hw/xfree86/fbdevhw:libfbdevhw hw/xfree86/shadowfb:libshadowfb; do \
+		dir=$${spec%:*}; library=$${spec#*:}; \
+		rm -f $(BUILD_WORK)/xorg-server/$$dir/$$library.la; \
+		$(MAKE) -C $(BUILD_WORK)/xorg-server/$$dir $$library.la \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/xorg-server/$$dir/Makefile) -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/xorg-server/$$dir/Makefile) -fno-lto -static"; \
+		case $$dir in hw/*) cp -a $(BUILD_WORK)/xorg-server/$$dir/.libs/$$library.a $(BUILD_STAGE)/xorg-server/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/xorg/modules/ ;; esac; \
+	done
+endif
 	$(call AFTER_BUILD,copy)
 endif
 
