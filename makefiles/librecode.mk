@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS       += librecode
 LIBRECODE_VERSION := 3.7.8
-DEB_LIBRECODE_V   ?= $(LIBRECODE_VERSION)
+DEB_LIBRECODE_V   ?= $(LIBRECODE_VERSION)-1
 
 librecode-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://github.com/rrthomas/recode/releases/download/v$(LIBRECODE_VERSION)/recode-$(LIBRECODE_VERSION).tar.gz)
@@ -21,6 +21,18 @@ librecode: librecode-setup gettext
 	+$(MAKE) -C $(BUILD_WORK)/librecode
 	+$(MAKE) -C $(BUILD_WORK)/librecode install \
 		DESTDIR=$(BUILD_STAGE)/librecode
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Retain installed LTO outputs; include both folded convenience libraries.
+	+$(MAKE) -C $(BUILD_WORK)/librecode/lib clean
+	+$(MAKE) -C $(BUILD_WORK)/librecode/lib all \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/librecode/lib/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/librecode/lib/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -static"
+	+$(MAKE) -C $(BUILD_WORK)/librecode/src clean
+	+$(MAKE) -C $(BUILD_WORK)/librecode/src librecode.la \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/librecode/src/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/librecode/src/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -static"
+	cp -a $(BUILD_WORK)/librecode/src/.libs/librecode.a $(BUILD_STAGE)/librecode/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	$(call AFTER_BUILD,copy)
 endif
 

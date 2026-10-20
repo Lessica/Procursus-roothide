@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS      += torsocks
 TORSOCKS_VERSION := 2.3.0
-DEB_TORSOCKS_V   ?= $(TORSOCKS_VERSION)-1
+DEB_TORSOCKS_V   ?= $(TORSOCKS_VERSION)-2
 
 torsocks-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE), \
@@ -30,6 +30,18 @@ torsocks: torsocks-setup
 		CPPFLAGS="$(CPPFLAGS) -DLIBIOSEXEC_INTERNAL"
 	+$(MAKE) -C $(BUILD_WORK)/torsocks install \
 		DESTDIR=$(BUILD_STAGE)/torsocks
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Rebuild the folded common objects too; installed LTO runtime stays intact.
+	find $(BUILD_WORK)/torsocks/src/{common,lib} -maxdepth 1 \( -name '*.lo' -o -name '*.la' \) -type f -delete
+	+set -e; for pair in common:libcommon lib:libtorsocks; do \
+		sub=$${pair%:*}; target=$${pair#*:}; \
+		$(MAKE) -C $(BUILD_WORK)/torsocks/src/$$sub $$target.la \
+			CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/torsocks/src/$$sub/Makefile) -DLIBIOSEXEC_INTERNAL -fno-lto" \
+			CPPFLAGS="$$(sed -n 's/^CPPFLAGS = //p' $(BUILD_WORK)/torsocks/src/$$sub/Makefile) -DLIBIOSEXEC_INTERNAL" \
+			LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/torsocks/src/$$sub/Makefile) -fno-lto -static"; \
+	done
+	cp -a $(BUILD_WORK)/torsocks/src/lib/.libs/libtorsocks.a $(BUILD_STAGE)/torsocks/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/torsocks/
+endif
 	mv $(BUILD_STAGE)/torsocks/$(MEMO_PREFIX)/etc/tor/torsocks.conf \
 		$(BUILD_STAGE)/torsocks/$(MEMO_PREFIX)/etc/tor/torsocks.conf.sample
 	touch $(BUILD_WORK)/torsocks/.build_complete
