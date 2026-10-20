@@ -1,0 +1,10 @@
+--- a/lib/Makefile
++++ b/lib/Makefile
+@@ -92,6 +92,7 @@
+ 
+ .PHONY: libzstd.a  # must be run every time
+ libzstd.a: CPPFLAGS += $(CPPFLAGS_STATLIB)
++libzstd.a: override CFLAGS += -fno-lto
+ 
+ SET_CACHE_DIRECTORY = \
+    +$(MAKE) --no-print-directory $@ \

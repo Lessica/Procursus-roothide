@@ -4,13 +4,14 @@ endif
 
 STRAPPROJECTS += zstd
 ZSTD_VERSION  := 1.5.5
-DEB_ZSTD_V    ?= $(ZSTD_VERSION)
+DEB_ZSTD_V    ?= $(ZSTD_VERSION)-1
 
 zstd-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://github.com/facebook/zstd/releases/download/v$(ZSTD_VERSION)/zstd-$(ZSTD_VERSION).tar.zst{$(comma).sig$(comma).sha256})
 	$(call CHECKSUM_VERIFY,sha256,zstd-$(ZSTD_VERSION).tar.zst)
 	$(call PGP_VERIFY,zstd-$(ZSTD_VERSION).tar.zst)
 	$(call EXTRACT_TAR,zstd-$(ZSTD_VERSION).tar.zst,zstd-$(ZSTD_VERSION),zstd)
+	$(call DO_PATCH,zstd,zstd,-p1)
 
 ifneq ($(wildcard $(BUILD_WORK)/zstd/.build_complete),)
 zstd:

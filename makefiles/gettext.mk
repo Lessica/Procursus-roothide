@@ -4,7 +4,7 @@ endif
 
 STRAPPROJECTS   += gettext
 GETTEXT_VERSION := 0.22
-DEB_GETTEXT_V   ?= $(GETTEXT_VERSION)
+DEB_GETTEXT_V   ?= $(GETTEXT_VERSION)-1
 
 gettext-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://ftpmirror.gnu.org/gettext/gettext-$(GETTEXT_VERSION).tar.xz{$(comma).sig})
@@ -27,6 +27,23 @@ gettext: gettext-setup ncurses libunistring
 		LTLIBTERMINFO=-lncursesw
 	+$(MAKE) -C $(BUILD_WORK)/gettext install \
 		DESTDIR=$(BUILD_STAGE)/gettext
+ifneq ($(filter -flto%,$(CFLAGS) $(CXXFLAGS)),)
+	# Keep the installed LTO tools/dylibs. Rebuild the three public archives
+	# and their embedded convenience libraries using the same configuration.
+	+set -e; for sub in gettext-runtime/intl libtextstyle/lib gettext-tools/libgettextpo; do \
+		$(MAKE) -C $(BUILD_WORK)/gettext/$$sub clean; \
+	done
+	+set -e; for sub in gettext-runtime/intl/gnulib-lib gettext-runtime/intl libtextstyle/lib gettext-tools/libgettextpo; do \
+		$(MAKE) -C $(BUILD_WORK)/gettext/$$sub all \
+			CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/gettext/$$sub/Makefile) -fno-lto" \
+			CXXFLAGS="$$(sed -n 's/^CXXFLAGS = //p' $(BUILD_WORK)/gettext/$$sub/Makefile) -fno-lto" \
+			LDFLAGS="$(filter-out -flto%,$(LDFLAGS)) -static"; \
+	done
+	cp -a $(BUILD_WORK)/gettext/gettext-runtime/intl/.libs/libintl.a \
+		$(BUILD_WORK)/gettext/libtextstyle/lib/.libs/libtextstyle.a \
+		$(BUILD_WORK)/gettext/gettext-tools/libgettextpo/.libs/libgettextpo.a \
+		$(BUILD_STAGE)/gettext/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	rm -rf $(BUILD_STAGE)/gettext/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share/gettext-*
 	$(call AFTER_BUILD,copy)
 endif
