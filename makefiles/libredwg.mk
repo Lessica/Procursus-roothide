@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS += libredwg
 LIBREDWG_VERSION := 0.12
-DEB_LIBREDWG_V   ?= $(LIBREDWG_VERSION)
+DEB_LIBREDWG_V   ?= $(LIBREDWG_VERSION)-1
 
 libredwg-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://ftp.gnu.org/gnu/libredwg/libredwg-$(LIBREDWG_VERSION).tar.xz)
@@ -20,6 +20,15 @@ libredwg: libredwg-setup
 	+$(MAKE) -C $(BUILD_WORK)/libredwg
 	+$(MAKE) -C $(BUILD_WORK)/libredwg install \
 		DESTDIR=$(BUILD_STAGE)/libredwg
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Keep installed LTO library/tools; rebuild only the public archive.
+	find $(BUILD_WORK)/libredwg/src -name '*.lo' -type f -delete
+	rm -f $(BUILD_WORK)/libredwg/src/libredwg.la
+	+$(MAKE) -C $(BUILD_WORK)/libredwg/src libredwg.la \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/libredwg/src/Makefile) -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/libredwg/src/Makefile) -fno-lto -static"
+	cp -a $(BUILD_WORK)/libredwg/src/.libs/libredwg.a $(BUILD_STAGE)/libredwg/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	$(call AFTER_BUILD,copy)
 endif
 
