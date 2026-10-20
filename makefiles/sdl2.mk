@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS   += sdl2
 SDL2_VERSION  := 2.0.14
-DEB_SDL2_V    ?= $(SDL2_VERSION)
+DEB_SDL2_V    ?= $(SDL2_VERSION)-1
 
 ### Do X11 stuff with this later
 
@@ -43,6 +43,15 @@ endif
 	sed -i 's/-Werror=declaration-after-statement/-Wno-error=declaration-after-statement/g' $(BUILD_WORK)/sdl2/Makefile
 	+$(MAKE) -C $(BUILD_WORK)/sdl2 install \
 		DESTDIR=$(BUILD_STAGE)/sdl2
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Keep installed LTO dylib and all iOS backends; cover all three archives.
+	+$(MAKE) -C $(BUILD_WORK)/sdl2 clean
+	+$(MAKE) -C $(BUILD_WORK)/sdl2 build/libSDL2.la build/libSDL2main.la build/libSDL2_test.la \
+		CFLAGS="$$(sed -n 's/^CFLAGS[[:space:]]*=[[:space:]]*//p' $(BUILD_WORK)/sdl2/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -fno-lto" \
+		EXTRA_CFLAGS="$$(sed -n 's/^EXTRA_CFLAGS[[:space:]]*=[[:space:]]*//p' $(BUILD_WORK)/sdl2/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS[[:space:]]*=[[:space:]]*//p' $(BUILD_WORK)/sdl2/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -static"
+	cp -a $(BUILD_WORK)/sdl2/build/.libs/libSDL2{,main,_test}.a $(BUILD_STAGE)/sdl2/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	$(call AFTER_BUILD,copy)
 endif
 
