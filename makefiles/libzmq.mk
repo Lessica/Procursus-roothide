@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS    += libzmq
 LIBZMQ_VERSION := 4.3.4
-DEB_LIBZMQ_V   ?= $(LIBZMQ_VERSION)
+DEB_LIBZMQ_V   ?= $(LIBZMQ_VERSION)-1
 
 libzmq-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://github.com/zeromq/libzmq/releases/download/v$(LIBZMQ_VERSION)/zeromq-$(LIBZMQ_VERSION).tar.gz)
@@ -22,6 +22,20 @@ libzmq: libzmq-setup libsodium
 	+$(MAKE) -C $(BUILD_WORK)/libzmq
 	+$(MAKE) -C $(BUILD_WORK)/libzmq install \
 		DESTDIR=$(BUILD_STAGE)/libzmq
+ifneq ($(filter iphoneos%,$(MEMO_TARGET)),)
+	# The iOS toolchain uses libc++; libstdc++ is absent from modern iOS SDKs.
+	sed -i '/^Libs.private:/s/-lstdc++/-lc++/g' $(BUILD_STAGE)/libzmq/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/pkgconfig/libzmq.pc
+endif
+ifneq ($(filter -flto%,$(CXXFLAGS)),)
+	# Keep installed LTO runtime/tools; retain all configured C/C++ flags.
+	find $(BUILD_WORK)/libzmq/{src,external} -name '*.lo' -type f -delete
+	rm -f $(BUILD_WORK)/libzmq/src/libzmq.la
+	+$(MAKE) -C $(BUILD_WORK)/libzmq src/libzmq.la \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/libzmq/Makefile) -fno-lto" \
+		CXXFLAGS="$$(sed -n 's/^CXXFLAGS = //p' $(BUILD_WORK)/libzmq/Makefile) -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/libzmq/Makefile) -fno-lto -static"
+	cp -a $(BUILD_WORK)/libzmq/src/.libs/libzmq.a $(BUILD_STAGE)/libzmq/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	$(call AFTER_BUILD,copy)
 endif
 

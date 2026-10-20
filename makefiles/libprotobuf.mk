@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS         += libprotobuf
 LIBPROTOBUF_VERSION := 3.21.2
-DEB_LIBPROTOBUF_V   ?= $(LIBPROTOBUF_VERSION)
+DEB_LIBPROTOBUF_V   ?= $(LIBPROTOBUF_VERSION)-1
 
 libprotobuf-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://github.com/protocolbuffers/protobuf/releases/download/v$(shell echo $(LIBPROTOBUF_VERSION) | cut -d. -f2-)/protobuf-cpp-$(LIBPROTOBUF_VERSION).tar.gz)
@@ -21,6 +21,17 @@ libprotobuf: libprotobuf-setup
 	+$(MAKE) -C $(BUILD_WORK)/libprotobuf
 	+$(MAKE) -C $(BUILD_WORK)/libprotobuf install \
 		DESTDIR="$(BUILD_STAGE)/libprotobuf"
+ifneq ($(filter -flto%,$(CXXFLAGS)),)
+	# Only these two archives are public outputs; preserve all installed LTO
+	# shared libraries and protoc, including its normal full feature set.
+	find $(BUILD_WORK)/libprotobuf/src/google -name '*.lo' -type f -delete
+	rm -f $(BUILD_WORK)/libprotobuf/src/{libprotobuf,libprotoc}.la
+	+$(MAKE) -C $(BUILD_WORK)/libprotobuf/src libprotobuf.la libprotoc.la \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/libprotobuf/src/Makefile) -fno-lto" \
+		CXXFLAGS="$$(sed -n 's/^CXXFLAGS = //p' $(BUILD_WORK)/libprotobuf/src/Makefile) -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/libprotobuf/src/Makefile) -fno-lto -static"
+	cp -a $(BUILD_WORK)/libprotobuf/src/.libs/{libprotobuf,libprotoc}.a $(BUILD_STAGE)/libprotobuf/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	$(call AFTER_BUILD,copy)
 endif
 

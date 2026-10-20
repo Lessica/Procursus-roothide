@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS   += aom
 AOM_VERSION   := 3.3.0
-DEB_AOM_V     ?= $(AOM_VERSION)
+DEB_AOM_V     ?= $(AOM_VERSION)-1
 
 aom-setup: setup
 	$(call GIT_CLONE,https://aomedia.googlesource.com/aom.git,v$(AOM_VERSION),aom)
@@ -26,6 +26,22 @@ aom: aom-setup
 	+$(MAKE) -C $(BUILD_WORK)/aom/build
 	+$(MAKE) -C $(BUILD_WORK)/aom/build install \
 		DESTDIR="$(BUILD_STAGE)/aom"
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Keep installed LTO programs/dylib and original assembly objects.
+	# The static target shares object libraries; retain their CPU options/macros.
+	for flags in $$(find $(BUILD_WORK)/aom/build -type f -name flags.make \
+		! -path '*/CMakeFiles/aom.dir/*' ! -path '*/CMakeFiles/aom_version.dir/*'); do \
+		cp -p "$$flags" "$$flags.lto"; \
+		sed -E '/^(C|CXX)_FLAGS[^=]* =/ { s/(^|[[:space:]])-flto(=[^[:space:]]*)?//g; s/$$/ -fno-lto/; }' "$$flags.lto" > "$$flags"; \
+		touch -r "$$flags.lto" "$$flags"; \
+		find "$$(dirname "$$flags")" -type f \
+			\( -name '*.c.o' -o -name '*.cc.o' -o -name '*.cpp.o' -o -name '*.cxx.o' \) -delete; \
+	done
+	rm -f $(BUILD_WORK)/aom/build/libaom.a
+	+$(MAKE) -C $(BUILD_WORK)/aom/build aom_static
+	cp -a $(BUILD_WORK)/aom/build/libaom.a $(BUILD_STAGE)/aom/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+	for flags in $$(find $(BUILD_WORK)/aom/build -type f -name flags.make.lto); do mv "$$flags" "$${flags%.lto}"; done
+endif
 	$(call AFTER_BUILD,copy)
 endif
 
