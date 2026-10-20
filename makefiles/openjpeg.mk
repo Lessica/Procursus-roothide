@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS      += openjpeg
 OPENJPEG_VERSION := 2.5.0
-DEB_OPENJPEG_V   ?= $(OPENJPEG_VERSION)
+DEB_OPENJPEG_V   ?= $(OPENJPEG_VERSION)-1
 
 openjpeg-setup: setup
 	$(call GITHUB_ARCHIVE,uclouvain,openjpeg,$(OPENJPEG_VERSION),v$(OPENJPEG_VERSION))
@@ -21,6 +21,18 @@ openjpeg: openjpeg-setup libpng16 libtiff lcms2
 	+$(MAKE) -C $(BUILD_WORK)/openjpeg
 	+$(MAKE) -C $(BUILD_WORK)/openjpeg install \
 		DESTDIR="$(BUILD_STAGE)/openjpeg"
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Keep the normal install; rebuild only the existing static CMake target.
+	cp -p $(BUILD_WORK)/openjpeg/src/lib/openjp2/CMakeFiles/openjp2_static.dir/flags.make{,.lto}
+	sed -E '/^C_FLAGS =/ { s/(^|[[:space:]])-flto(=[^[:space:]]*)?//g; s/$$/ -fno-lto/; }' \
+		$(BUILD_WORK)/openjpeg/src/lib/openjp2/CMakeFiles/openjp2_static.dir/flags.make.lto \
+		> $(BUILD_WORK)/openjpeg/src/lib/openjp2/CMakeFiles/openjp2_static.dir/flags.make
+	find $(BUILD_WORK)/openjpeg/src/lib/openjp2/CMakeFiles/openjp2_static.dir -name '*.c.o' -delete
+	rm -f $(BUILD_WORK)/openjpeg/bin/libopenjp2.a
+	+$(MAKE) -C $(BUILD_WORK)/openjpeg openjp2_static
+	cp -a $(BUILD_WORK)/openjpeg/bin/libopenjp2.a $(BUILD_STAGE)/openjpeg/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+	mv $(BUILD_WORK)/openjpeg/src/lib/openjp2/CMakeFiles/openjp2_static.dir/flags.make{.lto,}
+endif
 	$(call AFTER_BUILD,copy)
 endif
 
