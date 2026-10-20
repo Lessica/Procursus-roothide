@@ -1,0 +1,22 @@
+--- a/Makefile
++++ b/Makefile
+@@ -16,1 +16,7 @@
+ UCFLAGS = $(CPPFLAGS) $(CFLAGS) $(PICFLAG) $(C99FLAG) $(WCFLAGS) -DUTF8PROC_EXPORTS $(UTF8PROC_DEFINES)
++ifneq ($(filter -flto%,$(UCFLAGS)),)
++STATIC_OBJECT = utf8proc-static.o
++else
++STATIC_OBJECT = utf8proc.o
++endif
++
+@@ -57,1 +63,1 @@
+-	rm -f utf8proc.o libutf8proc.a libutf8proc.$(SHLIB_VERS_EXT) libutf8proc.$(SHLIB_EXT)
++	rm -f utf8proc.o utf8proc-static.o libutf8proc.a libutf8proc.$(SHLIB_VERS_EXT) libutf8proc.$(SHLIB_EXT)
+@@ -85,3 +91,6 @@
+-libutf8proc.a: utf8proc.o
++utf8proc-static.o: utf8proc.h utf8proc.c utf8proc_data.c
++	$(CC) $(UCFLAGS) -fno-lto -c -o $@ utf8proc.c
++
++libutf8proc.a: $(STATIC_OBJECT)
+ 	rm -f libutf8proc.a
+-	$(AR) crs libutf8proc.a utf8proc.o
++	$(AR) crs libutf8proc.a $^
