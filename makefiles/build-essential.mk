@@ -17,7 +17,7 @@ endif
 
 build-essential-package: build-essential-stage
 	# Set version info
-	$(eval DEB_BUILD-ESSENTIAL_V := $(shell /usr/libexec/PlistBuddy -c "Print :MinimalDisplayName" $(TARGET_SYSROOT)/SDKSettings.plist))
+	$(eval DEB_BUILD-ESSENTIAL_V := $(shell python3 -c 'import plistlib, sys; print(plistlib.load(open(sys.argv[1], "rb"))["MinimalDisplayName"])' "$(TARGET_SYSROOT)/SDKSettings.plist"))
 
 	# build-essential.mk Package Structure
 	rm -rf $(BUILD_DIST)/build-essential

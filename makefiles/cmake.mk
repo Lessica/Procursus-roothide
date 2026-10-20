@@ -12,7 +12,7 @@ endif
 
 cmake-setup: setup
 	$(call GITHUB_ARCHIVE,Kitware,CMake,$(CMAKE_VERSION),v$(CMAKE_VERSION))
-	$(call EXTRACT_TAR,cmake-$(CMAKE_VERSION).tar.gz,cmake-$(CMAKE_VERSION),cmake)
+	$(call EXTRACT_TAR,CMake-$(CMAKE_VERSION).tar.gz,CMake-$(CMAKE_VERSION),cmake)
 	$(call DO_PATCH,cmake,cmake,-p1)
 
 ifneq ($(wildcard $(BUILD_WORK)/cmake/.build_complete),)
