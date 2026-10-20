@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS    += hidapi
 HIDAPI_VERSION := 0.9.0
-DEB_HIDAPI_V   ?= $(HIDAPI_VERSION)
+DEB_HIDAPI_V   ?= $(HIDAPI_VERSION)-1
 
 hidapi-setup: setup
 	$(call GITHUB_ARCHIVE,libusb,hidapi,$(HIDAPI_VERSION),hidapi-$(HIDAPI_VERSION))
@@ -22,6 +22,14 @@ hidapi: hidapi-setup
 	+$(MAKE) -C $(BUILD_WORK)/hidapi install \
 		CFLAGS="$(CFLAGS) -D__OPEN_SOURCE__ -DMAC_OS_X_VERSION_MIN_REQUIRED=101500" \
 		DESTDIR="$(BUILD_STAGE)/hidapi"
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Preserve the installed LTO dylib; rebuild only its public archive.
+	+$(MAKE) -C $(BUILD_WORK)/hidapi/mac clean
+	+$(MAKE) -C $(BUILD_WORK)/hidapi/mac libhidapi.la \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/hidapi/mac/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -fno-lto -D__OPEN_SOURCE__ -DMAC_OS_X_VERSION_MIN_REQUIRED=101500" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/hidapi/mac/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -static"
+	cp -a $(BUILD_WORK)/hidapi/mac/.libs/libhidapi.a $(BUILD_STAGE)/hidapi/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	$(call AFTER_BUILD,copy)
 endif
 
