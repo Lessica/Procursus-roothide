@@ -933,6 +933,8 @@ AFTER_BUILD = \
 	for file in $$(find $(BUILD_STAGE)/$$pkg -type f -exec sh -c "file -ib '{}' | grep -q 'x-mach-binary; charset=binary'" \; -printf '%D:%i\t%p\n' | sort -u -k1,1 | cut -f2-); do \
 		$(OTOOL) -arch all -hv "$$file" | awk '/^MH_/ { seen=1; if ($$0 !~ /[[:space:]](EXECUTE|DYLIB|BUNDLE)[[:space:]]/) bad=1 } END { exit (!seen || bad) }' || continue; \
 		if [ $${file\#\#*.} != "a" ] && [ $${file\#\#*.} != "dSYM" ]; then \
+			hardlinks=; \
+			if [ -n "$$(find "$$file" -links +1 -print)" ]; then hardlinks=$$(find $(BUILD_STAGE)/$$pkg -type f -samefile "$$file" -print); fi; \
 			chmod +w $$file; echo "some packages may be installed into the BUILD_STAGE with 0555 permission, for example: berkeleydb" > /dev/null; \
 			$(I_N_T) -add_rpath "$(MEMO_LINK_PREFIX)$(MEMO_SUB_PREFIX)$(MEMO_ALT_PREFIX)/lib" $$file || exit 1; \
 			$(I_N_T) -add_rpath "$(MEMO_LINK_PREFIX)$(MEMO_SUB_PREFIX)/lib" $$file || exit 1; \
@@ -948,6 +950,9 @@ AFTER_BUILD = \
 			if [ ! -z "$(findstring roothide,$(MEMO_TARGET))" ];then \
 				if [ -z "$(4)" ]; then symredirect $$file || exit 1; fi; \
 			fi; \
+			for linked_file in $$hardlinks; do \
+				if [ "$$linked_file" != "$$file" ]; then ln -f "$$file" "$$linked_file" || exit 1; fi; \
+			done; \
 		fi; \
 	done; \
 	rm -f $(BUILD_STAGE)/$$pkg/._lib_cache; \
