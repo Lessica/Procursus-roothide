@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS         += libxvidcore
 LIBXVIDCORE_VERSION := 1.3.7
-DEB_LIBXVIDCORE_V   ?= $(LIBXVIDCORE_VERSION)-1
+DEB_LIBXVIDCORE_V   ?= $(LIBXVIDCORE_VERSION)-2
 
 libxvidcore-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://downloads.xvid.com/downloads/xvidcore-$(LIBXVIDCORE_VERSION).tar.bz2)
@@ -24,6 +24,13 @@ endif
 	+$(MAKE) -C $(BUILD_WORK)/libxvidcore/build/generic
 	+$(MAKE) -C $(BUILD_WORK)/libxvidcore/build/generic install \
 		DESTDIR=$(BUILD_STAGE)/libxvidcore
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Preserve the installed LTO dylib and all configured source/assembly flags.
+	+$(MAKE) -C $(BUILD_WORK)/libxvidcore/build/generic clean
+	+$(MAKE) -C $(BUILD_WORK)/libxvidcore/build/generic libxvidcore.a \
+		CFLAGS="$$(sed -n 's/^CFLAGS[[:space:]]*=[[:space:]]*//p' $(BUILD_WORK)/libxvidcore/build/generic/platform.inc | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -fno-lto"
+	cp -a $(BUILD_WORK)/libxvidcore/build/generic/=build/libxvidcore.a $(BUILD_STAGE)/libxvidcore/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	$(call AFTER_BUILD,copy)
 endif
 
