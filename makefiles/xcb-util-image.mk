@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS            += xcb-util-image
 XCB-UTIL-IMAGE_VERSION := 0.4.0
-DEB_XCB-UTIL-IMAGE_V   ?= $(XCB-UTIL-IMAGE_VERSION)
+DEB_XCB-UTIL-IMAGE_V   ?= $(XCB-UTIL-IMAGE_VERSION)-1
 
 xcb-util-image-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://www.x.org/archive/individual/xcb/xcb-util-image-$(XCB-UTIL-IMAGE_VERSION).tar.gz)
@@ -20,6 +20,14 @@ xcb-util-image: xcb-util-image-setup libxcb xcb-util
 	+$(MAKE) -C $(BUILD_WORK)/xcb-util-image
 	+$(MAKE) -C $(BUILD_WORK)/xcb-util-image install \
 		DESTDIR=$(BUILD_STAGE)/xcb-util-image
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Preserve installed LTO outputs and configured static compiler flags.
+	+$(MAKE) -C $(BUILD_WORK)/xcb-util-image/image clean
+	+$(MAKE) -C $(BUILD_WORK)/xcb-util-image/image libxcb-image.la \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/xcb-util-image/image/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/xcb-util-image/image/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -static"
+	cp -a $(BUILD_WORK)/xcb-util-image/image/.libs/libxcb-image.a $(BUILD_STAGE)/xcb-util-image/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	$(call AFTER_BUILD,copy)
 endif
 

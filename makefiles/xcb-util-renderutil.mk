@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS                 += xcb-util-renderutil
 XCB-UTIL-RENDERUTIL_VERSION := 0.3.9
-DEB_XCB-UTIL-RENDERUTIL_V   ?= $(XCB-UTIL-RENDERUTIL_VERSION)
+DEB_XCB-UTIL-RENDERUTIL_V   ?= $(XCB-UTIL-RENDERUTIL_VERSION)-1
 
 xcb-util-renderutil-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://www.x.org/archive/individual/xcb/xcb-util-renderutil-$(XCB-UTIL-RENDERUTIL_VERSION).tar.gz)
@@ -20,6 +20,14 @@ xcb-util-renderutil: xcb-util-renderutil-setup libxcb xcb-util
 	+$(MAKE) -C $(BUILD_WORK)/xcb-util-renderutil
 	+$(MAKE) -C $(BUILD_WORK)/xcb-util-renderutil install \
 		DESTDIR=$(BUILD_STAGE)/xcb-util-renderutil
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Preserve installed LTO outputs and configured static compiler flags.
+	+$(MAKE) -C $(BUILD_WORK)/xcb-util-renderutil/renderutil clean
+	+$(MAKE) -C $(BUILD_WORK)/xcb-util-renderutil/renderutil libxcb-render-util.la \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/xcb-util-renderutil/renderutil/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/xcb-util-renderutil/renderutil/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -static"
+	cp -a $(BUILD_WORK)/xcb-util-renderutil/renderutil/.libs/libxcb-render-util.a $(BUILD_STAGE)/xcb-util-renderutil/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	$(call AFTER_BUILD,copy)
 endif
 

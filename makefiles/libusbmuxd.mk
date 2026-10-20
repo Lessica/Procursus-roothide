@@ -5,7 +5,7 @@ endif
 SUBPROJECTS        += libusbmuxd
 LIBUSBMUXD_COMMIT  := 36ffb7ab6e2a7e33bd1b56398a88895b7b8c615a
 LIBUSBMUXD_VERSION := 2.0.2+git20220504.$(shell echo $(LIBUSBMUXD_COMMIT) | cut -c -7)
-DEB_LIBUSBMUXD_V   ?= $(LIBUSBMUXD_VERSION)
+DEB_LIBUSBMUXD_V   ?= $(LIBUSBMUXD_VERSION)-1
 
 libusbmuxd-setup: setup
 	$(call GITHUB_ARCHIVE,libimobiledevice,libusbmuxd,$(LIBUSBMUXD_COMMIT),$(LIBUSBMUXD_COMMIT))
@@ -22,6 +22,16 @@ libusbmuxd: libusbmuxd-setup libplist libimobiledevice-glue
 	+$(MAKE) -C $(BUILD_WORK)/libusbmuxd
 	+$(MAKE) -C $(BUILD_WORK)/libusbmuxd install \
 		DESTDIR="$(BUILD_STAGE)/libusbmuxd"
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Preserve normal installed LTO runtime and tools; replace only the archive.
+	find $(BUILD_WORK)/libusbmuxd/src -name '*.lo' -type f -delete
+	rm -f $(BUILD_WORK)/libusbmuxd/src/libusbmuxd-2.0.la
+	+$(MAKE) -C $(BUILD_WORK)/libusbmuxd/src libusbmuxd-2.0.la \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/libusbmuxd/src/Makefile) -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/libusbmuxd/src/Makefile) -fno-lto -static"
+	cp -a $(BUILD_WORK)/libusbmuxd/src/.libs/libusbmuxd-2.0.a \
+		$(BUILD_STAGE)/libusbmuxd/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	$(call AFTER_BUILD,copy)
 endif
 
