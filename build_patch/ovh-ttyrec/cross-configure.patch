@@ -1,0 +1,19 @@
+--- a/configure
++++ b/configure
+@@ -32,6 +32,7 @@
+ command -v $CC >/dev/null 2>&1 || CC=clang
+ command -v $CC >/dev/null 2>&1 || CC=cc
+ echo "$CC"
++CC="$CC $CPPFLAGS $CFLAGS $LDFLAGS"
+ 
+ LDLIBS=''
+ DEFINES_STR='uses:'
+@@ -43,7 +44,7 @@
+     CFLAGS="$CFLAGS -static"
+ fi
+ 
+-os=$(uname -s)
++os=${HOST_OS:-$(uname -s)}
+ if [ "$os" = Linux ]; then
+     CFLAGS="$CFLAGS -D_XOPEN_SOURCE=600 -D_XOPEN_SOURCE_EXTENDED -D_GNU_SOURCE -pipe"
+ elif [ "$os" = NetBSD ]; then

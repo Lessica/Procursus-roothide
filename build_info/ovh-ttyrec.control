@@ -2,6 +2,7 @@ Package: ovh-ttyrec
 Architecture: @DEB_ARCH@
 Maintainer: @DEB_MAINTAINER@
 Version: @DEB_OVH_TTYREC_V@
+Depends: libzstd1
 Conflicts: ttyrec
 Replaces: ttyrec
 Provides: ttyrec (= @DEB_OVH_TTYREC_V@)

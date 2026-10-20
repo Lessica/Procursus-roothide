@@ -9,14 +9,15 @@ DEB_OVH_TTYREC_V   ?= $(OVH_TTYREC_VERSION)
 ovh-ttyrec-setup: setup
 	$(call GITHUB_ARCHIVE,ovh,ovh-ttyrec,$(OVH_TTYREC_VERSION),v$(OVH_TTYREC_VERSION))
 	$(call EXTRACT_TAR,ovh-ttyrec-$(OVH_TTYREC_VERSION).tar.gz,ovh-ttyrec-$(OVH_TTYREC_VERSION),ovh-ttyrec)
-	sed -i '1 i\#define SIGWINCH 28' $(BUILD_WORK)/ovh-ttyrec/ttyrec.c
+	$(call DO_PATCH,ovh-ttyrec,ovh-ttyrec,-p1)
+	sed -i '1{/^#define SIGWINCH 28$$/!s/^/#define SIGWINCH 28\n/;}' $(BUILD_WORK)/ovh-ttyrec/ttyrec.c
 
 ifneq ($(wildcard $(BUILD_WORK)/ovh-ttyrec/.build_complete),)
 ovh-ttyrec:
 	@echo "Using previously built ovh-ttyrec."
 else
-ovh-ttyrec: ovh-ttyrec-setup
-	cd $(BUILD_WORK)/ovh-ttyrec && ./configure -C \
+ovh-ttyrec: ovh-ttyrec-setup zstd
+	cd $(BUILD_WORK)/ovh-ttyrec && HOST_OS=Darwin NO_STATIC_ZSTD=1 ./configure -C \
 		$(DEFAULT_CONFIGURE_FLAGS)
 	+$(MAKE) -C $(BUILD_WORK)/ovh-ttyrec
 	+$(MAKE) -C $(BUILD_WORK)/ovh-ttyrec install \
