@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS    += mpg123
 MPG123_VERSION := 1.26.3
-DEB_MPG123_V   ?= $(MPG123_VERSION)
+DEB_MPG123_V   ?= $(MPG123_VERSION)-1
 
 mpg123-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://www.mpg123.de/download/mpg123-$(MPG123_VERSION).tar.bz2)
@@ -21,6 +21,22 @@ mpg123: mpg123-setup
 		--with-cpu=aarch64
 	+$(MAKE) -C $(BUILD_WORK)/mpg123 install \
 		DESTDIR=$(BUILD_STAGE)/mpg123
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Retain installed LTO runtime/modules; rebuild the three public libraries,
+	# two module archives and their configured convenience dependencies/ASM.
+	+$(MAKE) -C $(BUILD_WORK)/mpg123 clean
+	+$(MAKE) -C $(BUILD_WORK)/mpg123 src/libmpg123/libmpg123.la \
+		src/libout123/libout123.la src/libsyn123/libsyn123.la \
+		src/libout123/modules/output_{coreaudio,dummy}.la \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/mpg123/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/mpg123/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -static"
+	cp -a $(BUILD_WORK)/mpg123/src/libmpg123/.libs/libmpg123.a \
+		$(BUILD_WORK)/mpg123/src/libout123/.libs/libout123.a \
+		$(BUILD_WORK)/mpg123/src/libsyn123/.libs/libsyn123.a \
+		$(BUILD_STAGE)/mpg123/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+	cp -a $(BUILD_WORK)/mpg123/src/libout123/modules/.libs/output_{coreaudio,dummy}.a \
+		$(BUILD_STAGE)/mpg123/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/mpg123/
+endif
 	$(call AFTER_BUILD)
 endif
 
