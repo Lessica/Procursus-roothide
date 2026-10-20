@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS       += libsnappy
 LIBSNAPPY_VERSION := 1.1.9
-DEB_LIBSNAPPY_V   ?= $(LIBSNAPPY_VERSION)
+DEB_LIBSNAPPY_V   ?= $(LIBSNAPPY_VERSION)-1
 
 libsnappy-setup: setup
 	$(call GITHUB_ARCHIVE,google,snappy,$(LIBSNAPPY_VERSION),$(LIBSNAPPY_VERSION),libsnappy)
