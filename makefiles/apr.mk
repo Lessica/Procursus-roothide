@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS += apr
 APR_VERSION := 1.7.0
-DEB_APR_V   ?= $(APR_VERSION)-1
+DEB_APR_V   ?= $(APR_VERSION)-2
 APR_SYS_LIB_SEARCH_PATHS := $(sort $(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib $(MEMO_PREFIX)$(MEMO_SUB_PREFIX)$(MEMO_ALT_PREFIX)/lib /usr/lib /usr/local/lib)
 APR_SYS_LIB_DLSEARCH_PATHS := $(sort $(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib $(MEMO_PREFIX)$(MEMO_SUB_PREFIX)$(MEMO_ALT_PREFIX)/lib /usr/local/lib /lib /usr/lib)
 APR_TARGET_LIB_SEARCH_FLAGS := $(addprefix -L,$(sort $(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib $(MEMO_PREFIX)$(MEMO_SUB_PREFIX)$(MEMO_ALT_PREFIX)/lib /usr/lib /usr/local/lib))
@@ -38,6 +38,15 @@ apr: apr-setup
 		CC_FOR_BUILD=$(shell command -v clang)
 	+$(MAKE) -C $(BUILD_WORK)/apr install \
 		DESTDIR="$(BUILD_STAGE)/apr"
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# The installed runtime stays LTO; only the archive is rebuilt.
+	find $(BUILD_WORK)/apr -name '*.lo' -type f -delete
+	rm -f $(BUILD_WORK)/apr/libapr-1.la
+	+$(MAKE) -C $(BUILD_WORK)/apr libapr-1.la \
+		CFLAGS="$$(sed -n 's/^CFLAGS[[:space:]]*=[[:space:]]*//p' $(BUILD_WORK)/apr/build/apr_rules.mk) -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS[[:space:]]*=[[:space:]]*//p' $(BUILD_WORK)/apr/build/apr_rules.mk) -fno-lto -static"
+	cp -a $(BUILD_WORK)/apr/.libs/libapr-1.a $(BUILD_STAGE)/apr/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	sed -i -e 's|^CC=".*"|CC="cc"|' \
 		-e 's|^CPP=".*"|CPP="cc -E"|' \
 		-e 's|^APR_SOURCE_DIR=".*"|APR_SOURCE_DIR=""|' \
