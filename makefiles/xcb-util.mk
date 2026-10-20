@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS      += xcb-util
 XCB-UTIL_VERSION := 0.4.0
-DEB_XCB-UTIL_V   ?= $(XCB-UTIL_VERSION)
+DEB_XCB-UTIL_V   ?= $(XCB-UTIL_VERSION)-1
 
 xcb-util-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://xcb.freedesktop.org/dist/xcb-util-$(XCB-UTIL_VERSION).tar.gz)
@@ -19,6 +19,14 @@ xcb-util: xcb-util-setup libxcb
 		$(DEFAULT_CONFIGURE_FLAGS)
 	+$(MAKE) -C $(BUILD_WORK)/xcb-util install \
 		DESTDIR=$(BUILD_STAGE)/xcb-util
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Preserve installed LTO outputs and configured static compiler flags.
+	+$(MAKE) -C $(BUILD_WORK)/xcb-util/src clean
+	+$(MAKE) -C $(BUILD_WORK)/xcb-util/src libxcb-util.la \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/xcb-util/src/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/xcb-util/src/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -static"
+	cp -a $(BUILD_WORK)/xcb-util/src/.libs/libxcb-util.a $(BUILD_STAGE)/xcb-util/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	$(call AFTER_BUILD,copy)
 endif
 

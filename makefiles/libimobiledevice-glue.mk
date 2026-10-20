@@ -5,7 +5,7 @@ endif
 SUBPROJECTS                  += libimobiledevice-glue
 LIBIMOBILEDEVICEGLUE_COMMIT  := d2ff7969dcd0a12e4f18f63dab03e6cd03054fcb
 LIBIMOBILEDEVICEGLUE_VERSION := 1.0.0+git20220522.$(shell echo $(LIBIMOBILEDEVICEGLUE_COMMIT) | cut -c -7)
-DEB_LIBIMOBILEDEVICEGLUE_V   ?= $(LIBIMOBILEDEVICEGLUE_VERSION)
+DEB_LIBIMOBILEDEVICEGLUE_V   ?= $(LIBIMOBILEDEVICEGLUE_VERSION)-1
 
 libimobiledevice-glue-setup: setup
 	$(call GITHUB_ARCHIVE,libimobiledevice,libimobiledevice-glue,$(LIBIMOBILEDEVICEGLUE_COMMIT),$(LIBIMOBILEDEVICEGLUE_COMMIT))
@@ -22,6 +22,16 @@ libimobiledevice-glue: libimobiledevice-glue-setup libplist
 	+$(MAKE) -C $(BUILD_WORK)/libimobiledevice-glue
 	+$(MAKE) -C $(BUILD_WORK)/libimobiledevice-glue install \
 		DESTDIR="$(BUILD_STAGE)/libimobiledevice-glue"
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Preserve normal installed LTO runtime; rebuild only the public archive.
+	find $(BUILD_WORK)/libimobiledevice-glue/src -name '*.lo' -type f -delete
+	rm -f $(BUILD_WORK)/libimobiledevice-glue/src/libimobiledevice-glue-1.0.la
+	+$(MAKE) -C $(BUILD_WORK)/libimobiledevice-glue/src libimobiledevice-glue-1.0.la \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/libimobiledevice-glue/src/Makefile) -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/libimobiledevice-glue/src/Makefile) -fno-lto -static"
+	cp -a $(BUILD_WORK)/libimobiledevice-glue/src/.libs/libimobiledevice-glue-1.0.a \
+		$(BUILD_STAGE)/libimobiledevice-glue/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	$(call AFTER_BUILD,copy)
 endif
 
