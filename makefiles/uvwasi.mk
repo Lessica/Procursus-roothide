@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS    += uvwasi
 UVWASI_VERSION := 0.0.12
-DEB_UVWASI_V   ?= $(UVWASI_VERSION)-1
+DEB_UVWASI_V   ?= $(UVWASI_VERSION)-2
 UVWASI_SOVER   := 0
 
 uvwasi-setup: setup
@@ -12,6 +12,10 @@ uvwasi-setup: setup
 	$(call EXTRACT_TAR,uvwasi-$(UVWASI_VERSION).tar.gz,uvwasi-$(UVWASI_VERSION),uvwasi)
 #	uvwasi doesn't mark functions as public, do this
 	sed -i 's/-fvisibility=hidden/-fvisibility=default/' $(BUILD_WORK)/uvwasi/CMakeLists.txt
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# uvwasi_a already has independent objects; preserve shared-target LTO.
+	printf '\nset_property(TARGET uvwasi_a PROPERTY INTERPROCEDURAL_OPTIMIZATION FALSE)\ntarget_compile_options(uvwasi_a PRIVATE -fno-lto)\n' >> $(BUILD_WORK)/uvwasi/CMakeLists.txt
+endif
 
 ifneq ($(wildcard $(BUILD_WORK)/uvwasi/.build_complete),)
 uvwasi:
