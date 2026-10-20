@@ -6,7 +6,7 @@ endif
 STRAPPROJECTS       += libplist
 LIBPLIST_COMMIT  := 4b50a5acf1e26ff44904d5e533ff0fc06bde3e61
 LIBPLIST_VERSION := 2.2.0+git20230130.$(shell echo $(LIBPLIST_COMMIT) | cut -c -7)
-DEB_LIBPLIST_V    ?= $(LIBPLIST_VERSION)
+DEB_LIBPLIST_V    ?= $(LIBPLIST_VERSION)-1
 
 libplist-setup: setup
 	$(call GITHUB_ARCHIVE,libimobiledevice,libplist,$(LIBPLIST_COMMIT),$(LIBPLIST_COMMIT))
@@ -27,6 +27,21 @@ libplist: libplist-setup
 	+$(MAKE) -C $(BUILD_WORK)/libplist
 	+$(MAKE) -C $(BUILD_WORK)/libplist install \
 		DESTDIR="$(BUILD_STAGE)/libplist"
+ifneq ($(filter -flto%,$(CFLAGS) $(CXXFLAGS)),)
+	# Keep installed dylibs/tools optimized with LTO, but ship native objects
+	# in both public archives. Rebuild libcnary too: its objects enter the C archive.
+	+$(MAKE) -C $(BUILD_WORK)/libplist/libcnary clean
+	+$(MAKE) -C $(BUILD_WORK)/libplist/src clean
+	+$(MAKE) -C $(BUILD_WORK)/libplist/libcnary libcnary.la \
+		CFLAGS="$(filter-out -flto%,$(CFLAGS)) -fno-lto" \
+		LDFLAGS="$(filter-out -flto%,$(LDFLAGS)) -static"
+	+$(MAKE) -C $(BUILD_WORK)/libplist/src libplist-2.0.la libplist++-2.0.la \
+		CFLAGS="$(filter-out -flto%,$(CFLAGS)) -fno-lto" \
+		CXXFLAGS="$(filter-out -flto%,$(CXXFLAGS)) -fno-lto" \
+		LDFLAGS="$(filter-out -flto%,$(LDFLAGS)) -static"
+	cp -a $(BUILD_WORK)/libplist/src/.libs/libplist{,++}-2.0.a \
+		$(BUILD_STAGE)/libplist/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	$(call AFTER_BUILD,copy)
 endif
 

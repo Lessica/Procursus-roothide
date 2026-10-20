@@ -4,7 +4,7 @@ endif
 
 STRAPPROJECTS  += xxhash
 XXHASH_VERSION := 0.8.2
-DEB_XXHASH_V   ?= $(XXHASH_VERSION)
+DEB_XXHASH_V   ?= $(XXHASH_VERSION)-1
 
 xxhash-setup: setup
 	$(call GITHUB_ARCHIVE,Cyan4973,xxhash,$(XXHASH_VERSION),v$(XXHASH_VERSION))
@@ -23,6 +23,16 @@ xxhash: xxhash-setup
 		UNAME=Darwin \
 		PREFIX=$(MEMO_PREFIX)$(MEMO_SUB_PREFIX) \
 		DESTDIR=$(BUILD_STAGE)/xxhash
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Public archives must not require the build host's bitcode reader.
+	# Keep the installed shared library and CLI from the normal LTO build.
+	rm -f $(BUILD_WORK)/xxhash/{xxhash.o,libxxhash.a}
+	+$(MAKE) -C $(BUILD_WORK)/xxhash libxxhash.a \
+		UNAME=Darwin \
+		CFLAGS="$(filter-out -flto%,$(CFLAGS)) -fno-lto"
+	cp -a $(BUILD_WORK)/xxhash/libxxhash.a \
+		$(BUILD_STAGE)/xxhash/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	$(call AFTER_BUILD,copy)
 endif
 
