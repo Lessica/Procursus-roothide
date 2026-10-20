@@ -6,7 +6,7 @@ ifeq (,$(findstring darwin,$(MEMO_TARGET)))
 
 SUBPROJECTS       += text-cmds
 TEXT-CMDS_VERSION := 165.100.8
-DEB_TEXT-CMDS_V   ?= 1:$(TEXT-CMDS_VERSION)
+DEB_TEXT-CMDS_V   ?= 1:$(TEXT-CMDS_VERSION)-1
 
 ifeq ($(shell [ "$(CFVER_WHOLE)" -lt 1700 ] && echo 1),1)
 COL_EXTRAFLAGS    := $(BUILD_WORK)/text-cmds/col/strtonum.c

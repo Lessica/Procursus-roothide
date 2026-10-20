@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS    += libglu
 LIBGLU_VERSION := 9.0.1
-DEB_LIBGLU_V   ?= $(LIBGLU_VERSION)-1
+DEB_LIBGLU_V   ?= $(LIBGLU_VERSION)-2
 
 libglu-setup: setup
 	$(call DOWNLOAD_FILE,$(BUILD_SOURCE)/libglu-$(LIBGLU_VERSION).tar.xz, \

@@ -22,10 +22,10 @@ adv-cmds:
 	@echo "Using previously built adv-cmds."
 else
 adv-cmds: adv-cmds-setup ncurses libxo
-	cd $(BUILD_WORK)/adv-cmds/colldef; \
+	set -e; cd $(BUILD_WORK)/adv-cmds/colldef; \
 		yacc -d parse.y; \
 		lex scan.l;
-	cd $(BUILD_WORK)/adv-cmds; \
+	set -e; cd $(BUILD_WORK)/adv-cmds; \
 	$(CXX) -arch $(MEMO_ARCH) -isysroot $(TARGET_SYSROOT) $(PLATFORM_VERSION_MIN) -DPLATFORM_$(BARE_PLATFORM) -o $(BUILD_STAGE)/adv-cmds/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/locale locale/*.cc; \
 	$(INSTALL) -Dm644 locale/locale.1 $(BUILD_STAGE)/adv-cmds/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share/man/man1; \
 	$(CC) $(CFLAGS) $(LDFLAGS) -DPLATFORM_$(BARE_PLATFORM) -o $(BUILD_STAGE)/adv-cmds/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/tabs tabs/*.c -lncursesw; \
