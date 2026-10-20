@@ -23,8 +23,8 @@ pinentry: pinentry-setup libgpg-error libassuan ncurses
 		--enable-pinentry-tty \
 		--enable-pinentry-ncurses \
 		NCURSES_CFLAGS="-DNCURSES_WIDECHAR"
-	+$(MAKE) -C $(BUILD_WORK)/pinentry
-	+$(MAKE) -C $(BUILD_WORK)/pinentry install \
+	+$(MAKE) -C $(BUILD_WORK)/pinentry AR="$(AR)"
+	+$(MAKE) -C $(BUILD_WORK)/pinentry install AR="$(AR)" \
 		DESTDIR="$(BUILD_STAGE)/pinentry"
 	$(call AFTER_BUILD)
 endif
