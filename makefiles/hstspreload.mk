@@ -13,7 +13,7 @@ hstspreload-setup: setup
 		https://gitlab.com/rockdaboot/libhsts/-/raw/master/src/hsts-make-dafsa)
 	chmod 0755 $(BUILD_WORK)/hstspreload/hsts-make-dafsa
 	sed -i 's/^ *\/\/.*$$//g' $(BUILD_WORK)/hstspreload/transport_security_state_static.json
-	sed -i 's|env python|env python3|' $(BUILD_WORK)/hstspreload/hsts-make-dafsa
+	sed -i '1s|^#!/usr/bin/env python[0-9]*$$|#!/usr/bin/env python3|' $(BUILD_WORK)/hstspreload/hsts-make-dafsa
 
 ifneq ($(wildcard $(BUILD_WORK)/hstspreload/.build_complete),)
 hstspreload:
