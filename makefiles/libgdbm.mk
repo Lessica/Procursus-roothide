@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS     += libgdbm
 LIBGDBM_VERSION := 1.23
-DEB_LIBGDBM_V   ?= $(LIBGDBM_VERSION)
+DEB_LIBGDBM_V   ?= $(LIBGDBM_VERSION)-1
 
 libgdbm-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://ftpmirror.gnu.org/gdbm/gdbm-$(LIBGDBM_VERSION).tar.gz{$(comma).sig})
@@ -21,6 +21,15 @@ libgdbm: libgdbm-setup readline gettext
 	+$(MAKE) -C $(BUILD_WORK)/libgdbm
 	+$(MAKE) -C $(BUILD_WORK)/libgdbm install \
 		DESTDIR=$(BUILD_STAGE)/libgdbm
+ifneq ($(filter -flto%,$(CFLAGS) $(CXXFLAGS)),)
+	# Retain installed LTO outputs and all configured static compiler flags.
+	+$(MAKE) -C $(BUILD_WORK)/libgdbm/src clean
+	+$(MAKE) -C $(BUILD_WORK)/libgdbm/src libgdbm.la \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/libgdbm/src/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -fno-lto" \
+		CXXFLAGS="$$(sed -n 's/^CXXFLAGS = //p' $(BUILD_WORK)/libgdbm/src/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/libgdbm/src/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -static"
+	cp -a $(BUILD_WORK)/libgdbm/src/.libs/libgdbm.a $(BUILD_STAGE)/libgdbm/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	$(call AFTER_BUILD,copy)
 endif
 
