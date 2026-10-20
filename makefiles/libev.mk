@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS   += libev
 LIBEV_VERSION := 4.33
-DEB_LIBEV_V   ?= $(LIBEV_VERSION)
+DEB_LIBEV_V   ?= $(LIBEV_VERSION)-1
 
 libev-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),http://dist.schmorp.de/libev/libev-$(LIBEV_VERSION).tar.gz)
@@ -19,6 +19,15 @@ libev: libev-setup
 		$(DEFAULT_CONFIGURE_FLAGS)
 	+$(MAKE) -C $(BUILD_WORK)/libev install \
 		DESTDIR=$(BUILD_STAGE)/libev
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Preserve the installed LTO dylib; rebuild only its public static target.
+	+$(MAKE) -C $(BUILD_WORK)/libev clean
+	+$(MAKE) -C $(BUILD_WORK)/libev libev.la \
+		CFLAGS="$(filter-out -flto%,$(CFLAGS)) -fno-lto" \
+		LDFLAGS="$(filter-out -flto%,$(LDFLAGS)) -static"
+	cp -a $(BUILD_WORK)/libev/.libs/libev.a \
+		$(BUILD_STAGE)/libev/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	# Do not make install to build_base do to conflicts with event.h from libevent.
 	$(call AFTER_BUILD)
 	cp -a $(BUILD_STAGE)/libev/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include/ev{,++}.h $(BUILD_BASE)$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include

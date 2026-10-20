@@ -8,7 +8,7 @@ else # ($(MEMO_TARGET),darwin-\*)
 SUBPROJECTS     += ncurses
 endif # ($(MEMO_TARGET),darwin-\*)
 NCURSES_VERSION := 6.4
-DEB_NCURSES_V   ?= $(NCURSES_VERSION)-1
+DEB_NCURSES_V   ?= $(NCURSES_VERSION)-2
 
 ncurses-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://salsa.debian.org/debian/ncurses/-/archive/upstream/$(NCURSES_VERSION)/ncurses-upstream-$(NCURSES_VERSION).tar.gz)
@@ -42,6 +42,13 @@ ncurses: ncurses-setup
 		--with-manpage-format=normal \
 		LDFLAGS="$(CFLAGS) $(LDFLAGS)" \
 		PKG_CONFIG_LIBDIR="$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/pkgconfig"
+	# The C libraries already separate normal/archive and shared objects.
+	sed -i '/^CFLAGS_NORMAL[[:space:]]*=/s/$$/ -fno-lto/' \
+		$(BUILD_WORK)/ncurses/{ncurses,form,menu,panel}/Makefile
+	# The C++ binding is archive-only but its generated rules use SHARED flags.
+	# Restrict the override to those object rules, leaving program flags intact.
+	sed -i '/$$(CXX) $$(CFLAGS_SHARED) -c/s/$$(CFLAGS_SHARED)/$$(CFLAGS_SHARED) -fno-lto/' \
+		$(BUILD_WORK)/ncurses/c++/Makefile
 	+$(MAKE) -C $(BUILD_WORK)/ncurses
 	+$(MAKE) -C $(BUILD_WORK)/ncurses install \
 		DESTDIR="$(BUILD_STAGE)/ncurses"

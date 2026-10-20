@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS     += libopus
 LIBOPUS_VERSION := 1.3.1
-DEB_LIBOPUS_V   ?= $(LIBOPUS_VERSION)-1
+DEB_LIBOPUS_V   ?= $(LIBOPUS_VERSION)-2
 
 libopus-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://archive.mozilla.org/pub/opus/opus-$(LIBOPUS_VERSION).tar.gz)
@@ -22,6 +22,16 @@ libopus: libopus-setup
 	+$(MAKE) -C $(BUILD_WORK)/libopus
 	+$(MAKE) -C $(BUILD_WORK)/libopus install \
 		DESTDIR=$(BUILD_STAGE)/libopus
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Keep the installed LTO dylib and the configured CPU feature selection;
+	# rebuild only the public archive target with native objects.
+	+$(MAKE) -C $(BUILD_WORK)/libopus clean
+	+$(MAKE) -C $(BUILD_WORK)/libopus libopus.la \
+		CFLAGS="$(filter-out -flto%,$(CFLAGS)) -fno-lto" \
+		LDFLAGS="$(filter-out -flto%,$(LDFLAGS)) -static"
+	cp -a $(BUILD_WORK)/libopus/.libs/libopus.a \
+		$(BUILD_STAGE)/libopus/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	$(call AFTER_BUILD,copy)
 endif
 
