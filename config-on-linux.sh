@@ -20,7 +20,7 @@ if [[ ${1:-} != --skip-system-deps ]]; then
  "${SUDO[@]}" env DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
   ca-certificates build-essential clang clang-18 llvm llvm-18-dev lld make coreutils findutils sed tar patch bash \
   openssl gnupg libtool libtool-bin automake autoconf bison flex groff fakeroot dpkg-dev zstd \
-  xz-utils libncurses-dev wget cmake docbook-xsl docbook-xml xsltproc python3 python3-dev python3-venv git pkg-config \
+  xz-utils lzip libncurses-dev wget cmake docbook-xsl docbook-xml xsltproc python3 python3-dev python3-venv git pkg-config \
   autopoint po4a unzip triehash ninja-build curl libssl-dev libplist-dev libplist++-dev \
   libbsd-dev file gettext gperf texinfo help2man rsync tcl
 fi
