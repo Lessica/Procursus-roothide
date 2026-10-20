@@ -242,6 +242,42 @@ fi
     -r "$CHECKOUT/build_misc/ghc/requirements-sphinx.txt"
 "$HOST_TOOL_ROOT/venv/bin/sphinx-build" --version
 if [[ $HOST_PLATFORM == linux ]]; then
+    # Duktape's upstream source generator still requires Python 2 and PyYAML.
+    host_python2_prefix="$HOST_TOOL_ROOT/python2.7"
+    host_python2_archive="$HOST_TOOL_ROOT/cache/Python-2.7.18.tar.xz"
+    if [[ ! -x $host_python2_prefix/bin/python2.7 ]]; then
+        if [[ ! -f $host_python2_archive ]]; then
+            curl --fail --location --retry 3 -o "$host_python2_archive.part" \
+                https://www.python.org/ftp/python/2.7.18/Python-2.7.18.tar.xz
+            mv "$host_python2_archive.part" "$host_python2_archive"
+        fi
+        printf '%s  %s\n' b62c0e7937551d0cc02b8fd5cb0f544f9405bafc9a54d3808ed4594812edef43 "$host_python2_archive" | sha256sum -c -
+        mkdir -p "$HOST_TOOL_ROOT/src/host-python2.7"
+        tar -xf "$host_python2_archive" --strip-components=1 -C "$HOST_TOOL_ROOT/src/host-python2.7"
+        (
+            unset CC CXX CPP CFLAGS CXXFLAGS CPPFLAGS LDFLAGS LDSHARED AR RANLIB LD NM CONFIG_SITE MACOSX_DEPLOYMENT_TARGET
+            cd "$HOST_TOOL_ROOT/src/host-python2.7"
+            CC="$HOST_CC" CXX="$HOST_CXX" CFLAGS="-O2 -std=gnu89" ./configure \
+                --prefix="$host_python2_prefix" --with-ensurepip=no
+            "$HOST_MAKE" -j "$HOST_JOBS"
+            "$HOST_MAKE" altinstall
+        )
+    fi
+    "$host_python2_prefix/bin/python2.7" -c 'import sys, zlib; assert sys.version_info[:3] == (2, 7, 18)'
+    if ! "$host_python2_prefix/bin/python2.7" -c 'import yaml; assert yaml.__version__ == "5.3.1"' 2>/dev/null; then
+        host_yaml_archive="$HOST_TOOL_ROOT/cache/PyYAML-5.3.1.tar.gz"
+        if [[ ! -f $host_yaml_archive ]]; then
+            curl --fail --location --retry 3 -o "$host_yaml_archive.part" \
+                https://files.pythonhosted.org/packages/64/c2/b80047c7ac2478f9501676c988a5411ed5572f35d1beff9cae07d321512c/PyYAML-5.3.1.tar.gz
+            mv "$host_yaml_archive.part" "$host_yaml_archive"
+        fi
+        printf '%s  %s\n' b8eac752c5e14d3eca0e6dd9199cd627518cb5ec06add0de9d32baeee6fe645d "$host_yaml_archive" | sha256sum -c -
+        mkdir -p "$HOST_TOOL_ROOT/src/host-pyyaml"
+        tar -xf "$host_yaml_archive" --strip-components=1 -C "$HOST_TOOL_ROOT/src/host-pyyaml"
+        (cd "$HOST_TOOL_ROOT/src/host-pyyaml" && "$host_python2_prefix/bin/python2.7" setup.py --without-libyaml install --prefix="$host_python2_prefix")
+    fi
+    "$host_python2_prefix/bin/python2.7" -c 'import yaml; assert yaml.safe_load("test: yes")["test"] is True'
+    ln -sfn "$host_python2_prefix/bin/python2.7" "$HOST_TOOL_ROOT/bin/python2"
     # Python package recipes use the target's 3.9 ABI, independently of Meson.
     host_python_prefix="$HOST_TOOL_ROOT/python3.9"
     host_python_archive="$HOST_TOOL_ROOT/cache/Python-3.9.9.tar.xz"

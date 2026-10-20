@@ -9,10 +9,6 @@ DEB_DUKTAPE_V   ?= $(DUKTAPE_VERSION)
 duktape-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://github.com/svaarala/duktape/releases/download/v$(DUKTAPE_VERSION)/duktape-$(DUKTAPE_VERSION).tar.xz)
 	$(call EXTRACT_TAR,duktape-$(DUKTAPE_VERSION).tar.xz,duktape-$(DUKTAPE_VERSION),duktape)
-	sed -i 's/gcc/cc/g' $(BUILD_WORK)/duktape/Makefile.cmdline
-	sed -i 's/gcc/cc/g' $(BUILD_WORK)/duktape/Makefile.sharedlibrary
-	sed -i 's|\$$(CCLIBS)|\$$(CCLIBS) $(LDFLAGS) $(CFLAGS)|g' $(BUILD_WORK)/duktape/Makefile.cmdline
-	sed -i 's|\$$(CC)|\$$(CC) $(LDFLAGS) $(CFLAGS)|g' $(BUILD_WORK)/duktape/Makefile.sharedlibrary
 	mkdir -p $(BUILD_STAGE)/duktape/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/{lib/pkgconfig,include}
 	cp $(BUILD_MISC)/duktape/duktape.pc $(BUILD_STAGE)/duktape/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/pkgconfig/duktape.pc
 	sed -i 's|prefix=|prefix=$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)|g' \
@@ -31,8 +27,10 @@ duktape: duktape-setup
 	cp -a $(BUILD_STAGE)/duktape/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include/{duk_config.h,duktape.h,duktape.c} \
 		$(BUILD_WORK)/duktape/src/
 	+$(MAKE) -C $(BUILD_WORK)/duktape -f Makefile.sharedlibrary install \
+		CC="$(CC) $(CFLAGS) $(LDFLAGS)" DETECTED_OS=Darwin \
 		INSTALL_PREFIX="$(BUILD_STAGE)/duktape/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)"
-	+$(MAKE) -C $(BUILD_WORK)/duktape -f Makefile.cmdline
+	+$(MAKE) -C $(BUILD_WORK)/duktape -f Makefile.cmdline \
+		CC="$(CC) $(CFLAGS) $(LDFLAGS)"
 	mkdir -p $(BUILD_STAGE)/duktape/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin
 	cp -a $(BUILD_WORK)/duktape/duk $(BUILD_STAGE)/duktape/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/duk
 	cp -a $(BUILD_STAGE)/duktape/* $(BUILD_BASE)
