@@ -5,7 +5,7 @@ endif
 SUBPROJECTS         += asciidoctor
 ASCIIDOCTOR_VERSION := 2.0.17
 DEB_ASCIIDOCTOR_V   ?= $(ASCIIDOCTOR_VERSION)
-ASCIIDOCTOR_GEM     ?= gem3.1
+ASCIIDOCTOR_GEM     ?= gem
 
 asciidoctor-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE)/gems,https://rubygems.org/downloads/asciidoctor-$(ASCIIDOCTOR_VERSION).gem)

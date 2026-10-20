@@ -18,6 +18,7 @@ else
 xapian: xapian-setup uuid
 	cd $(BUILD_WORK)/xapian && ./configure -C \
 		$(DEFAULT_CONFIGURE_FLAGS) \
+		CXXFLAGS="$(CXXFLAGS) -std=c++14" \
 		--enable-shared=yes \
 		--disable-dependency-tracking
 	+$(MAKE) -C $(BUILD_WORK)/xapian
