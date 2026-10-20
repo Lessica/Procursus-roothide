@@ -29,6 +29,7 @@ ccache:
 	@echo "Using previously built ccache."
 else
 ccache: ccache-setup zstd
+	command -v asciidoctor >/dev/null
 	cd $(BUILD_WORK)/ccache && unset MACOSX_DEPLOYMENT_TARGET && cmake . \
 		$(DEFAULT_CMAKE_FLAGS) \
 		-DZSTD_INCLUDE_DIR=$(BUILD_STAGE)/zstd/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include \
