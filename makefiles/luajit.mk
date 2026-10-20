@@ -28,6 +28,9 @@ luajit: luajit-setup
 	+unset CC CFLAGS CXXFLAGS CPPFLAGS LDFLAGS && $(MAKE) -C $(BUILD_WORK)/luajit \
 		DYNAMIC_CC="$(CC) -fPIC" \
 		STATIC_CC="$(CC)" \
+		TARGET_LD="$(CC)" \
+		TARGET_AR="$(AR) rcus" \
+		TARGET_STRIP="$(STRIP) -x" \
 		HOST_CC="$(CC_FOR_BUILD)" \
 		HOST_CFLAGS="$(CFLAGS_FOR_BUILD)" \
 		HOST_LDFLAGS="$(LDFLAGS_FOR_BUILD)" \
@@ -37,7 +40,7 @@ luajit: luajit-setup
 		PREFIX=$(MEMO_PREFIX)$(MEMO_SUB_PREFIX) \
 		$(LUAJIT_MAKE_ARGS) \
 		$(MEMO_DEPLOYMENT)
-	+$(MAKE) -C $(BUILD_WORK)/luajit install \
+	+$(MAKE) -C $(BUILD_WORK)/luajit install TARGET_SYS=Darwin \
 		DESTDIR="$(BUILD_STAGE)/luajit" \
 		PREFIX=$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)
 	mv $(BUILD_STAGE)/luajit/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/luajit-$(LUAJIT_VERSION) $(BUILD_STAGE)/luajit/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/luajit
