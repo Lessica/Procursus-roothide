@@ -1,0 +1,41 @@
+--- a/stdlib/cmake/modules/AddSwiftStdlib.cmake
++++ b/stdlib/cmake/modules/AddSwiftStdlib.cmake
+@@ -1043,6 +1043,11 @@
+               ${SWIFTLIB_SINGLE_EXTERNAL_SOURCES}
+               ${INCORPORATED_OBJECT_LIBRARIES_EXPRESSIONS}
+               ${SWIFTLIB_SINGLE_XCODE_WORKAROUND_SOURCES})
++  # Keep the original compatibility targets for HostCompatibilityLibs/tools.
++  # Native archive copies are created only after this directory is configured.
++  if(name MATCHES "^swiftCompatibility(50|51|56|Concurrency|DynamicReplacements|Packs|Threading)$")
++    procursus_register_native_swift_target("${target}")
++  endif()
+   # NOTE: always inject the LLVMSupport directory before anything else.  We want
+   # to ensure that the runtime is built with our local copy of LLVMSupport
+   target_include_directories(${target} BEFORE PRIVATE
+@@ -2426,6 +2431,11 @@
+           set(install_dest "lib${LLVM_LIBDIR_SUFFIX}/${resource_dir}/${resource_dir_sdk_subdir}")
+         endif()
+ 
++        if(name MATCHES "^swiftCompatibility(50|51|56|Concurrency|DynamicReplacements|Packs)$")
++          procursus_native_swift_archive("${lipo_target}"
++            "${UNIVERSAL_LIBRARY_NAME}" "${install_dest}" "${SWIFT_LIPO}"
++            ${THIN_INPUT_TARGETS})
++        endif()
+         swift_install_in_component(FILES "${UNIVERSAL_LIBRARY_NAME}"
+                                    DESTINATION ${install_dest}
+                                    COMPONENT "${SWIFTLIB_INSTALL_IN_COMPONENT}"
+--- a/stdlib/toolchain/CMakeLists.txt
++++ b/stdlib/toolchain/CMakeLists.txt
+@@ -52,11 +52,11 @@
+ if(SWIFT_STDLIB_SUPPORT_BACK_DEPLOYMENT)
+   add_subdirectory(legacy_layouts)
++  add_subdirectory(CompatibilityThreading)
+   add_subdirectory(Compatibility50)
+   add_subdirectory(Compatibility51)
+   add_subdirectory(Compatibility56)
+   add_subdirectory(CompatibilityDynamicReplacements)
+   add_subdirectory(CompatibilityConcurrency)
+-  add_subdirectory(CompatibilityThreading)
+   add_subdirectory(CompatibilityPacks)
+ 
+   # This is a convenience target to have the list

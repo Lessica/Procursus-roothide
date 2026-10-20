@@ -1,0 +1,58 @@
+--- a/llvm/cmake/modules/AddLLVM.cmake
++++ b/llvm/cmake/modules/AddLLVM.cmake
+@@ -3,6 +3,7 @@
+ include(LLVMProcessSources)
+ include(LLVM-Config)
+ include(DetermineGCCCompatible)
++include(ProcursusNativeArchives)
+ 
+ function(llvm_update_compile_flags name)
+   get_property(sources TARGET ${name} PROPERTY SOURCES)
+@@ -869,6 +870,7 @@
+       endif()
+ 
+       get_target_export_arg(${name} LLVM export_to_llvmexports ${umbrella})
++      procursus_register_native_archive(${name})
+       install(TARGETS ${name}
+               ${export_to_llvmexports}
+               LIBRARY DESTINATION lib${LLVM_LIBDIR_SUFFIX} COMPONENT ${name}
+--- a/clang/cmake/modules/AddClang.cmake
++++ b/clang/cmake/modules/AddClang.cmake
+@@ -116,6 +116,7 @@
+ 
+       if (NOT LLVM_INSTALL_TOOLCHAIN_ONLY OR ARG_INSTALL_WITH_TOOLCHAIN)
+         get_target_export_arg(${name} Clang export_to_clangtargets UMBRELLA clang-libraries)
++        procursus_register_native_archive(${lib})
+         install(TARGETS ${lib}
+           COMPONENT ${lib}
+           ${export_to_clangtargets}
+--- a/flang/cmake/modules/AddFlang.cmake
++++ b/flang/cmake/modules/AddFlang.cmake
+@@ -68,6 +68,7 @@
+     if (NOT LLVM_INSTALL_TOOLCHAIN_ONLY OR ${name} STREQUAL "libflang"
+         OR ARG_INSTALL_WITH_TOOLCHAIN)
+       get_target_export_arg(${name} Flang export_to_flangtargets UMBRELLA flang-libraries)
++      procursus_register_native_archive(${name})
+       install(TARGETS ${name}
+         COMPONENT ${name}
+         ${export_to_flangtargets}
+--- a/lld/cmake/modules/AddLLD.cmake
++++ b/lld/cmake/modules/AddLLD.cmake
+@@ -15,6 +15,7 @@
+ 
+   if (NOT LLVM_INSTALL_TOOLCHAIN_ONLY)
+     get_target_export_arg(${name} LLD export_to_lldtargets)
++    procursus_register_native_archive(${name})
+     install(TARGETS ${name}
+       COMPONENT ${name}
+       ${export_to_lldtargets}
+--- a/polly/cmake/polly_macros.cmake
++++ b/polly/cmake/polly_macros.cmake
+@@ -42,6 +42,7 @@
+     llvm_config(${name} ${LLVM_LINK_COMPONENTS})
+   endif( LLVM_LINK_COMPONENTS )
+   if (NOT LLVM_INSTALL_TOOLCHAIN_ONLY OR ${name} STREQUAL "LLVMPolly")
++    procursus_register_native_archive(${name})
+     install(TARGETS ${name}
+       EXPORT LLVMExports
+       LIBRARY DESTINATION lib${LLVM_LIBDIR_SUFFIX}

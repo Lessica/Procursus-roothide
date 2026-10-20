@@ -17,8 +17,8 @@ ifneq (,$(findstring roothide,$(MEMO_TARGET)))
 # Bundle sealing follows PACK's final per-file entitlement merge.
 LLVM_SEAL_SOURCEKITD = $(LDID) -M -S$(BUILD_MISC)/entitlements/roothide.xml $(BUILD_DIST)/swift-$(SWIFT_VERSION)/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/llvm-$(LLVM_MAJOR_V)/lib/sourcekitd.framework
 endif
-DEB_SWIFT_V          ?= $(SWIFT_VERSION)~$(SWIFT_SUFFIX)
-DEB_LLVM_V           ?= $(LLVM_VERSION)~$(DEB_SWIFT_V)-1
+DEB_SWIFT_V          ?= $(SWIFT_VERSION)~$(SWIFT_SUFFIX)-1
+DEB_LLVM_V           ?= $(LLVM_VERSION)~$(SWIFT_VERSION)~$(SWIFT_SUFFIX)-2
 
 ifneq (,$(findstring darwin,$(MEMO_TARGET)))
 LLVM_CMAKE_FLAGS :=     -DLLDB_USE_SYSTEM_DEBUGSERVER=ON \
@@ -46,6 +46,7 @@ llvm-setup: setup
 	$(call EXTRACT_TAR,swift-syntax-$(SWIFT_SYNTAX_VERSION).tar.gz,swift-syntax-$(SWIFT_SYNTAX_VERSION),llvm/swift-syntax)
 	$(call DO_PATCH,llvm,llvm,-p1)
 	$(call DO_PATCH,swift,llvm/swift,-p1)
+	cp -a $(BUILD_MISC)/llvm/ProcursusNativeArchives.cmake $(BUILD_WORK)/llvm/llvm/cmake/modules/
 	sed -i "s|VERBATIM COMMAND mig |VERBATIM COMMAND mig -I$(BUILD_BASE)$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include |" $(BUILD_WORK)/llvm/lldb/tools/debugserver/source/CMakeLists.txt
 	sed -i 's|#define HAS_FLOAT128 1|#define HAS_FLOAT128 0|g' $(BUILD_WORK)/llvm/flang/include/flang/Runtime/float128.h
 	mkdir -p $(BUILD_WORK)/llvm/build
@@ -129,6 +130,7 @@ ifeq ($(wildcard $(BUILD_WORK)/llvm/build/.build_complete),)
 		-DRUNTIMES_CMAKE_ARGS='-DCMAKE_BUILD_TYPE=$(MEMO_CMAKE_BUILD_TYPE);-DCMAKE_CROSSCOMPILING=true;-DCMAKE_SYSTEM_NAME=Darwin;-DCMAKE_SYSTEM_PROCESSOR=$(shell echo $(GNU_HOST_TRIPLE) | cut -f1 -d-);-DCMAKE_OSX_DEPLOYMENT_TARGET=;-DCMAKE_C_FLAGS=$(OPTIMIZATION_FLAGS) $(PLATFORM_VERSION_MIN) -arch $(MEMO_ARCH) -isysroot $(TARGET_SYSROOT) -isystem $(BUILD_BASE)$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include -isystem $(TARGET_SYSROOT)/usr/include;-DCMAKE_CXX_FLAGS=$(OPTIMIZATION_FLAGS) $(PLATFORM_VERSION_MIN) -arch $(MEMO_ARCH) -isysroot $(TARGET_SYSROOT) -isystem $(BUILD_BASE)$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include -isystem $(TARGET_SYSROOT)/usr/include;-DCMAKE_FIND_ROOT_PATH="$(BUILD_BASE)";-DPKG_CONFIG_EXECUTABLE="$(BUILD_TOOLS)/cross-pkg-config";-DCMAKE_INSTALL_NAME_TOOL="$(I_N_T)";-DCMAKE_INSTALL_PREFIX="$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)";-DCMAKE_INSTALL_NAME_DIR="$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib";-DCMAKE_INSTALL_RPATH=;-DCMAKE_INSTALL_SYSCONFDIR="$(MEMO_PREFIX)/etc";-DCMAKE_OSX_SYSROOT="../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../$(TARGET_SYSROOT)";-DCMAKE_OSX_ARCHITECTURES=$(MEMO_ARCH)' \
 		-DCLANG_VERSION=$(LLVM_VERSION) \
 		-DLLVM_ENABLE_LTO=THIN \
+		-DPROCURSUS_NATIVE_STATIC_ARCHIVES=ON \
 		-DLLVM_BUILD_LLVM_DYLIB=ON \
 		-DLLVM_LINK_LLVM_DYLIB=ON \
 		-DCLANG_LINK_CLANG_DYLIB=ON \
@@ -212,6 +214,9 @@ ifeq ($(wildcard $(BUILD_WORK)/llvm/build/.build_complete),)
 	DESTDIR="$(BUILD_STAGE)/llvm" ninja -j4 -C $(BUILD_WORK)/llvm/build
 	mkdir -p $(BUILD_WORK)/llvm/build/lib/swift{,_static}/$(PLATFORM)/Cxx{,Stdlib}.swiftmodule
 	DESTDIR="$(BUILD_STAGE)/llvm" ninja -j4 -C $(BUILD_WORK)/llvm/build install
+	# Separate installation-only archives; original components/tools retain LTO.
+	ninja -j4 -C $(BUILD_WORK)/llvm/build procursus-native-static
+	DESTDIR="$(BUILD_STAGE)/llvm" cmake --install $(BUILD_WORK)/llvm/build --component procursus-native-static
 	$(INSTALL) -Dm755 $(BUILD_WORK)/llvm/build/bin/{obj2yaml,yaml2obj} $(BUILD_STAGE)/llvm/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/llvm-$(LLVM_MAJOR_V)/bin/
 	touch $(BUILD_WORK)/llvm/build/.build_complete
 endif
@@ -279,6 +284,9 @@ ifeq ($(wildcard $(BUILD_WORK)/llvm/build-compiler-rt/.build_complete),)
 	+unset MACOSX_DEPLOYMENT_TARGET IPHONEOS_DEPLOYMENT_TARGET APPLETVOS_DEPLOYMENT_TARGET WATCHOS_DEPLOYMENT_TARGET BRIDGEOS_DEPLOYMENT_TARGET && \
 	$(MAKE) -C $(BUILD_WORK)/llvm/build-compiler-rt install-compiler-rt \
 		DESTDIR="$(BUILD_STAGE)/llvm"
+	# The runtime aggregate omits public headers and CFI resource files.
+	DESTDIR="$(BUILD_STAGE)/llvm" cmake --install $(BUILD_WORK)/llvm/build-compiler-rt --component compiler-rt-headers
+	DESTDIR="$(BUILD_STAGE)/llvm" cmake --install $(BUILD_WORK)/llvm/build-compiler-rt --component cfi
 	touch $(BUILD_WORK)/llvm/build-compiler-rt/.build_complete
 endif
 	# Let's build wrappers now
@@ -313,6 +321,8 @@ endif
 	$(call AFTER_BUILD,,,$(MEMO_LINK_PREFIX)$(MEMO_SUB_PREFIX)/lib/llvm-$(LLVM_MAJOR_V)/lib,,defer)
 ifneq (,$(findstring roothide,$(MEMO_TARGET)))
 	cp -a $(BUILD_WORK)/llvm/foreign-compiler-rt/. $(BUILD_STAGE)/llvm/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/llvm-$(LLVM_MAJOR_V)/lib/clang/$(LLVM_VERSION)/lib/darwin/ || { rm -f $(BUILD_WORK)/llvm/.build_complete; exit 1; }
+	# RootHide has an empty MEMO_PREFIX; retain swift-demangle's system libc++ import.
+	$(I_N_T) -change @rpath/libc++.1.dylib /usr/lib/libc++.1.dylib $(BUILD_STAGE)/llvm/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/llvm-$(LLVM_MAJOR_V)/bin/swift-demangle
 endif
 ifneq ($(MEMO_PREFIX),)
 	-for bin in bin/flang-new bin/lldb-server lib/liblldb.16.0.0.dylib; do \
