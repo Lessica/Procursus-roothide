@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS      += libde265
 LIBDE265_VERSION := 1.0.8
-DEB_LIBDE265_V   ?= $(LIBDE265_VERSION)
+DEB_LIBDE265_V   ?= $(LIBDE265_VERSION)-1
 
 libde265-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://github.com/strukturag/libde265/releases/download/v$(LIBDE265_VERSION)/libde265-$(LIBDE265_VERSION).tar.gz)
@@ -22,6 +22,15 @@ libde265: libde265-setup
 	+$(MAKE) -C $(BUILD_WORK)/libde265
 	+$(MAKE) -C $(BUILD_WORK)/libde265 install \
 		DESTDIR=$(BUILD_STAGE)/libde265
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Keep installed LTO outputs; include every configured folded library.
+	+$(MAKE) -C $(BUILD_WORK)/libde265/libde265 clean
+	+$(MAKE) -C $(BUILD_WORK)/libde265/libde265 all \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/libde265/libde265/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -fno-lto" \
+		CXXFLAGS="$$(sed -n 's/^CXXFLAGS = //p' $(BUILD_WORK)/libde265/libde265/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/libde265/libde265/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -static"
+	cp -a $(BUILD_WORK)/libde265/libde265/.libs/libde265.a $(BUILD_STAGE)/libde265/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	$(call AFTER_BUILD,copy)
 endif
 
