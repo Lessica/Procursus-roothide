@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS   += libmpfi
 LIBMPFI_VERSION := 1.5.3
-DEB_LIBMPFI_V   ?= $(LIBMPFI_VERSION)
+DEB_LIBMPFI_V   ?= $(LIBMPFI_VERSION)-1
 
 ifneq ($(wildcard $(BUILD_WORK)/libmpfi/.CRLFtoLF_done),)
 libmpfi-setup: setup
@@ -26,6 +26,15 @@ libmpfi: libmpfi-setup libgmp10 mpfr4
 	+$(MAKE) -C $(BUILD_WORK)/libmpfi/mpfi
 	+$(MAKE) -C $(BUILD_WORK)/libmpfi/mpfi install \
 		DESTDIR=$(BUILD_STAGE)/libmpfi
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Preserve original LTO installation and rebuild only the static library objects.
+	rm -f $(BUILD_WORK)/libmpfi/mpfi/src/*.lo $(BUILD_WORK)/libmpfi/mpfi/src/libmpfi.la
+	+$(MAKE) -C $(BUILD_WORK)/libmpfi/mpfi/src libmpfi.la \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/libmpfi/mpfi/src/Makefile) -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/libmpfi/mpfi/src/Makefile) -fno-lto -static"
+	cp -a $(BUILD_WORK)/libmpfi/mpfi/src/.libs/libmpfi.a \
+		$(BUILD_STAGE)/libmpfi/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	$(call AFTER_BUILD,copy)
 endif
 
