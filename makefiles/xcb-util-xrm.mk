@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS          += xcb-util-xrm
 XCB-UTIL-XRM_VERSION := 1.3
-DEB_XCB-UTIL-XRM_V   ?= $(XCB-UTIL-XRM_VERSION)
+DEB_XCB-UTIL-XRM_V   ?= $(XCB-UTIL-XRM_VERSION)-1
 
 xcb-util-xrm-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://github.com/Airblader/xcb-util-xrm/releases/download/v1.3/xcb-util-xrm-1.3.tar.gz)
@@ -20,6 +20,14 @@ xcb-util-xrm: xcb-util-xrm-setup libxcb xcb-util
 	+$(MAKE) -C $(BUILD_WORK)/xcb-util-xrm
 	+$(MAKE) -C $(BUILD_WORK)/xcb-util-xrm install \
 		DESTDIR=$(BUILD_STAGE)/xcb-util-xrm
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Preserve installed LTO outputs and configured static compiler flags.
+	+$(MAKE) -C $(BUILD_WORK)/xcb-util-xrm clean
+	+$(MAKE) -C $(BUILD_WORK)/xcb-util-xrm libxcb-xrm.la \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/xcb-util-xrm/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/xcb-util-xrm/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -static"
+	cp -a $(BUILD_WORK)/xcb-util-xrm/.libs/libxcb-xrm.a $(BUILD_STAGE)/xcb-util-xrm/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	$(call AFTER_BUILD,copy)
 endif
 
