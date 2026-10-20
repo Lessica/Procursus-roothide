@@ -23,7 +23,7 @@ endif
 libiosexec-setup: setup
 	$(call GITHUB_ARCHIVE,roothide,libiosexec,$(LIBIOSEXEC_COMMIT),$(LIBIOSEXEC_COMMIT))
 	$(call EXTRACT_TAR,libiosexec-$(LIBIOSEXEC_COMMIT).tar.gz,libiosexec-$(LIBIOSEXEC_COMMIT),libiosexec)
-	cd $(BUILD_WORK)/libiosexec && patch -p1 < $(BUILD_PATCH)/libiosexec/0001-darwin-nobody-group.patch
+	$(call DO_PATCH,libiosexec,libiosexec,-p1)
 	sed -i 's/$$(shell uname -s)/Darwin/g' $(BUILD_WORK)/libiosexec/Makefile
 
 ifneq ($(wildcard $(BUILD_WORK)/libiosexec/.build_complete),)

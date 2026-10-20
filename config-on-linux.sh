@@ -53,7 +53,10 @@ for name in ar ld ranlib strings strip install_name_tool nm lipo otool libtool; 
 done
 for name in clang clang++; do
  compiler=$(command -v "$name")
- printf '#!/usr/bin/env bash\nexec %q --target=aarch64-apple-darwin -B%q -stdlib=libc++ "$@"\n' "$compiler" "$toolbin" > "$HOST_TOOL_ROOT/bin/aarch64-apple-darwin-$name"
+ # C compilations reject the unused C++ library option when using -Werror.
+ stdlib_flag=
+ [[ $name != clang++ ]] || stdlib_flag=-stdlib=libc++
+ printf '#!/usr/bin/env bash\nexec %q --target=aarch64-apple-darwin -B%q %s "$@"\n' "$compiler" "$toolbin" "$stdlib_flag" > "$HOST_TOOL_ROOT/bin/aarch64-apple-darwin-$name"
  chmod +x "$HOST_TOOL_ROOT/bin/aarch64-apple-darwin-$name"
 done
 ln -sf "$toolbin/tapi" "$HOST_TOOL_ROOT/bin/tapi"
