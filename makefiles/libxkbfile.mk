@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS        += libxkbfile
 LIBXKBFILE_VERSION := 1.1.0
-DEB_LIBXKBFILE_V   ?= $(LIBXKBFILE_VERSION)
+DEB_LIBXKBFILE_V   ?= $(LIBXKBFILE_VERSION)-1
 
 libxkbfile-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://xorg.freedesktop.org/archive/individual/lib/libxkbfile-$(LIBXKBFILE_VERSION).tar.bz2{$(comma).sig})
@@ -21,6 +21,14 @@ libxkbfile: libxkbfile-setup libx11
 	+$(MAKE) -C $(BUILD_WORK)/libxkbfile
 	+$(MAKE) -C $(BUILD_WORK)/libxkbfile install \
 		DESTDIR=$(BUILD_STAGE)/libxkbfile
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Preserve installed LTO outputs and configured static compiler flags.
+	+$(MAKE) -C $(BUILD_WORK)/libxkbfile/src clean
+	+$(MAKE) -C $(BUILD_WORK)/libxkbfile/src libxkbfile.la \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/libxkbfile/src/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/libxkbfile/src/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -static"
+	cp -a $(BUILD_WORK)/libxkbfile/src/.libs/libxkbfile.a $(BUILD_STAGE)/libxkbfile/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	$(call AFTER_BUILD,copy)
 endif
 
