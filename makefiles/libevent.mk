@@ -4,12 +4,13 @@ endif
 
 SUBPROJECTS        += libevent
 LIBEVENT_VERSION   := 2.1.12
-DEB_LIBEVENT_V     ?= $(LIBEVENT_VERSION)-3
+DEB_LIBEVENT_V     ?= $(LIBEVENT_VERSION)-4
 
 libevent-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://github.com/libevent/libevent/releases/download/release-$(LIBEVENT_VERSION)-stable/libevent-$(LIBEVENT_VERSION)-stable.tar.gz{$(comma).asc})
 	$(call PGP_VERIFY,libevent-$(LIBEVENT_VERSION)-stable.tar.gz,asc)
 	$(call EXTRACT_TAR,libevent-$(LIBEVENT_VERSION)-stable.tar.gz,libevent-$(LIBEVENT_VERSION)-stable,libevent)
+	$(call DO_PATCH,libevent,libevent,-p1)
 
 ifneq ($(wildcard $(BUILD_WORK)/libevent/.build_complete),)
 libevent:
@@ -30,7 +31,7 @@ libevent-package: libevent-stage
 	rm -rf $(BUILD_DIST)/libevent-{{core-,extra-,openssl-,pthreads-,}2.1-7,dev}
 	mkdir -p \
 		$(BUILD_DIST)/libevent-{core-,extra-,openssl-,pthreads-,}2.1-7/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib \
-		$(BUILD_DIST)/libevent-dev/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/
+		$(BUILD_DIST)/libevent-dev/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib
 
 	# libevent.mk Prep libevent-2.1-7
 	cp -a $(BUILD_STAGE)/libevent/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/libevent-2.1.7.dylib $(BUILD_DIST)/libevent-2.1-7/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib

@@ -1,0 +1,28 @@
+--- a/cmake/AddEventLibrary.cmake
++++ b/cmake/AddEventLibrary.cmake
+@@ -30,7 +30,13 @@
+ 
+     set(OPENSSL_LIBS "")
+     foreach(LIB ${OPENSSL_LIBRARIES})
+-        set(OPENSSL_LIBS "${OPENSSL_LIBS} -L${LIB}")
++        if(IS_ABSOLUTE "${LIB}")
++            get_filename_component(OPENSSL_LIB_NAME "${LIB}" NAME_WE)
++            string(REGEX REPLACE "^lib" "" OPENSSL_LIB_NAME "${OPENSSL_LIB_NAME}")
++            set(OPENSSL_LIBS "${OPENSSL_LIBS} -l${OPENSSL_LIB_NAME}")
++        else()
++            set(OPENSSL_LIBS "${OPENSSL_LIBS} ${LIB}")
++        endif()
+     endforeach()
+ 
+     configure_file("lib${LIB_NAME}.pc.in" "lib${LIB_NAME}.pc" @ONLY)
+@@ -105,6 +105,10 @@
+ 
+     if (${EVENT_LIBRARY_STATIC})
+         add_library("${LIB_NAME}_static" STATIC ${LIB_SOURCES})
++        # Public archives must contain native objects; shared targets keep their flags.
++        if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
++            target_compile_options("${LIB_NAME}_static" PRIVATE -fno-lto)
++        endif()
+         set_target_properties("${LIB_NAME}_static" PROPERTIES
+             OUTPUT_NAME "${LIB_NAME}"
+             CLEAN_DIRECT_OUTPUT 1)

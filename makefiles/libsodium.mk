@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS           += libsodium
 LIBSODIUM_VERSION     := 1.0.18
-DEB_LIBSODIUM_V       ?= $(LIBSODIUM_VERSION)
+DEB_LIBSODIUM_V       ?= $(LIBSODIUM_VERSION)-1
 
 libsodium-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://download.libsodium.org/libsodium/releases/old/libsodium-$(LIBSODIUM_VERSION).tar.gz)
@@ -20,6 +20,16 @@ libsodium: libsodium-setup
 	+$(MAKE) -C $(BUILD_WORK)/libsodium
 	+$(MAKE) -C $(BUILD_WORK)/libsodium install \
 		DESTDIR=$(BUILD_STAGE)/libsodium
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Rebuild the library's nested and CPU convenience objects after preserving the LTO install.
+	find $(BUILD_WORK)/libsodium/src/libsodium -name '*.lo' -delete
+	rm -f $(BUILD_WORK)/libsodium/src/libsodium/*.la
+	+$(MAKE) -C $(BUILD_WORK)/libsodium/src/libsodium libsodium.la \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/libsodium/src/libsodium/Makefile) -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/libsodium/src/libsodium/Makefile) -fno-lto -static"
+	cp -a $(BUILD_WORK)/libsodium/src/libsodium/.libs/libsodium.a \
+		$(BUILD_STAGE)/libsodium/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	$(call AFTER_BUILD,copy)
 endif
 

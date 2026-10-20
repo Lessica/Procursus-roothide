@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS    += libx11
 LIBX11_VERSION := 1.7.3.1
-DEB_LIBX11_V   ?= $(LIBX11_VERSION)
+DEB_LIBX11_V   ?= $(LIBX11_VERSION)-1
 
 libx11-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://xorg.freedesktop.org/archive/individual/lib/libX11-$(LIBX11_VERSION).tar.gz{$(comma).sig})
@@ -35,6 +35,27 @@ libx11: libx11-setup xorgproto libxcb xtrans
 	+$(MAKE) -C $(BUILD_WORK)/libx11
 	+$(MAKE) -C $(BUILD_WORK)/libx11 install \
 		DESTDIR=$(BUILD_STAGE)/libx11
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Rebuild only public library sources, retaining configured flags and generated inputs.
+	# Use each folded i18n module's configured flags and original target definitions.
+	+for sub in im/ximcp lc/Utf8 lc/def lc/gen om/generic; do \
+		$(MAKE) -C $(BUILD_WORK)/libx11/modules/$$sub clean && \
+		$(MAKE) -C $(BUILD_WORK)/libx11/modules/$$sub all \
+			CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/libx11/modules/$$sub/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -fno-lto" \
+			LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/libx11/modules/$$sub/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -static" || exit $$?; \
+	done
+	# Keep the native build-host makekeys utility separate from target flag overrides.
+	+$(MAKE) -C $(BUILD_WORK)/libx11/src mostlyclean-compile mostlyclean-libtool clean-libtool clean-libLTLIBRARIES
+	+$(MAKE) -C $(BUILD_WORK)/libx11/src/xcms clean
+	+$(MAKE) -C $(BUILD_WORK)/libx11/src/xlibi18n clean
+	+$(MAKE) -C $(BUILD_WORK)/libx11/src/xkb clean
+	+$(MAKE) -C $(BUILD_WORK)/libx11/src/util
+	+$(MAKE) -C $(BUILD_WORK)/libx11/src ks_tables.h
+	+$(MAKE) -C $(BUILD_WORK)/libx11/src all \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/libx11/src/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/libx11/src/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -static"
+	cp -a $(BUILD_WORK)/libx11/src/.libs/libX11{,-xcb}.a $(BUILD_STAGE)/libx11/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	$(call AFTER_BUILD,copy)
 endif
 
