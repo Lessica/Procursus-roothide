@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS     += libtiff
 LIBTIFF_VERSION := 4.2.0
-DEB_LIBTIFF_V   ?= $(LIBTIFF_VERSION)-1
+DEB_LIBTIFF_V   ?= $(LIBTIFF_VERSION)-2
 
 libtiff-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE), \
@@ -25,6 +25,20 @@ libtiff: libtiff-setup libjpeg-turbo xz zstd
 	+$(MAKE) -C $(BUILD_WORK)/libtiff
 	+$(MAKE) -C $(BUILD_WORK)/libtiff install \
 		DESTDIR="$(BUILD_STAGE)/libtiff"
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Include the folded portability archive in the same native static pass.
+	+$(MAKE) -C $(BUILD_WORK)/libtiff/port clean
+	+$(MAKE) -C $(BUILD_WORK)/libtiff/port libport.la \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/libtiff/port/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -fno-lto" \
+		CXXFLAGS="$$(sed -n 's/^CXXFLAGS = //p' $(BUILD_WORK)/libtiff/port/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/libtiff/port/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -static"
+	+$(MAKE) -C $(BUILD_WORK)/libtiff/libtiff clean
+	+$(MAKE) -C $(BUILD_WORK)/libtiff/libtiff libtiff.la libtiffxx.la \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/libtiff/libtiff/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -fno-lto" \
+		CXXFLAGS="$$(sed -n 's/^CXXFLAGS = //p' $(BUILD_WORK)/libtiff/libtiff/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/libtiff/libtiff/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -static"
+	cp -a $(BUILD_WORK)/libtiff/libtiff/.libs/libtiff{,xx}.a $(BUILD_STAGE)/libtiff/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	$(call AFTER_BUILD,copy)
 endif
 

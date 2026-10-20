@@ -5,7 +5,7 @@ endif
 SUBPROJECTS        += libgeneral
 LIBGENERAL_VERSION := 56
 LIBGENERAL_COMMIT  := e0d98cbeedece5d62e3e9432c3ed37cd87da5338
-DEB_LIBGENERAL_V   ?= $(LIBGENERAL_VERSION)-1
+DEB_LIBGENERAL_V   ?= $(LIBGENERAL_VERSION)-2
 
 libgeneral-setup: setup
 	$(call GITHUB_ARCHIVE,tihmstar,libgeneral,$(LIBGENERAL_VERSION),$(LIBGENERAL_VERSION))
@@ -26,6 +26,17 @@ libgeneral: libgeneral-setup
 	+$(MAKE) -C $(BUILD_WORK)/libgeneral
 	+$(MAKE) -C $(BUILD_WORK)/libgeneral install \
 		DESTDIR="$(BUILD_STAGE)/libgeneral"
+ifneq ($(filter -flto%,$(CXXFLAGS)),)
+	# Preserve normal installed LTO runtime; replace only the C++ archive.
+	find $(BUILD_WORK)/libgeneral/libgeneral -name '*.lo' -type f -delete
+	rm -f $(BUILD_WORK)/libgeneral/libgeneral/libgeneral.la
+	+$(MAKE) -C $(BUILD_WORK)/libgeneral/libgeneral libgeneral.la \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/libgeneral/libgeneral/Makefile) -fno-lto" \
+		CXXFLAGS="$$(sed -n 's/^CXXFLAGS = //p' $(BUILD_WORK)/libgeneral/libgeneral/Makefile) -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/libgeneral/libgeneral/Makefile) -fno-lto -static"
+	cp -a $(BUILD_WORK)/libgeneral/libgeneral/.libs/libgeneral.a \
+		$(BUILD_STAGE)/libgeneral/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	$(call AFTER_BUILD,copy)
 endif
 

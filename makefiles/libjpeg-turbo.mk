@@ -5,7 +5,7 @@ endif
 
 SUBPROJECTS           += libjpeg-turbo
 LIBJPEG_TURBO_VERSION := 2.0.6
-DEB_LIBJPEG_TURBO_V   ?= $(LIBJPEG_TURBO_VERSION)-1
+DEB_LIBJPEG_TURBO_V   ?= $(LIBJPEG_TURBO_VERSION)-2
 
 libjpeg-turbo-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE), \
@@ -24,6 +24,25 @@ libjpeg-turbo: libjpeg-turbo-setup
 	+$(MAKE) -C $(BUILD_WORK)/libjpeg-turbo
 	+$(MAKE) -C $(BUILD_WORK)/libjpeg-turbo install \
 		DESTDIR="$(BUILD_STAGE)/libjpeg-turbo"
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# The SIMD object target is shared with the already-installed runtime.
+	# Rebuild only C/C++ objects used by the two public static targets.
+	# Keep assembly objects and flag-file mtimes so ASM is not rebuilt.
+	for flags in $$(find $(BUILD_WORK)/libjpeg-turbo -type f \
+		\( -path '*/CMakeFiles/jpeg-static.dir/flags.make' \
+		-o -path '*/CMakeFiles/turbojpeg-static.dir/flags.make' \
+		-o -path '*/CMakeFiles/simd.dir/flags.make' \)); do \
+		cp -p "$$flags" "$$flags.lto"; \
+		sed -E '/^(C|CXX)_FLAGS =/ { s/(^|[[:space:]])-flto(=[^[:space:]]*)?//g; s/$$/ -fno-lto/; }' "$$flags.lto" > "$$flags"; \
+		touch -r "$$flags.lto" "$$flags"; \
+		find "$$(dirname "$$flags")" -type f \
+			\( -name '*.c.o' -o -name '*.cc.o' -o -name '*.cpp.o' -o -name '*.cxx.o' \) -delete; \
+	done
+	rm -f $(BUILD_WORK)/libjpeg-turbo/lib{jpeg,turbojpeg}.a
+	+$(MAKE) -C $(BUILD_WORK)/libjpeg-turbo jpeg-static turbojpeg-static
+	cp -a $(BUILD_WORK)/libjpeg-turbo/lib{jpeg,turbojpeg}.a $(BUILD_STAGE)/libjpeg-turbo/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+	for flags in $$(find $(BUILD_WORK)/libjpeg-turbo -type f -name flags.make.lto); do mv "$$flags" "$${flags%.lto}"; done
+endif
 	$(call AFTER_BUILD,copy)
 endif
 
