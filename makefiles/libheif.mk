@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS     += libheif
 LIBHEIF_VERSION := 1.12.0
-DEB_LIBHEIF_V   ?= $(LIBHEIF_VERSION)-1
+DEB_LIBHEIF_V   ?= $(LIBHEIF_VERSION)-2
 
 libheif-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://github.com/strukturag/libheif/releases/download/v$(LIBHEIF_VERSION)/libheif-$(LIBHEIF_VERSION).tar.gz)
@@ -24,6 +24,19 @@ libheif: libheif-setup x265 libde265 aom rav1e dav1d
 	+$(MAKE) -C $(BUILD_WORK)/libheif
 	+$(MAKE) -C $(BUILD_WORK)/libheif install \
 		DESTDIR=$(BUILD_STAGE)/libheif
+ifneq ($(filter iphoneos%,$(MEMO_TARGET)),)
+	# iOS uses libc++, including static pkg-config consumers.
+	sed -i 's/-lstdc++/-lc++/g' $(BUILD_STAGE)/libheif/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/pkgconfig/libheif.pc
+endif
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Preserve the installed LTO dylib and all configured codec backends.
+	+$(MAKE) -C $(BUILD_WORK)/libheif/libheif clean
+	+$(MAKE) -C $(BUILD_WORK)/libheif/libheif libheif.la \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/libheif/libheif/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -fno-lto" \
+		CXXFLAGS="$$(sed -n 's/^CXXFLAGS = //p' $(BUILD_WORK)/libheif/libheif/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/libheif/libheif/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -static"
+	cp -a $(BUILD_WORK)/libheif/libheif/.libs/libheif.a $(BUILD_STAGE)/libheif/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	$(call AFTER_BUILD,copy)
 endif
 
