@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS    += libass
 LIBASS_VERSION := 0.16.0
-DEB_LIBASS_V   ?= $(LIBASS_VERSION)
+DEB_LIBASS_V   ?= $(LIBASS_VERSION)-1
 
 libass-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://github.com/libass/libass/releases/download/$(LIBASS_VERSION)/libass-$(LIBASS_VERSION).tar.xz)
@@ -21,6 +21,14 @@ libass: libass-setup freetype fontconfig libfribidi harfbuzz
 	+$(MAKE) -C $(BUILD_WORK)/libass
 	+$(MAKE) -C $(BUILD_WORK)/libass install \
 		DESTDIR="$(BUILD_STAGE)/libass"
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Preserve normal installed LTO output and configured font providers.
+	+$(MAKE) -C $(BUILD_WORK)/libass/libass clean
+	+$(MAKE) -C $(BUILD_WORK)/libass/libass libass.la \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/libass/libass/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/libass/libass/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -static"
+	cp -a $(BUILD_WORK)/libass/libass/.libs/libass.a $(BUILD_STAGE)/libass/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	$(call AFTER_BUILD,copy)
 endif
 
