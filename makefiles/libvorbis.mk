@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS       += libvorbis
 LIBVORBIS_VERSION := 1.3.7
-DEB_LIBVORBIS_V   ?= $(LIBVORBIS_VERSION)
+DEB_LIBVORBIS_V   ?= $(LIBVORBIS_VERSION)-1
 
 libvorbis-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://downloads.xiph.org/releases/vorbis/libvorbis-$(LIBVORBIS_VERSION).tar.xz)
@@ -28,6 +28,15 @@ libvorbis: libvorbis-setup libogg
 	+$(MAKE) -C $(BUILD_WORK)/libvorbis
 	+$(MAKE) -C $(BUILD_WORK)/libvorbis install \
 		DESTDIR=$(BUILD_STAGE)/libvorbis
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Preserve the installed LTO libraries/programs; rebuild only public static targets.
+	rm -f $(BUILD_WORK)/libvorbis/lib/*.lo $(BUILD_WORK)/libvorbis/lib/libvorbis.la $(BUILD_WORK)/libvorbis/lib/libvorbisfile.la $(BUILD_WORK)/libvorbis/lib/libvorbisenc.la
+	+$(MAKE) -C $(BUILD_WORK)/libvorbis/lib libvorbis.la libvorbisfile.la libvorbisenc.la \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/libvorbis/lib/Makefile) -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/libvorbis/lib/Makefile) -fno-lto -static"
+	cp -a $(BUILD_WORK)/libvorbis/lib/.libs/libvorbis.a $(BUILD_WORK)/libvorbis/lib/.libs/libvorbisfile.a $(BUILD_WORK)/libvorbis/lib/.libs/libvorbisenc.a \
+		$(BUILD_STAGE)/libvorbis/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	$(call AFTER_BUILD,copy)
 endif
 
