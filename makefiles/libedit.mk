@@ -5,7 +5,7 @@ endif
 STRAPPROJECTS   += libedit
 LIBEDIT_VERSION := 3.1
 LIBEDIT_DATE    := 20230828
-DEB_LIBEDIT_V   ?= $(LIBEDIT_VERSION)-$(LIBEDIT_DATE)
+DEB_LIBEDIT_V   ?= $(LIBEDIT_VERSION)-$(LIBEDIT_DATE).1
 
 libedit-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://thrysoee.dk/editline/libedit-$(LIBEDIT_DATE)-$(LIBEDIT_VERSION).tar.gz)
@@ -23,6 +23,16 @@ libedit: libedit-setup ncurses
 		LIBS=-lncursesw
 	+$(MAKE) -C $(BUILD_WORK)/libedit install \
 		DESTDIR="$(BUILD_STAGE)/libedit"
+ifneq ($(filter -flto%,$(CFLAGS) $(CXXFLAGS)),)
+	# Retain installed LTO outputs and all configured static compiler flags.
+	+$(MAKE) -C $(BUILD_WORK)/libedit/src clean
+	+$(MAKE) -C $(BUILD_WORK)/libedit/src vi.h emacs.h common.h fcns.h help.h func.h
+	+$(MAKE) -C $(BUILD_WORK)/libedit/src libedit.la LIBS=-lncursesw \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/libedit/src/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -fno-lto" \
+		CXXFLAGS="$$(sed -n 's/^CXXFLAGS = //p' $(BUILD_WORK)/libedit/src/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/libedit/src/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -static"
+	cp -a $(BUILD_WORK)/libedit/src/.libs/libedit.a $(BUILD_STAGE)/libedit/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	$(call AFTER_BUILD,copy)
 endif
 
