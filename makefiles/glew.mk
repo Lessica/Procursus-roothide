@@ -4,11 +4,12 @@ endif
 
 SUBPROJECTS  += glew
 GLEW_VERSION := 2.2.0
-DEB_GLEW_V   ?= $(GLEW_VERSION)
+DEB_GLEW_V   ?= $(GLEW_VERSION)-1
 
 glew-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://downloads.sourceforge.net/project/glew/glew/$(GLEW_VERSION)/glew-$(GLEW_VERSION).tgz)
 	$(call EXTRACT_TAR,glew-$(GLEW_VERSION).tgz,glew-$(GLEW_VERSION),glew)
+	$(call DO_PATCH,glew,glew,-p1)
 	sed -i -e s/GLEW_DEST/GLEW_PREFIX/ \
 		-e 's/(LIB.SHARED)/(LIB.SONAME)/' $(BUILD_WORK)/glew/config/Makefile.darwin
 

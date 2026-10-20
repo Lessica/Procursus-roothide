@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS    += libglu
 LIBGLU_VERSION := 9.0.1
-DEB_LIBGLU_V   ?= $(LIBGLU_VERSION)-2
+DEB_LIBGLU_V   ?= $(LIBGLU_VERSION)-3
 
 libglu-setup: setup
 	$(call DOWNLOAD_FILE,$(BUILD_SOURCE)/libglu-$(LIBGLU_VERSION).tar.xz, \
@@ -25,6 +25,16 @@ libglu: libglu-setup mesa
 	+$(MAKE) -C $(BUILD_WORK)/libglu
 	+$(MAKE) -C $(BUILD_WORK)/libglu install \
 		DESTDIR=$(BUILD_STAGE)/libglu
+ifneq ($(filter -flto%,$(CFLAGS) $(CXXFLAGS)),)
+	# Keep the installed LTO dylib; rebuild only the development archive.
+	find $(BUILD_WORK)/libglu/src -name '*.lo' -type f -delete
+	rm -f $(BUILD_WORK)/libglu/libGLU.la
+	+$(MAKE) -C $(BUILD_WORK)/libglu libGLU.la \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/libglu/Makefile) -fno-lto" \
+		CXXFLAGS="$$(sed -n 's/^CXXFLAGS = //p' $(BUILD_WORK)/libglu/Makefile) -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/libglu/Makefile) -fno-lto -static"
+	cp -a $(BUILD_WORK)/libglu/.libs/libGLU.a $(BUILD_STAGE)/libglu/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	$(call AFTER_BUILD,copy)
 endif
 
