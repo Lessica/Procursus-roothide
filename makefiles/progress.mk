@@ -5,19 +5,23 @@ endif
 SUBPROJECTS      += progress
 PROGRESS_VERSION := 0.16
 DEB_PROGRESS_V   ?= $(PROGRESS_VERSION)
+PROGRESS_NETBSD_COMMIT := 71b79bfa3fc058cc1efb0377260850433357a7d7
 
 progress-setup: setup
 	$(call GITHUB_ARCHIVE,Xfennec,progress,$(PROGRESS_VERSION),v$(PROGRESS_VERSION))
 	$(call EXTRACT_TAR,progress-$(PROGRESS_VERSION).tar.gz,progress-$(PROGRESS_VERSION),progress)
-	sed -i 's/-lncursesww/-lncursesw/g; s/-lncurses\([^w]\|$\)/-lncursesw\1/g' $(BUILD_WORK)/progress/Makefile
+	sed -i 's/-lncursesww/-lncursesw/g; s/-lncurses\([^w]\|$$\)/-lncursesw\1/g' $(BUILD_WORK)/progress/Makefile
 
 ifeq (,$(findstring darwin,$(MEMO_TARGET)))
-	$(call DOWNLOAD_FILES,$(BUILD_WORK)/progress,https://raw.githubusercontent.com/NetBSD/src/trunk/{lib/libc/gen/wordexp.c$(comma)include/wordexp.h})
-	echo 'b4b5590b58c72c37d5284767275b175c1feaa569c5f269b2f90d669b6108c20b  $(BUILD_WORK)/progress/wordexp.c' | shasum -a 256 -c -
-	echo '9497c55ed1a5640bfaf1b3956549dd893b31a2acc7a83b07cb9a76c7b5f2f213  $(BUILD_WORK)/progress/wordexp.h' | shasum -a 256 -c -
+	$(call DOWNLOAD_FILES,$(BUILD_SOURCE)/progress-netbsd-$(PROGRESS_NETBSD_COMMIT),https://raw.githubusercontent.com/NetBSD/src/$(PROGRESS_NETBSD_COMMIT)/{lib/libc/gen/wordexp.c$(comma)include/wordexp.h})
+	echo 'b4b5590b58c72c37d5284767275b175c1feaa569c5f269b2f90d669b6108c20b  $(BUILD_SOURCE)/progress-netbsd-$(PROGRESS_NETBSD_COMMIT)/wordexp.c' | shasum -a 256 -c -
+	echo '9497c55ed1a5640bfaf1b3956549dd893b31a2acc7a83b07cb9a76c7b5f2f213  $(BUILD_SOURCE)/progress-netbsd-$(PROGRESS_NETBSD_COMMIT)/wordexp.h' | shasum -a 256 -c -
+	if [ ! -f $(BUILD_WORK)/progress/ios.patch.done ]; then \
+		cp $(BUILD_SOURCE)/progress-netbsd-$(PROGRESS_NETBSD_COMMIT)/wordexp.{c,h} $(BUILD_WORK)/progress/; \
+	fi
 	$(call DO_PATCH,progress,progress,-p1)
 endif
-	mv $(BUILD_WORK)/progress/progress.1 $(BUILD_WORK)/progress/cv-progress.1
+	cp $(BUILD_WORK)/progress/progress.1 $(BUILD_WORK)/progress/cv-progress.1
 
 ifneq ($(wildcard $(BUILD_WORK)/progress/.build_complete),)
 progress:
