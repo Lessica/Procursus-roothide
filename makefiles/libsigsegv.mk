@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS        += libsigsegv
 LIBSIGSEGV_VERSION := 2.13
-DEB_LIBSIGSEGV_V   ?= $(LIBSIGSEGV_VERSION)
+DEB_LIBSIGSEGV_V   ?= $(LIBSIGSEGV_VERSION)-1
 
 libsigsegv-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://ftp.gnu.org/gnu/libsigsegv/libsigsegv-$(LIBSIGSEGV_VERSION).tar.gz)
@@ -31,6 +31,15 @@ libsigsegv: libsigsegv-setup
 	+$(MAKE) -C $(BUILD_WORK)/libsigsegv
 	+$(MAKE) -C $(BUILD_WORK)/libsigsegv install \
 		DESTDIR=$(BUILD_STAGE)/libsigsegv
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Retain the configured Darwin fault handlers and installed LTO dylib.
+	rm -f $(BUILD_WORK)/libsigsegv/src/*.lo $(BUILD_WORK)/libsigsegv/src/libsigsegv.la
+	+$(MAKE) -C $(BUILD_WORK)/libsigsegv/src libsigsegv.la \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/libsigsegv/src/Makefile) -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/libsigsegv/src/Makefile) -fno-lto -static"
+	cp -a $(BUILD_WORK)/libsigsegv/src/.libs/libsigsegv.a \
+		$(BUILD_STAGE)/libsigsegv/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	$(call AFTER_BUILD,copy)
 endif
 

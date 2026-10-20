@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS       += libdvdcss
 LIBDVDCSS_VERSION := 1.4.2
-DEB_LIBDVDCSS_V   ?= $(LIBDVDCSS_VERSION)
+DEB_LIBDVDCSS_V   ?= $(LIBDVDCSS_VERSION)-1
 
 libdvdcss-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://download.videolan.org/pub/libdvdcss/$(LIBDVDCSS_VERSION)/libdvdcss-$(LIBDVDCSS_VERSION).tar.bz2)
@@ -20,6 +20,15 @@ libdvdcss: libdvdcss-setup
 	+$(MAKE) -C $(BUILD_WORK)/libdvdcss
 	+$(MAKE) -C $(BUILD_WORK)/libdvdcss install \
 		DESTDIR=$(BUILD_STAGE)/libdvdcss
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Keep installed LTO outputs and the complete configured compiler flags.
+	+$(MAKE) -C $(BUILD_WORK)/libdvdcss clean
+	+$(MAKE) -C $(BUILD_WORK)/libdvdcss libdvdcss.la \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/libdvdcss/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/libdvdcss/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -static"
+	cp -a $(BUILD_WORK)/libdvdcss/.libs/libdvdcss.a \
+		$(BUILD_STAGE)/libdvdcss/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	$(call AFTER_BUILD,copy)
 endif
 

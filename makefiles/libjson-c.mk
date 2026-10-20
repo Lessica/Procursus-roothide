@@ -4,11 +4,12 @@ endif
 
 SUBPROJECTS      += libjson-c
 JSON-C_VERSION   := 0.15
-DEB_JSON-C_V     ?= $(JSON-C_VERSION)
+DEB_JSON-C_V     ?= $(JSON-C_VERSION)-1
 
 libjson-c-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://s3.amazonaws.com/json-c_releases/releases/json-c-$(JSON-C_VERSION).tar.gz)
 	$(call EXTRACT_TAR,json-c-$(JSON-C_VERSION).tar.gz,json-c-$(JSON-C_VERSION),libjson-c)
+	$(call DO_PATCH,libjson-c,libjson-c,-p1)
 
 ifneq ($(wildcard $(BUILD_WORK)/libjson-c/.build_complete),)
 libjson-c:
