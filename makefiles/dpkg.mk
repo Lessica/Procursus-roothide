@@ -4,7 +4,7 @@ endif
 
 STRAPPROJECTS  += dpkg
 DPKG_VERSION   := 1.22.6
-DEB_DPKG_V     ?= $(DPKG_VERSION)
+DEB_DPKG_V     ?= $(DPKG_VERSION)-1
 
 dpkg-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://snapshot.debian.org/archive/debian/20240311T214105Z/pool/main/d/dpkg/dpkg_$(DPKG_VERSION).tar.xz)
@@ -46,6 +46,20 @@ endif
 		PERL="$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/perl"
 	+$(MAKE) -C $(BUILD_WORK)/dpkg install \
 		DESTDIR="$(BUILD_STAGE)/dpkg"
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Programs retain their installed LTO code. Include all convenience members
+	# when rebuilding the public libdpkg archive with native objects.
+	find $(BUILD_WORK)/dpkg/lib/{compat,dpkg} -maxdepth 1 -name '*.lo' -type f -delete
+	rm -f $(BUILD_WORK)/dpkg/lib/compat/libcompat.la $(BUILD_WORK)/dpkg/lib/dpkg/libdpkg.la
+	+$(MAKE) -C $(BUILD_WORK)/dpkg/lib/compat libcompat.la \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/dpkg/lib/compat/Makefile) -fno-lto"
+	+$(MAKE) -C $(BUILD_WORK)/dpkg/lib/dpkg libdpkg.la \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/dpkg/lib/dpkg/Makefile) -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/dpkg/lib/dpkg/Makefile) -fno-lto -static"
+	cp -a $(BUILD_WORK)/dpkg/lib/dpkg/.libs/libdpkg.a $(BUILD_STAGE)/dpkg/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
+	# The explicit host-build dylib is only a build input; pc already has -llzma.
+	sed -i 's|$(BUILD_BASE)$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)$(MEMO_ALT_PREFIX)/lib/liblzma.dylib ||g' $(BUILD_STAGE)/dpkg/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/pkgconfig/libdpkg.pc
 	mkdir -p $(BUILD_STAGE)/dpkg/$(MEMO_PREFIX)/var/lib
 	$(LN_S) $(MEMO_PREFIX)/Library/dpkg $(BUILD_STAGE)/dpkg/$(MEMO_PREFIX)/var/lib/dpkg
 	$(call AFTER_BUILD)
