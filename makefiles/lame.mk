@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS  += lame
 LAME_VERSION := 3.100
-DEB_LAME_V   ?= $(LAME_VERSION)
+DEB_LAME_V   ?= $(LAME_VERSION)-1
 
 lame-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://downloads.sourceforge.net/lame/lame-$(LAME_VERSION).tar.gz)
@@ -24,6 +24,19 @@ lame: lame-setup ncurses libsndfile
 	+$(MAKE) -C $(BUILD_WORK)/lame
 	+$(MAKE) -C $(BUILD_WORK)/lame install \
 		DESTDIR=$(BUILD_STAGE)/lame
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Retain installed LTO frontend/dylib. Rebuild only the decoder
+	# convenience library and the configured encoder library/subdirectories.
+	+$(MAKE) -C $(BUILD_WORK)/lame/mpglib clean
+	+$(MAKE) -C $(BUILD_WORK)/lame/libmp3lame clean
+	+$(MAKE) -C $(BUILD_WORK)/lame/mpglib \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/lame/mpglib/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/lame/mpglib/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -static"
+	+$(MAKE) -C $(BUILD_WORK)/lame/libmp3lame \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/lame/libmp3lame/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/lame/libmp3lame/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -static"
+	cp -a $(BUILD_WORK)/lame/libmp3lame/.libs/libmp3lame.a $(BUILD_STAGE)/lame/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	$(call AFTER_BUILD,copy)
 endif
 

@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS   += bison
 BISON_VERSION := 3.8.2
-DEB_BISON_V   ?= $(BISON_VERSION)
+DEB_BISON_V   ?= $(BISON_VERSION)-1
 
 bison-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://ftpmirror.gnu.org/gnu/bison/bison-$(BISON_VERSION).tar.xz{$(comma).sig})
@@ -21,6 +21,12 @@ bison: bison-setup m4 gettext readline
 	+$(MAKE) -C $(BUILD_WORK)/bison
 	+$(MAKE) -C $(BUILD_WORK)/bison install \
 		DESTDIR=$(BUILD_STAGE)/bison
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# liby is independent of the already installed LTO bison executable.
+	rm -f $(BUILD_WORK)/bison/lib/{main,yyerror}.o $(BUILD_WORK)/bison/lib/liby.a
+	+$(MAKE) -C $(BUILD_WORK)/bison lib/liby.a CFLAGS="$(CFLAGS) -fno-lto"
+	cp -a $(BUILD_WORK)/bison/lib/liby.a $(BUILD_STAGE)/bison/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	mv $(BUILD_STAGE)/bison/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/yacc \
 		$(BUILD_STAGE)/bison/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/bison.yacc
 	mv $(BUILD_STAGE)/bison/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share/man/man1/yacc.1 \
