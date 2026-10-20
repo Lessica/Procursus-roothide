@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS      += libpng16
 LIBPNG16_VERSION := 1.6.37
-DEB_LIBPNG16_V   ?= $(LIBPNG16_VERSION)-2
+DEB_LIBPNG16_V   ?= $(LIBPNG16_VERSION)-3
 
 libpng16-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://download.sourceforge.net/libpng/libpng-$(LIBPNG16_VERSION).tar.xz)
@@ -23,6 +23,17 @@ libpng16: libpng16-setup
 	+$(MAKE) -C $(BUILD_WORK)/libpng16
 	+$(MAKE) -C $(BUILD_WORK)/libpng16 install \
 		DESTDIR=$(BUILD_STAGE)/libpng16
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Keep the installed LTO dylib/tools; rebuild the same configured library
+	# as native static objects, preserving APNG and target assembler options.
+	+$(MAKE) -C $(BUILD_WORK)/libpng16 clean
+	+$(MAKE) -C $(BUILD_WORK)/libpng16 libpng16.la \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/libpng16/Makefile) -fno-lto" \
+		CCASFLAGS="$$(sed -n 's/^CCASFLAGS = //p' $(BUILD_WORK)/libpng16/Makefile) -fno-lto" \
+		LDFLAGS="$(filter-out -flto%,$(LDFLAGS)) -static"
+	cp -a $(BUILD_WORK)/libpng16/.libs/libpng16.a \
+		$(BUILD_STAGE)/libpng16/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	$(call AFTER_BUILD,copy)
 endif
 

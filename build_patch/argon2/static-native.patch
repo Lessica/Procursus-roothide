@@ -1,0 +1,10 @@
+--- a/Makefile
++++ b/Makefile
+@@ -185,3 +185,6 @@
+-$(LIB_ST): 	$(OBJ)
++# Only the archive uses these objects; shared library and CLI compile SRC
++# directly and retain their normal LTO flags.
++$(OBJ): CFLAGS += -fno-lto
++$(LIB_ST): 	$(OBJ)
+ 		$(AR) rcs $@ $^
+ 

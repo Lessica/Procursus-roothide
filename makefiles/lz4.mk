@@ -4,11 +4,12 @@ endif
 
 STRAPPROJECTS += lz4
 LZ4_VERSION   := 1.9.4
-DEB_LZ4_V     ?= $(LZ4_VERSION)
+DEB_LZ4_V     ?= $(LZ4_VERSION)-1
 
 lz4-setup: setup
 	$(call GITHUB_ARCHIVE,lz4,lz4,$(LZ4_VERSION),v$(LZ4_VERSION))
 	$(call EXTRACT_TAR,lz4-$(LZ4_VERSION).tar.gz,lz4-$(LZ4_VERSION),lz4)
+	$(call DO_PATCH,lz4,lz4,-p1)
 
 ifneq ($(wildcard $(BUILD_WORK)/lz4/.build_complete),)
 lz4:

@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS  += alac
 ALAC_VERSION := 0.0.7
-DEB_ALAC_V   ?= $(ALAC_VERSION)
+DEB_ALAC_V   ?= $(ALAC_VERSION)-1
 
 alac-setup: setup
 	$(call GITHUB_ARCHIVE,mikebrady,alac,$(ALAC_VERSION),$(ALAC_VERSION))
@@ -24,6 +24,16 @@ alac: alac-setup
 	+$(MAKE) -C $(BUILD_WORK)/alac install \
 		DESTDIR=$(BUILD_STAGE)/alac
 
+ifneq ($(filter -flto%,$(CFLAGS) $(CXXFLAGS)),)
+	# Keep the installed LTO dylib and rebuild only its static C/C++ target.
+	+$(MAKE) -C $(BUILD_WORK)/alac/codec clean
+	+$(MAKE) -C $(BUILD_WORK)/alac/codec libalac.la \
+		CFLAGS="$(filter-out -flto%,$(CFLAGS)) -DTARGET_OS_MAC -fno-lto" \
+		CXXFLAGS="$(filter-out -flto%,$(CXXFLAGS)) -fno-lto" \
+		LDFLAGS="$(filter-out -flto%,$(LDFLAGS)) -static"
+	cp -a $(BUILD_WORK)/alac/codec/.libs/libalac.a \
+		$(BUILD_STAGE)/alac/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	$(call AFTER_BUILD,copy)
 endif
 

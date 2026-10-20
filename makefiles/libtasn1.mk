@@ -4,7 +4,7 @@ endif
 
 STRAPPROJECTS    += libtasn1
 LIBTASN1_VERSION := 4.19.0
-DEB_LIBTASN1_V   ?= $(LIBTASN1_VERSION)
+DEB_LIBTASN1_V   ?= $(LIBTASN1_VERSION)-1
 
 libtasn1-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://ftpmirror.gnu.org/libtasn1/libtasn1-$(LIBTASN1_VERSION).tar.gz{$(comma).sig})
@@ -21,6 +21,19 @@ libtasn1: libtasn1-setup
 	+$(MAKE) -C $(BUILD_WORK)/libtasn1
 	+$(MAKE) -C $(BUILD_WORK)/libtasn1 install \
 		DESTDIR=$(BUILD_STAGE)/libtasn1
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Keep installed LTO programs/dylib; rebuild the public archive and
+	# its embedded gnulib objects as native machine code in the same tree.
+	+$(MAKE) -C $(BUILD_WORK)/libtasn1/lib clean
+	+$(MAKE) -C $(BUILD_WORK)/libtasn1/lib/gl libgnu.la \
+		CFLAGS="$(filter-out -flto%,$(CFLAGS)) -fno-lto" \
+		LDFLAGS="$(filter-out -flto%,$(LDFLAGS)) -static"
+	+$(MAKE) -C $(BUILD_WORK)/libtasn1/lib libtasn1.la \
+		CFLAGS="$(filter-out -flto%,$(CFLAGS)) -fno-lto" \
+		LDFLAGS="$(filter-out -flto%,$(LDFLAGS)) -static"
+	cp -a $(BUILD_WORK)/libtasn1/lib/.libs/libtasn1.a \
+		$(BUILD_STAGE)/libtasn1/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	$(call AFTER_BUILD,copy)
 endif
 

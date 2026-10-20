@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS    += argon2
 ARGON2_VERSION := 20190702
-DEB_ARGON2_V   ?= 0~$(ARGON2_VERSION)
+DEB_ARGON2_V   ?= 0~$(ARGON2_VERSION)-1
 
 argon2-setup: setup
 	$(call GITHUB_ARCHIVE,P-H-C,phc-winner-argon2,$(ARGON2_VERSION),$(ARGON2_VERSION),argon2)
