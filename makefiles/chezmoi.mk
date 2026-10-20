@@ -29,7 +29,7 @@ endif
 			-X main.builtBy=Procursus \
 			-X main.date=$(shell date -u +%Y-%m-%dT%H:%M:%SZ)"
 	cd $(BUILD_WORK)/chezmoi && \
-		CGO_CC="$(CC_FOR_BUILD)" CGO_CFLAGS="$(CFLAGS_FOR_BUILD)" CGO_CPPFLAGS="$(CPPFLAGS_FOR_BUILD)" CGO_LDFLAGS="$(LDFLAGS_FOR_BUILD)" \
+		CC="$(CC_FOR_BUILD)" CXX="$(CXX_FOR_BUILD)" CGO_CFLAGS="$(CFLAGS_FOR_BUILD)" CGO_CXXFLAGS="$(CXXFLAGS_FOR_BUILD)" CGO_CPPFLAGS="$(CPPFLAGS_FOR_BUILD)" CGO_LDFLAGS="$(LDFLAGS_FOR_BUILD)" \
 		go build -o chezmoi-host
 ifeq ($(UNAME),Darwin)
 	codesign --force --sign - $(BUILD_WORK)/chezmoi/chezmoi-host
