@@ -4,25 +4,19 @@ endif
 
 STRAPPROJECTS    += brotli
 BROTLI_VERSION   := 1.1.0
-DEB_BROTLI_V     ?= $(BROTLI_VERSION)-1
+DEB_BROTLI_V     ?= $(BROTLI_VERSION)-2
 
 brotli-setup: setup
 	$(call GITHUB_ARCHIVE,google,brotli,$(BROTLI_VERSION),v$(BROTLI_VERSION))
 	$(call EXTRACT_TAR,brotli-$(BROTLI_VERSION).tar.gz,brotli-$(BROTLI_VERSION),brotli)
+	$(call DO_PATCH,brotli,brotli,-p1)
 
 ifneq ($(wildcard $(BUILD_WORK)/brotli/.build_complete),)
 brotli:
 	@echo "Using previously built brotli."
 else
 brotli: brotli-setup
-	# Build and install static libraries first.
-	cd $(BUILD_WORK)/brotli && cmake . \
-		$(DEFAULT_CMAKE_FLAGS) \
-		-DBUILD_SHARED_LIBS=OFF
-	+$(MAKE) -C $(BUILD_WORK)/brotli
-	+$(MAKE) -C $(BUILD_WORK)/brotli install \
-		DESTDIR="$(BUILD_STAGE)/brotli"
-	# Then install shared libraries into the same stage.
+	# Build separate shared/static targets in one configuration.
 	cd $(BUILD_WORK)/brotli && cmake . \
 		$(DEFAULT_CMAKE_FLAGS) \
 		-DBUILD_SHARED_LIBS=ON

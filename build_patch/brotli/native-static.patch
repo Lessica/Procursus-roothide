@@ -1,0 +1,42 @@
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -157,6 +157,27 @@
+ target_link_libraries(brotlienc brotlicommon)
+ endif()
+ 
++# Separate static objects in the same configuration; shared targets retain LTO.
++if(BUILD_SHARED_LIBS)
++  add_library(brotlicommon_static STATIC ${BROTLI_COMMON_SOURCES})
++  add_library(brotlidec_static STATIC ${BROTLI_DEC_SOURCES})
++  add_library(brotlienc_static STATIC ${BROTLI_ENC_SOURCES})
++  foreach(lib brotlicommon_static brotlidec_static brotlienc_static)
++    string(REGEX REPLACE "_static$" "" LIB_OUTPUT "${lib}")
++    set_target_properties(${lib} PROPERTIES OUTPUT_NAME "${LIB_OUTPUT}")
++    if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
++      target_compile_options(${lib} PRIVATE -fno-lto)
++    endif()
++    if(NOT BROTLI_EMSCRIPTEN)
++      set_target_properties(${lib} PROPERTIES POSITION_INDEPENDENT_CODE TRUE)
++    endif()
++    target_link_libraries(${lib} ${LIBM_LIBRARY})
++    target_include_directories(${lib} PUBLIC ${BROTLI_INCLUDE_DIRS})
++  endforeach()
++  target_link_libraries(brotlidec_static brotlicommon_static)
++  target_link_libraries(brotlienc_static brotlicommon_static)
++endif()
++
+ # For projects stuck on older versions of CMake, this will set the
+ # BROTLI_INCLUDE_DIRS and BROTLI_LIBRARIES variables so they still
+ # have a relatively easy way to use Brotli:
+@@ -185,6 +206,11 @@
+     LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+     RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
+   )
++
++  if(BUILD_SHARED_LIBS)
++    install(TARGETS brotlicommon_static brotlidec_static brotlienc_static
++      ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}")
++  endif()
+ 
+   install(
+     DIRECTORY ${BROTLI_INCLUDE_DIRS}/brotli
