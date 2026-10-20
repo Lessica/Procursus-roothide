@@ -909,6 +909,7 @@ endif
 ###
 
 # Argument 5 lets a recipe defer completion until its remaining stage work ends.
+# Process each device/inode once: hard-linked commands share load commands.
 AFTER_BUILD = \
 	if [ ! -z "$(2)" ]; then \
 		pkg="$(2)"; \
@@ -917,7 +918,7 @@ AFTER_BUILD = \
 	fi; \
 	if [ ! -z "$(MEMO_ROOTLESS)" ] && [ -d "$(BUILD_STAGE)/$$pkg/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)" ]; then \
 		rm -f $(BUILD_STAGE)/$$pkg/._lib_cache && touch $(BUILD_STAGE)/$$pkg/._lib_cache; \
-		for file in $$(find $(BUILD_STAGE)/$$pkg -type f -exec sh -c "file -ib '{}' | grep -q 'x-mach-binary; charset=binary'" \; -print); do \
+		for file in $$(find $(BUILD_STAGE)/$$pkg -type f -exec sh -c "file -ib '{}' | grep -q 'x-mach-binary; charset=binary'" \; -printf '%D:%i\t%p\n' | sort -u -k1,1 | cut -f2-); do \
 			$(OTOOL) -arch all -hv "$$file" | awk '/^MH_/ { seen=1; if ($$0 !~ /[[:space:]](EXECUTE|DYLIB|BUNDLE)[[:space:]]/) bad=1 } END { exit (!seen || bad) }' || continue; \
 			if [ $${file\#\#*.} != "a" ] && [ $${file\#\#*.} != "dSYM" ]; then \
 				INSTALL_NAME=$$($(OTOOL) -D $$file | grep -v -e ":$$" -e "^Archive :" | head -n1); \
@@ -929,7 +930,7 @@ AFTER_BUILD = \
 			fi; \
 		done; \
 	fi; \
-	for file in $$(find $(BUILD_STAGE)/$$pkg -type f -exec sh -c "file -ib '{}' | grep -q 'x-mach-binary; charset=binary'" \; -print); do \
+	for file in $$(find $(BUILD_STAGE)/$$pkg -type f -exec sh -c "file -ib '{}' | grep -q 'x-mach-binary; charset=binary'" \; -printf '%D:%i\t%p\n' | sort -u -k1,1 | cut -f2-); do \
 		$(OTOOL) -arch all -hv "$$file" | awk '/^MH_/ { seen=1; if ($$0 !~ /[[:space:]](EXECUTE|DYLIB|BUNDLE)[[:space:]]/) bad=1 } END { exit (!seen || bad) }' || continue; \
 		if [ $${file\#\#*.} != "a" ] && [ $${file\#\#*.} != "dSYM" ]; then \
 			chmod +w $$file; echo "some packages may be installed into the BUILD_STAGE with 0555 permission, for example: berkeleydb" > /dev/null; \
