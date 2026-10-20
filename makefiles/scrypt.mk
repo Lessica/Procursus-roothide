@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS    += scrypt
 SCRYPT_VERSION := 1.3.1
-DEB_SCRYPT_V   ?= $(SCRYPT_VERSION)
+DEB_SCRYPT_V   ?= $(SCRYPT_VERSION)-1
 
 scrypt-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://www.tarsnap.com/scrypt/scrypt-$(SCRYPT_VERSION).tgz)
@@ -22,6 +22,14 @@ scrypt: scrypt-setup openssl
 	+$(MAKE) -C $(BUILD_WORK)/scrypt
 	+$(MAKE) -C $(BUILD_WORK)/scrypt install \
 		DESTDIR=$(BUILD_STAGE)/scrypt
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Include folded platform helper objects; retain installed normal LTO output.
+	find $(BUILD_WORK)/scrypt \( -name '*.lo' -o -name '*.la' \) -type f -delete
+	+$(MAKE) -C $(BUILD_WORK)/scrypt libscrypt-kdf.la \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/scrypt/Makefile) -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/scrypt/Makefile) -fno-lto -static"
+	cp -a $(BUILD_WORK)/scrypt/.libs/libscrypt-kdf.a $(BUILD_STAGE)/scrypt/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	$(call AFTER_BUILD)
 endif
 
