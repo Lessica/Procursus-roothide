@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS    += libdca
 LIBDCA_VERSION := 0.0.7
-DEB_LIBDCA_V   ?= $(LIBDCA_VERSION)
+DEB_LIBDCA_V   ?= $(LIBDCA_VERSION)-1
 
 libdca-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://download.videolan.org/pub/videolan/libdca/$(LIBDCA_VERSION)/libdca-$(LIBDCA_VERSION).tar.bz2)
@@ -22,6 +22,15 @@ libdca: libdca-setup
 	+$(MAKE) -C $(BUILD_WORK)/libdca
 	+$(MAKE) -C $(BUILD_WORK)/libdca install \
 		DESTDIR=$(BUILD_STAGE)/libdca
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Preserve installed LTO dylib/tools and all configured codec flags.
+	+$(MAKE) -C $(BUILD_WORK)/libdca/libdca clean
+	+$(MAKE) -C $(BUILD_WORK)/libdca/libdca libdca.la \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/libdca/libdca/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/libdca/libdca/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -static"
+	cp -a $(BUILD_WORK)/libdca/libdca/.libs/libdca.a \
+		$(BUILD_STAGE)/libdca/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	$(call AFTER_BUILD,copy)
 endif
 

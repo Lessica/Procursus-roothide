@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS       += libdvbcsa
 LIBDVBCSA_VERSION := 1.1.0
-DEB_LIBDVBCSA_V   ?= $(LIBDVBCSA_VERSION)
+DEB_LIBDVBCSA_V   ?= $(LIBDVBCSA_VERSION)-1
 
 libdvbcsa-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://download.videolan.org/pub/videolan/libdvbcsa/$(LIBDVBCSA_VERSION)/libdvbcsa-$(LIBDVBCSA_VERSION).tar.gz)
@@ -21,6 +21,15 @@ libdvbcsa: libdvbcsa-setup
 	+$(MAKE) -C $(BUILD_WORK)/libdvbcsa
 	+$(MAKE) -C $(BUILD_WORK)/libdvbcsa install \
 		DESTDIR=$(BUILD_STAGE)/libdvbcsa
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Keep the installed LTO dylib and configured bitslice/optimization flags.
+	+$(MAKE) -C $(BUILD_WORK)/libdvbcsa/src clean
+	+$(MAKE) -C $(BUILD_WORK)/libdvbcsa/src libdvbcsa.la \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/libdvbcsa/src/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/libdvbcsa/src/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -static"
+	cp -a $(BUILD_WORK)/libdvbcsa/src/.libs/libdvbcsa.a \
+		$(BUILD_STAGE)/libdvbcsa/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	$(call AFTER_BUILD,copy)
 endif
 
