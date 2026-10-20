@@ -9,10 +9,13 @@ DEB_MTREE_NETBSD_V   ?= $(MTREE_NETBSD_VERSION)
 mtree-netbsd-setup: setup
 	$(call GITHUB_ARCHIVE,jgoerzen,mtree-netbsd,$(MTREE_NETBSD_VERSION),debian/$(MTREE_NETBSD_VERSION))
 	$(call EXTRACT_TAR,mtree-netbsd-$(MTREE_NETBSD_VERSION).tar.gz,mtree-netbsd-debian-$(MTREE_NETBSD_VERSION),mtree-netbsd)
-	$(call DOWNLOAD_FILES,$(BUILD_WORK)/mtree-netbsd,https://raw.githubusercontent.com/NetBSD/src/71b79bfa3fc058cc1efb0377260850433357a7d7/lib/libc/gen/pwcache.{c$(comma)h})
+	$(call DOWNLOAD_FILES,$(BUILD_SOURCE)/mtree-netbsd-pwcache-71b79bfa3fc058cc1efb0377260850433357a7d7,https://raw.githubusercontent.com/NetBSD/src/71b79bfa3fc058cc1efb0377260850433357a7d7/lib/libc/gen/pwcache.{c$(comma)h})
 	@echo "Checking pinned NetBSD pwcache helper inputs"
-	@test "$$(shasum -a 256 $(BUILD_WORK)/mtree-netbsd/pwcache.c | awk '{print $$1}')" = "84e553fbbe4bb76dd670c25e6d8442ca04bfa6a13a59777fd8d102fe009d4c4d"
-	@test "$$(shasum -a 256 $(BUILD_WORK)/mtree-netbsd/pwcache.h | awk '{print $$1}')" = "6d8aa3ae4f1811eed431acbf42fdf7e154895a19a3a2fcb57f92dba0c5cb4ea6"
+	@test "$$(shasum -a 256 $(BUILD_SOURCE)/mtree-netbsd-pwcache-71b79bfa3fc058cc1efb0377260850433357a7d7/pwcache.c | awk '{print $$1}')" = "84e553fbbe4bb76dd670c25e6d8442ca04bfa6a13a59777fd8d102fe009d4c4d"
+	@test "$$(shasum -a 256 $(BUILD_SOURCE)/mtree-netbsd-pwcache-71b79bfa3fc058cc1efb0377260850433357a7d7/pwcache.h | awk '{print $$1}')" = "6d8aa3ae4f1811eed431acbf42fdf7e154895a19a3a2fcb57f92dba0c5cb4ea6"
+	if [ ! -f $(BUILD_WORK)/mtree-netbsd/pwcache.diff.done ]; then \
+		cp $(BUILD_SOURCE)/mtree-netbsd-pwcache-71b79bfa3fc058cc1efb0377260850433357a7d7/pwcache.{c,h} $(BUILD_WORK)/mtree-netbsd/; \
+	fi
 	$(call DO_PATCH,mtree-netbsd,mtree-netbsd,-p1)
 
 ifneq ($(wildcard $(BUILD_WORK)/mtree-netbsd/.build_complete),)
