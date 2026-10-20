@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS       += tesseract
 TESSERACT_VERSION := 5.1.0
-DEB_TESSERACT_V   ?= $(TESSERACT_VERSION)-1
+DEB_TESSERACT_V   ?= $(TESSERACT_VERSION)-2
 
 ###
 # TODO:
@@ -34,6 +34,19 @@ tesseract: tesseract-setup leptonica libarchive curl
 	sed -i -e 's|$(BUILD_BASE)$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)|$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)|g' \
 		-e 's|^datarootdir = |datarootdir=|' \
 		$(BUILD_STAGE)/tesseract/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/pkgconfig/tesseract.pc
+ifneq ($(filter iphoneos%,$(MEMO_TARGET)),)
+	# Static consumers of the public C API also require the Apple C++ runtime.
+	sed -i '/^Libs.private:/s/$$/ -lc++/' $(BUILD_STAGE)/tesseract/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/pkgconfig/tesseract.pc
+endif
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Keep installed LTO runtime; rebuild the public library and folded helpers.
+	+$(MAKE) -C $(BUILD_WORK)/tesseract clean
+	+$(MAKE) -C $(BUILD_WORK)/tesseract libtesseract.la \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/tesseract/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -fno-lto" \
+		CXXFLAGS="$$(sed -n 's/^CXXFLAGS = //p' $(BUILD_WORK)/tesseract/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/tesseract/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -static"
+	cp -a $(BUILD_WORK)/tesseract/.libs/libtesseract.a $(BUILD_STAGE)/tesseract/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	$(call AFTER_BUILD,copy)
 endif
 
