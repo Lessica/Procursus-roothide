@@ -23,7 +23,6 @@ bender: bender-setup
 	printf '%s\n' '#!/bin/sh' 'exec "$(CXX)" -isysroot "$(TARGET_SYSROOT)" "$$@"' > $(BUILD_WORK)/bender/target-cxx-wrapper
 	chmod 755 $(BUILD_WORK)/bender/target-{cc,cxx}-wrapper
 	cd $(BUILD_WORK)/bender && $(DEFAULT_RUST_FLAGS) \
-		SDKROOT="$(MACOSX_SYSROOT)" \
 		CC="$(CC_FOR_BUILD)" CXX="$(CXX_FOR_BUILD)" \
 		CC_$(subst -,_,$(RUST_TARGET))="$(BUILD_WORK)/bender/target-cc-wrapper" \
 		CXX_$(subst -,_,$(RUST_TARGET))="$(BUILD_WORK)/bender/target-cxx-wrapper" \
