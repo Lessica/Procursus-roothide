@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS   += libxpm
 LIBXPM_VERSION := 3.5.13
-DEB_LIBXPM_V   ?= $(LIBXPM_VERSION)
+DEB_LIBXPM_V   ?= $(LIBXPM_VERSION)-1
 
 libxpm-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://xorg.freedesktop.org/archive/individual/lib/libXpm-$(LIBXPM_VERSION).tar.bz2{$(comma).sig})
@@ -21,6 +21,14 @@ libxpm: libxpm-setup libx11 xorgproto libxt libxext gettext
 	+$(MAKE) -C $(BUILD_WORK)/libxpm
 	+$(MAKE) -C $(BUILD_WORK)/libxpm install \
 		DESTDIR=$(BUILD_STAGE)/libxpm
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Preserve installed LTO outputs and configured static compiler flags.
+	+$(MAKE) -C $(BUILD_WORK)/libxpm/src clean
+	+$(MAKE) -C $(BUILD_WORK)/libxpm/src libXpm.la \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/libxpm/src/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/libxpm/src/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -static"
+	cp -a $(BUILD_WORK)/libxpm/src/.libs/libXpm.a $(BUILD_STAGE)/libxpm/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	$(call AFTER_BUILD,copy)
 endif
 
