@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS       += libboost
 LIBBOOST_VERSION  := 1.84.0
-DEB_LIBBOOST_V    ?= $(LIBBOOST_VERSION)
+DEB_LIBBOOST_V    ?= $(LIBBOOST_VERSION)-1
 
 ifneq (,$(findstring amd64,$(MEMO_TARGET)))
 LIBBOOST_CONFIGURE_ARGS := abi=sysv
@@ -39,6 +39,20 @@ endif
 		cxxstd="11" \
 		$(LIBBOOST_CONFIGURE_ARGS) \
 		install
+ifneq ($(filter -flto%,$(CXXFLAGS)),)
+	# Keep the installed LTO shared family. Reuse its b2 configuration and
+	# force only static library targets, retaining original assembly members.
+	+cd $(BUILD_WORK)/libboost && \
+		cp tools/build/src/user-config.jam tools/build/src/user-config.jam.lto && \
+		trap 'mv -f tools/build/src/user-config.jam.lto tools/build/src/user-config.jam' EXIT && \
+		sed -i -E 's/-flto(=[^ "]+)?/-fno-lto/g' tools/build/src/user-config.jam && \
+		tools/build/src/engine/b2 -a -j$(CORE_COUNT) \
+			--stagedir=$(BUILD_WORK)/libboost/stage-native \
+			--without-mpi --without-graph_parallel \
+			threading=multi variant=release cxxstd="11" \
+			$(LIBBOOST_CONFIGURE_ARGS) link=static stage && \
+		cp -a stage-native/lib/libboost_*.a $(BUILD_STAGE)/libboost/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	# F u boost!
 	for lib in $(BUILD_STAGE)/libboost/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/libboost_*.dylib; do \
 		$(I_N_T) -id @rpath/$$(basename $$lib .dylib).$(LIBBOOST_VERSION).dylib $$lib; \
@@ -48,6 +62,10 @@ endif
 		mv $$lib $$(dirname $$lib)/$$(basename $$lib .dylib).$(LIBBOOST_VERSION).dylib; \
 		$(LN_S) $$(basename $$lib .dylib).$(LIBBOOST_VERSION).dylib $$lib; \
 	done
+	# Installed CMake packages must resolve from their own location, not the
+	# temporary b2 install prefix (the original block only preserves symlinks).
+	find $(BUILD_STAGE)/libboost/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/cmake -name '*.cmake' -type f \
+		-exec sed -i '/^# If the computed and the original directories are symlink-equivalent, use original$$/,/^endif()$$/d' {} +
 	$(call AFTER_BUILD,copy)
 endif
 
