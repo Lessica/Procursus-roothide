@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS    += wimlib
 WIMLIB_VERSION := 1.13.3
-DEB_WIMLIB_V   ?= $(WIMLIB_VERSION)-1
+DEB_WIMLIB_V   ?= $(WIMLIB_VERSION)-2
 
 wimlib-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://wimlib.net/downloads/wimlib-$(WIMLIB_VERSION).tar.gz)
@@ -26,6 +26,15 @@ wimlib: wimlib-setup openssl
 	+$(MAKE) -C $(BUILD_WORK)/wimlib
 	+$(MAKE) -C $(BUILD_WORK)/wimlib install \
 		DESTDIR=$(BUILD_STAGE)/wimlib
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Keep installed LTO tools/dylib; rebuild only the public library archive.
+	find $(BUILD_WORK)/wimlib -name '*.lo' -type f -delete
+	rm -f $(BUILD_WORK)/wimlib/libwim.la
+	+$(MAKE) -C $(BUILD_WORK)/wimlib libwim.la \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/wimlib/Makefile) -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/wimlib/Makefile) -fno-lto -static"
+	cp -a $(BUILD_WORK)/wimlib/.libs/libwim.a $(BUILD_STAGE)/wimlib/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	$(call AFTER_BUILD)
 endif
 
