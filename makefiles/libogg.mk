@@ -25,11 +25,11 @@ libogg: libogg-setup
 	+$(MAKE) -C $(BUILD_WORK)/libogg install \
 		DESTDIR=$(BUILD_STAGE)/libogg
 ifneq ($(filter -flto%,$(CFLAGS)),)
-	# Preserve the installed LTO dylib; rebuild only its public static target.
+	# Preserve the installed LTO dylib and configured flags; rebuild only its static target.
 	+$(MAKE) -C $(BUILD_WORK)/libogg/src clean
 	+$(MAKE) -C $(BUILD_WORK)/libogg/src libogg.la \
-		CFLAGS="$(filter-out -flto%,$(CFLAGS)) -fno-lto" \
-		LDFLAGS="$(filter-out -flto%,$(LDFLAGS)) -static"
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/libogg/src/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/libogg/src/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -static"
 	cp -a $(BUILD_WORK)/libogg/src/.libs/libogg.a \
 		$(BUILD_STAGE)/libogg/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
 endif

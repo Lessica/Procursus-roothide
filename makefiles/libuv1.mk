@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS    += libuv1
 LIBUV1_VERSION := 1.48.0
-DEB_LIBUV1_V   ?= $(LIBUV1_VERSION)
+DEB_LIBUV1_V   ?= $(LIBUV1_VERSION)-1
 
 libuv1-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://dist.libuv.org/dist/v$(LIBUV1_VERSION)/libuv-v$(LIBUV1_VERSION).tar.gz)
@@ -29,6 +29,15 @@ libuv1: libuv1-setup
 	+$(MAKE) -C $(BUILD_WORK)/libuv1
 	+$(MAKE) -C $(BUILD_WORK)/libuv1 install \
 		DESTDIR="$(BUILD_STAGE)/libuv1"
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Preserve the installed LTO dylib and configured flags; rebuild only its static target.
+	+$(MAKE) -C $(BUILD_WORK)/libuv1 clean
+	+$(MAKE) -C $(BUILD_WORK)/libuv1 libuv.la \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/libuv1/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/libuv1/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -static"
+	cp -a $(BUILD_WORK)/libuv1/.libs/libuv.a \
+		$(BUILD_STAGE)/libuv1/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	$(call AFTER_BUILD,copy)
 endif
 

@@ -27,8 +27,8 @@ ifneq ($(filter -flto%,$(CFLAGS)),)
 	# rebuild only the public archive target with native objects.
 	+$(MAKE) -C $(BUILD_WORK)/libopus clean
 	+$(MAKE) -C $(BUILD_WORK)/libopus libopus.la \
-		CFLAGS="$(filter-out -flto%,$(CFLAGS)) -fno-lto" \
-		LDFLAGS="$(filter-out -flto%,$(LDFLAGS)) -static"
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/libopus/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/libopus/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -static"
 	cp -a $(BUILD_WORK)/libopus/.libs/libopus.a \
 		$(BUILD_STAGE)/libopus/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
 endif

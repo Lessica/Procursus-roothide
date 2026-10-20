@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS       += libconfig
 LIBCONFIG_VERSION := 1.7.3
-DEB_LIBCONFIG_V   ?= $(LIBCONFIG_VERSION)
+DEB_LIBCONFIG_V   ?= $(LIBCONFIG_VERSION)-1
 
 libconfig-setup: setup
 	$(call GITHUB_ARCHIVE,hyperrealm,libconfig,$(LIBCONFIG_VERSION),v$(LIBCONFIG_VERSION))
@@ -24,6 +24,16 @@ libconfig: libconfig-setup
 	+$(MAKE) -C $(BUILD_WORK)/libconfig install \
 		DESTDIR=$(BUILD_STAGE)/libconfig
 
+ifneq ($(filter -flto%,$(CFLAGS) $(CXXFLAGS)),)
+	# Preserve both installed LTO dylibs; rebuild their public C/C++ archives.
+	+$(MAKE) -C $(BUILD_WORK)/libconfig/lib clean
+	+$(MAKE) -C $(BUILD_WORK)/libconfig/lib libconfig.la libconfig++.la \
+		CFLAGS="$(filter-out -flto%,$(CFLAGS)) -fno-lto" \
+		CXXFLAGS="$(filter-out -flto%,$(CXXFLAGS)) -fno-lto" \
+		LDFLAGS="$(filter-out -flto%,$(LDFLAGS)) -static"
+	cp -a $(BUILD_WORK)/libconfig/lib/.libs/libconfig{,++}.a \
+		$(BUILD_STAGE)/libconfig/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	$(call AFTER_BUILD,copy)
 endif
 
