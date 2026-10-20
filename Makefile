@@ -950,14 +950,25 @@ AFTER_BUILD = \
 		fi; \
 	done; \
 	rm -f $(BUILD_STAGE)/$$pkg/._lib_cache; \
-	find $(BUILD_STAGE)/$$pkg/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share/man -type f -name '*.gz$$' -exec gunzip '{}' \; 2> /dev/null; \
-	find $(BUILD_STAGE)/$$pkg/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share/man -type f -name '*.xz$$' -exec unxz '{}' \; 2> /dev/null; \
-	find $(BUILD_STAGE)/$$pkg/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share/man -type f -name '*.zst$$' -exec unzstd '{}' \; 2> /dev/null; \
-	if [ "$(MEMO_NO_DOC_COMPRESS)" != 1 ]; then \
-		find $(BUILD_STAGE)/$$pkg/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share/man -type f -exec $(MEMO_MANPAGE_COMPCMD) $(MEMO_MANPAGE_COMPFLGS) '{}' \; 2> /dev/null; \
-		find $(BUILD_STAGE)/$$pkg/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share/man -type l -exec bash -c '$(LN_S) $$(readlink "{}" | sed -e "s/\.gz$$//" -e "s/\.xz$$//" -e "s/\.zst$$//")$(MEMO_MANPAGE_SUFFIX) "{}"$(MEMO_MANPAGE_SUFFIX); rm -f "{}"' \; -delete 2> /dev/null; \
-	else \
-		find $(BUILD_STAGE)/$$pkg/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share/man -type l -exec bash -c '$(LN_S) $$(readlink "{}" | sed -e "s/\.gz$$//" -e "s/\.xz$$//" -e "s/\.zst$$//") "{}"' \; 2> /dev/null; \
+	man_dir="$(BUILD_STAGE)/$$pkg/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share/man"; \
+	if [ -d "$$man_dir" ]; then \
+		find "$$man_dir" -type f \( -name '*.gz' -o -name '*.xz' -o -name '*.zst' \) -exec bash -ec 'for file do \
+			plain=$${file%.*}; \
+			if [ -e "$$plain" ]; then rm -f "$$file"; else \
+				case "$$file" in *.gz) gunzip "$$file";; *.xz) unxz "$$file";; *.zst) unzstd --rm "$$file";; esac; \
+			fi; \
+		done' _ {} + || exit 1; \
+		man_suffix=""; \
+		if [ "$(MEMO_NO_DOC_COMPRESS)" != 1 ]; then \
+			find "$$man_dir" -type f -exec $(MEMO_MANPAGE_COMPCMD) $(MEMO_MANPAGE_COMPFLGS) '{}' + || exit 1; \
+			man_suffix="$(MEMO_MANPAGE_SUFFIX)"; \
+		fi; \
+		find "$$man_dir" -type l -exec bash -ec 'suffix=$$1; shift; for file do \
+			name=$$(printf "%s\n" "$$file" | sed -E "s/\.(gz|xz|zst)$$//"); \
+			target=$$(readlink "$$file" | sed -E "s/\.(gz|xz|zst)$$//"); \
+			$(LN_S) "$$target$$suffix" "$$name$$suffix"; \
+			if [ "$$file" != "$$name$$suffix" ]; then rm -f "$$file"; fi; \
+		done' _ "$$man_suffix" {} + || exit 1; \
 	fi; \
 	if [ "$(1)" = "copy" ]; then \
 		cp -af $(BUILD_STAGE)/$$pkg/* $(BUILD_BASE); \
