@@ -7,7 +7,7 @@ TSSCHECKER_VERSION := 367
 TSSCHECKER_COMMIT  := 9e7762e0edcc4821635b96feddf232b930c34e90
 # Gitlink recorded by the fixed tsschecker source commit.
 TSSCHECKER_JSSY_COMMIT := 6de3dc6b853d9338b971c1bea0c41465276e640a
-DEB_TSSCHECKER_V   ?= $(TSSCHECKER_VERSION)-1
+DEB_TSSCHECKER_V   ?= $(TSSCHECKER_VERSION)-2
 
 tsschecker-setup: setup
 	$(call GITHUB_ARCHIVE,1Conan,tsschecker,$(TSSCHECKER_VERSION),$(TSSCHECKER_VERSION))
@@ -31,6 +31,15 @@ tsschecker: tsschecker-setup libfragmentzip libplist curl libirecovery
 	+$(MAKE) -C $(BUILD_WORK)/tsschecker
 	+$(MAKE) -C $(BUILD_WORK)/tsschecker install \
 		DESTDIR="$(BUILD_STAGE)/tsschecker"
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# The installed jssy archive is public; retain the already installed LTO
+	# tsschecker program, then rebuild only jssy's archive object.
+	rm -f $(BUILD_WORK)/tsschecker/tsschecker/{libjssy_a-jssy.o,libjssy.a}
+	+$(MAKE) -C $(BUILD_WORK)/tsschecker/tsschecker libjssy.a \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/tsschecker/tsschecker/Makefile) -fno-lto"
+	cp -a $(BUILD_WORK)/tsschecker/tsschecker/libjssy.a \
+		$(BUILD_STAGE)/tsschecker/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	$(call AFTER_BUILD)
 endif
 
