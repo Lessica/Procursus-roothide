@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS     += libxml2
 LIBXML2_VERSION := 2.9.12
-DEB_LIBXML2_V   ?= $(LIBXML2_VERSION)-1
+DEB_LIBXML2_V   ?= $(LIBXML2_VERSION)-2
 
 ### Provided by macOS/iOS and only used for tools. Try not to link anything to this.
 
@@ -37,10 +37,20 @@ libxml2: libxml2-setup xz ncurses readline python3
 	find $(BUILD_STAGE)/libxml2 -name __pycache__ -prune -exec rm -rf {} \;
 	# Configure's private static link flags contain the build sysroot.
 	# Installed development interfaces must resolve libraries on the target.
-	sed -i 's|$(BUILD_BASE)||g' \
+	sed -i -e 's|$(BUILD_BASE)||g' \
+		-e 's|-L$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib -llzma|-L$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)$(MEMO_ALT_PREFIX)/lib -llzma|g' \
 		$(BUILD_STAGE)/libxml2/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/xml2-config \
 		$(BUILD_STAGE)/libxml2/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)$(MEMO_ALT_PREFIX)/lib/pkgconfig/libxml-2.0.pc \
 		$(BUILD_STAGE)/libxml2/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)$(MEMO_ALT_PREFIX)/lib/xml2Conf.sh
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Python bindings and tools above retain their normal LTO runtime.
+	find $(BUILD_WORK)/libxml2 -maxdepth 1 -name '*.lo' -type f -delete
+	rm -f $(BUILD_WORK)/libxml2/libxml2.la
+	+$(MAKE) -C $(BUILD_WORK)/libxml2 libxml2.la \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/libxml2/Makefile) -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/libxml2/Makefile) -fno-lto -static"
+	cp -a $(BUILD_WORK)/libxml2/.libs/libxml2.a $(BUILD_STAGE)/libxml2/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)$(MEMO_ALT_PREFIX)/lib/
+endif
 	$(call AFTER_BUILD)
 endif
 

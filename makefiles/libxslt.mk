@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS += libxslt
 LIBXSLT_VERSION := 1.1.34
-DEB_LIBXSLT_V ?= $(LIBXSLT_VERSION)
+DEB_LIBXSLT_V ?= $(LIBXSLT_VERSION)-1
 
 libxslt-setup: setup
 	$(call DOWNLOAD_FILE,$(BUILD_SOURCE)/libxslt-$(LIBXSLT_VERSION).tar.xz,https://download.gnome.org/sources/libxslt/1.1/libxslt-$(LIBXSLT_VERSION).tar.xz)
@@ -19,8 +19,8 @@ libxslt: libxslt-setup libxml2 libgcrypt
 	# The optional bindings in this release require Python 2, which this
 	# corpus does not provide. All C/EXSLT/crypto/plugin features are retained.
 	cd $(BUILD_WORK)/libxslt && \
-		LIBXML_CFLAGS="-I$(BUILD_BASE)$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include/libxml2" \
-		LIBXML_LIBS="-L$(BUILD_BASE)$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)$(MEMO_ALT_PREFIX)/lib -lxml2" \
+		LIBXML_CFLAGS="-I$(BUILD_STAGE)/libxml2$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include/libxml2" \
+		LIBXML_LIBS="-L$(BUILD_STAGE)/libxml2$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)$(MEMO_ALT_PREFIX)/lib -lxml2" \
 		WITH_MODULES=1 \
 		LIBGCRYPT_CONFIG="$(BUILD_BASE)$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/libgcrypt-config --prefix=$(BUILD_BASE)$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)" \
 		./configure $(DEFAULT_CONFIGURE_FLAGS) \
@@ -29,10 +29,25 @@ libxslt: libxslt-setup libxml2 libgcrypt
 	+$(MAKE) -C $(BUILD_WORK)/libxslt
 	+$(MAKE) -C $(BUILD_WORK)/libxslt install DESTDIR="$(BUILD_STAGE)/libxslt"
 	# Build roots are valid inputs, never installed development metadata.
-	sed -i 's|$(BUILD_BASE)||g' \
+	sed -i -e 's|$(BUILD_BASE)||g' -e 's|$(BUILD_STAGE)/libxml2||g' \
 		$(BUILD_STAGE)/libxslt/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/xslt-config \
 		$(BUILD_STAGE)/libxslt/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)$(MEMO_ALT_PREFIX)/lib/pkgconfig/*.pc \
 		$(BUILD_STAGE)/libxslt/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)$(MEMO_ALT_PREFIX)/lib/xsltConf.sh
+	# libgcrypt-config can retain its build host's gpg-error search directory.
+	# Both private target providers are installed in the target's regular libdir.
+	sed -i -E '/^Libs.private:/s|-L[^ ]+|-L$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib|g' \
+		$(BUILD_STAGE)/libxslt/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)$(MEMO_ALT_PREFIX)/lib/pkgconfig/libexslt.pc
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Stage keeps the installed LTO runtime, plugins and xsltproc.
+	+set -e; for sub in libxslt libexslt; do \
+		find $(BUILD_WORK)/libxslt/$$sub -maxdepth 1 -name '*.lo' -type f -delete; \
+		rm -f $(BUILD_WORK)/libxslt/$$sub/$$sub.la; \
+		$(MAKE) -C $(BUILD_WORK)/libxslt/$$sub $$sub.la \
+			CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/libxslt/$$sub/Makefile) -fno-lto" \
+			LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/libxslt/$$sub/Makefile) -fno-lto -static"; \
+		cp -a $(BUILD_WORK)/libxslt/$$sub/.libs/$$sub.a $(BUILD_STAGE)/libxslt/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)$(MEMO_ALT_PREFIX)/lib/; \
+	done
+endif
 	$(call AFTER_BUILD,copy)
 endif
 
