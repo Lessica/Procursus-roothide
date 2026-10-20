@@ -1,0 +1,15 @@
+--- a/makefile
++++ b/makefile
+@@ -64,6 +64,12 @@
+ 	ln -s libunrar.5.dylib libunrar.dylib
+ 	$(AR) rcs libunrar.a $(OBJECTS) $(LIB_OBJ)
+ 
++# Public archive pass reuses the exact library object list and flags.
++lib-static: WHAT=RARDLL
++lib-static: CXXFLAGS+=$(LIBFLAGS)
++lib-static: $(OBJECTS) $(LIB_OBJ)
++	$(AR) rcs libunrar.a $(OBJECTS) $(LIB_OBJ)
++
+ install-unrar:
+ 			install -D unrar $(DESTDIR)/bin/unrar
+ 

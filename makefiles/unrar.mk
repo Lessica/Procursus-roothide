@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS   += unrar
 UNRAR_VERSION := 7.0.7
-DEB_UNRAR_V   ?= $(UNRAR_VERSION)
+DEB_UNRAR_V   ?= $(UNRAR_VERSION)-1
 
 unrar-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://www.rarlab.com/rar/unrarsrc-$(UNRAR_VERSION).tar.gz)
@@ -32,6 +32,14 @@ unrar: unrar-setup
 		LDFLAGS="$(LDFLAGS)"
 	cp -af $(BUILD_WORK)/unrar/libunrar*.dylib $(BUILD_STAGE)/unrar/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib
 	cp -af $(BUILD_WORK)/unrar/libunrar.a $(BUILD_STAGE)/unrar/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib
+ifneq ($(filter -flto%,$(CXXFLAGS)),)
+	# Preserve staged LTO program/dylib; rebuild only the public RARDLL archive.
+	+$(MAKE) -C $(BUILD_WORK)/unrar clean
+	+$(MAKE) -C $(BUILD_WORK)/unrar lib-static \
+		CXX="$(CXX) -std=c++11 $(CXXFLAGS) -fno-lto" \
+		AR="$(AR)"
+	cp -af $(BUILD_WORK)/unrar/libunrar.a $(BUILD_STAGE)/unrar/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib
+endif
 	cp -af $(BUILD_WORK)/unrar/*.hpp $(BUILD_STAGE)/unrar/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include
 	cp -a $(BUILD_MISC)/unrar.1 $(BUILD_STAGE)/unrar/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share/man/man1/unrar-nonfree.1
 	mv $(BUILD_STAGE)/unrar/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/unrar{,-nonfree}
