@@ -4,7 +4,7 @@ endif
 
 SUBPROJECTS    += man-db
 MAN-DB_VERSION := 2.9.4
-DEB_MAN-DB_V   ?= $(MAN-DB_VERSION)-4
+DEB_MAN-DB_V   ?= $(MAN-DB_VERSION)-5
 PO4A           ?= po4a
 
 man-db-setup: setup
@@ -33,6 +33,20 @@ man-db: man-db-setup libpipeline libgdbm gettext zstd
 		LDFLAGS="$(LDFLAGS) -lintl -Wl,-framework -Wl,CoreFoundation"
 	+$(MAKE) -C $(BUILD_WORK)/man-db install \
 		DESTDIR=$(BUILD_STAGE)/man-db
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Keep installed LTO commands/dylibs, including their gnulib code.
+	find $(BUILD_WORK)/man-db/{gl/lib,lib,libdb} -name '*.lo' -type f -delete
+	rm -f $(BUILD_WORK)/man-db/gl/lib/libgnu.la $(BUILD_WORK)/man-db/lib/libman.la $(BUILD_WORK)/man-db/libdb/libmandb.la
+	+$(MAKE) -C $(BUILD_WORK)/man-db/gl/lib libgnu.la \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/man-db/gl/lib/Makefile) -fno-lto"
+	+$(MAKE) -C $(BUILD_WORK)/man-db/lib libman.la \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/man-db/lib/Makefile) -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/man-db/lib/Makefile) -fno-lto -static"
+	+$(MAKE) -C $(BUILD_WORK)/man-db/libdb libmandb.la \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/man-db/libdb/Makefile) -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/man-db/libdb/Makefile) -fno-lto -static"
+	cp -a $(BUILD_WORK)/man-db/{lib/.libs/libman.a,libdb/.libs/libmandb.a} $(BUILD_STAGE)/man-db/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/man-db/
+endif
 	$(call AFTER_BUILD,,,$(MEMO_LINK_PREFIX)$(MEMO_SUB_PREFIX)/lib/man-db)
 endif
 
