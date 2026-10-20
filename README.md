@@ -73,6 +73,16 @@ supply that runtime. The existing package identity `libkrw0-dopamine` and versio
 `0:2.0.6:compat` are retained for compatibility. The separate `libkrw-relaxin`
 build directory prevents reuse of an ordinary Dopamine provider build.
 
+## Bender runtime compatibility
+
+The Bender recipe and built package are retained. Bender requires
+`org.coolstar.libhooker (>= 1.4.0)` and a compatible tweak loader that honors its
+`/var/mobile/Library/Preferences/org.coolstar.libhooker.plist` configuration.
+An implementation of the libhooker hooking ABI alone, including an ElleKit
+`Provides` declaration, does not establish this configuration compatibility.
+The original package dependency is preserved; runtime compatibility with the
+current RootHide/ElleKit environment has not been validated.
+
 ## Credits
 Build system created by [Diatrus](https://twitter.com/Diatrus) and [Kirb](https://twitter.com/hbkirb). Built better by all our wonderful contributors. Made worth it by people like you!
 
