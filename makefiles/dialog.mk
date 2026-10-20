@@ -5,7 +5,7 @@ endif
 SUBPROJECTS    += dialog
 DIALOG_VERSION := 1.3
 DIALOG_DATE    := 20220117
-DEB_DIALOG_V   ?= $(DIALOG_VERSION)-$(DIALOG_DATE)
+DEB_DIALOG_V   ?= $(DIALOG_VERSION)-$(DIALOG_DATE)-1
 
 dialog-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://invisible-mirror.net/archives/dialog/dialog-$(DIALOG_VERSION)-$(DIALOG_DATE).tgz)
@@ -23,6 +23,13 @@ dialog: dialog-setup ncurses gettext
 	+$(MAKE) -C $(BUILD_WORK)/dialog
 	+$(MAKE) -C $(BUILD_WORK)/dialog install-full \
 		DESTDIR=$(BUILD_STAGE)/dialog
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Keep the installed dialog program linked from the original LTO objects.
+	rm -f $(BUILD_WORK)/dialog/*.o $(BUILD_WORK)/dialog/libdialog.a
+	+$(MAKE) -C $(BUILD_WORK)/dialog libdialog.a \
+		CFLAGS="$$(sed -n 's/^CFLAGS[[:space:]]*=[[:space:]]*//p' $(BUILD_WORK)/dialog/makefile) -fno-lto"
+	cp -a $(BUILD_WORK)/dialog/libdialog.a $(BUILD_STAGE)/dialog/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
 	$(call AFTER_BUILD)
 endif
 
