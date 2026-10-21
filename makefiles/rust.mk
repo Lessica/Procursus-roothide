@@ -66,7 +66,7 @@ rust: rust-setup openssl curl
 		PKG_CONFIG_$(RUST_TARGET_ENV)="$(BUILD_TOOLS)/$(RUST_TARGET)-pkg-config" \
 		PKG_CONFIG_ALLOW_CROSS_$(RUST_TARGET_ENV)=1 \
 		$(RUST_TARGET_UPPER)_OPENSSL_DIR="$(abspath $(BUILD_BASE)/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX))" \
-		python3 x.py build -j2 && \
+		python3 x.py build -j$(CORE_COUNT) && \
 	env CC_$(RUST_TARGET_ENV)="$(RUST_TARGET_CC_WRAPPER)" \
 		CXX_$(RUST_TARGET_ENV)="$(RUST_TARGET_CXX_WRAPPER)" \
 		AR_$(RUST_TARGET_ENV)="$(AR)" RANLIB_$(RUST_TARGET_ENV)="$(RANLIB)" \
@@ -75,7 +75,7 @@ rust: rust-setup openssl curl
 		PKG_CONFIG_$(RUST_TARGET_ENV)="$(BUILD_TOOLS)/$(RUST_TARGET)-pkg-config" \
 		PKG_CONFIG_ALLOW_CROSS_$(RUST_TARGET_ENV)=1 \
 		$(RUST_TARGET_UPPER)_OPENSSL_DIR="$(abspath $(BUILD_BASE)/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX))" \
-		python3 x.py install -j2
+		python3 x.py install -j$(CORE_COUNT)
 	rm -rf $(BUILD_STAGE)/rust/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/{share/doc,etc}
 	rm -rf $(BUILD_STAGE)/rust/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/rustlib/{src,manifest-*,components,install.log,uninstall.sh,rust-installer-version}
 	rm -rf $(BUILD_STAGE)/rust/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/rustlib/*/analysis

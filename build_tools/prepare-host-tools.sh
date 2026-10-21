@@ -52,7 +52,7 @@ if [[ $HOST_PLATFORM == auto ]]; then
     esac
 fi
 case $HOST_PLATFORM in
-    linux) deps=(apt-get install -y build-essential clang perl git curl ca-certificates patch pkg-config libssl-dev zlib1g-dev libbz2-dev liblzma-dev libffi-dev libplist-dev python3 python3-venv python3-dev ninja-build autoconf automake libtool bison flex cmake gettext gawk autopoint fakeroot dpkg-dev zstd gnupg groff docbook-xsl docbook-xml libxml2-utils itstool xsltproc po4a zip unzip xz-utils lzip tcl ghc protobuf-compiler neovim luajit lua-lpeg lua-mpack bsdextrautils nodejs libmodule-build-perl ruby asciidoctor gtk-doc-tools) ;;
+    linux) deps=(apt-get install -y build-essential clang perl git curl ca-certificates patch pkg-config libssl-dev zlib1g-dev libbz2-dev liblzma-dev libffi-dev libplist-dev python3 python3-venv python3-dev ninja-build autoconf automake libtool bison flex cmake gettext gawk autopoint fakeroot dpkg-dev zstd gnupg groff docbook-xsl docbook-xml libxml2-utils itstool xsltproc po4a zip unzip xz-utils lzip tcl ghc protobuf-compiler neovim luajit lua-lpeg lua-mpack bsdextrautils nodejs libmodule-build-perl ruby asciidoctor asciidoc-base xmlto gtk-doc-tools) ;;
     macos) deps=(brew install bash make gpatch file-formula ncurses gnu-sed gawk grep gnu-tar findutils coreutils bison flex autoconf automake libtool cmake gettext fakeroot dpkg zstd gnupg groff docbook-xsl po4a openssl@3 libplist pkg-config python@3.12 ninja) ;;
     ios) deps=(apt-get install -y clang make perl ncurses-bin git curl ca-certificates patch pkg-config openssl libssl-dev libplist-dev python3 libpython3.9-dev ninja bash coreutils findutils sed gawk grep tar bison flex autoconf automake libtool cmake gettext fakeroot dpkg zstd gnupg groff docbook-xsl po4a zip unzip xz-utils ldid) ;;
     *) fail 'HOST_PLATFORM must be macos, linux or ios' ;;
@@ -235,7 +235,7 @@ fi
 "$HOST_TOOL_ROOT/venv/bin/python" -m pip install --disable-pip-version-check \
     'pip==24.3.1' 'setuptools==75.3.2' 'wheel==0.45.1'
 "$HOST_TOOL_ROOT/venv/bin/python" -m pip install --disable-pip-version-check \
-    'Cython==0.29.37' 'meson==0.64.0' 'commonmark==0.9.1' 'Mako==1.3.8'
+    'Cython==0.29.37' 'meson==0.64.0' 'commonmark==0.9.1' 'Mako==1.3.8' 'asciidoc==10.2.0'
 "$HOST_TOOL_ROOT/venv/bin/python" -c 'import Cython; assert Cython.__version__ == "0.29.37"'
 "$HOST_TOOL_ROOT/venv/bin/meson" --version
 "$HOST_TOOL_ROOT/venv/bin/python" -m pip install --disable-pip-version-check \

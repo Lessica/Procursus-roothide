@@ -30,7 +30,7 @@ ifeq ($(UNAME),Darwin)
 	printf '%s\n' '#!/bin/sh' 'exec "$(DEVELOPER_DIR)/Toolchains/XcodeDefault.xctoolchain/usr/bin/ld" -syslibroot "$(MACOSX_SYSROOT)" "$$@"' > "$(GHC_STAGE0_LD)"
 	chmod +x "$(GHC_STAGE0_CC)" "$(GHC_STAGE0_LD)"
 endif
-	echo "$(CC) -DLIBIOSEXEC_INTERNAL $(patsubst -flto=thin,,$(CFLAGS)) \$$@" > $(BUILD_WORK)/ghc/probin/$(GNU_HOST_TRIPLE)-cc
+	printf '%s\n' '#!/bin/sh' 'exec "$(CC)" -DLIBIOSEXEC_INTERNAL $(patsubst -flto=thin,,$(CFLAGS)) "$$@"' > $(BUILD_WORK)/ghc/probin/$(GNU_HOST_TRIPLE)-cc
 	chmod +x $(BUILD_WORK)/ghc/probin/$(GNU_HOST_TRIPLE)-cc
 
 	echo "HADDOCK_DOCS=NO" > $(BUILD_WORK)/ghc/mk/build.mk
