@@ -72,6 +72,7 @@ python3-commonmark
 python3-dev
 python3-mako
 python3-pip
+python3-rich
 python3-setuptools
 python3-sphinx
 python3-wheel

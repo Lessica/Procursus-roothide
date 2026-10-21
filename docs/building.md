@@ -132,10 +132,9 @@ make --output-sync=target package SUBPROJECTS="$packages" 2>&1 | tee -a build_wo
 
 ### 可选终端界面
 
-Ubuntu 安装 `python3-rich` 后，可使用现有 Make 流程的状态界面：
+Ubuntu 环境准备完成后，可直接使用终端状态界面：
 
 ```bash
-apt-get install -y python3-rich
 python3 build_tools/build_status.py package SUBPROJECTS="$packages"
 ```
 
