@@ -18,7 +18,8 @@ python3-packaging:
 else
 python3-packaging: python3-packaging-setup python3
 	$(PYTHON_HOST) -c 'import sys; assert sys.version_info[:2] == tuple(map(int, "$(PYTHON3_MAJOR_V)".split("."))), "Host Python must match target major/minor"'
-	cd $(BUILD_WORK)/python3-packaging && $(PYTHON_HOST) setup.py \
+	# Keep packaging's source tree out of the host setuptools import path.
+	cd $(BUILD_WORK)/python3-packaging && $(PYTHON_HOST) -I -c 'import runpy; runpy.run_path("setup.py", run_name="__main__")' \
 		build --executable="$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/python3" \
 		install --install-lib="$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/python3/dist-packages" \
 		--root="$(BUILD_STAGE)/python3-packaging" --prefix="$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)"
