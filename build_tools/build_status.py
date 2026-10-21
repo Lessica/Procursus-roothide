@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Optional terminal presentation for the existing Make package target."""
 import argparse
+import collections
 import contextlib
 import os
 import queue
@@ -18,7 +19,7 @@ REMOVE = re.compile(r'^Removing child (\S+) PID (\d+) from chain')
 LOSE = re.compile(r'^Reaping losing child (\S+) PID (\d+)')
 FAIL = re.compile(r'^make(?:\[\d+\])?: \*\*\* \[(.+)\] (.+)')
 DEBUG = re.compile(r'^(?:Using jobserver|Need a job token|Live child|Putting child|Obtained token|Reaping |Removing child|Released token|Acquired all)')
-ERROR = re.compile(r'^(?:error(?:\[[^]]+\])?:|.*?fatal error:|Unable to generate bindings:|\[download failed\]|curl:|gpg:.*\b(?:failed|BAD)\b|tar:.*(?:Error|EOF)|gzip:|.*?:\d+(?::\d+)?: (?:fatal )?error:|configure: error:|\[monitor error\])')
+ERROR = re.compile(r'^(?:error(?:\[[^]]+\])?:|[\w.]*(?:Error|Exception):|.*?fatal error:|Unable to generate bindings:|\[download failed\]|curl:|gpg:.*\b(?:failed|BAD)\b|tar:.*(?:Error|EOF)|gzip:|.*?:\d+(?::\d+)?: (?:fatal )?error:|configure: error:|\[monitor error\])')
 GO_NETWORK_ERROR = re.compile(r'^(?:go: .*|.*@\S+: .*?)(?:Get|Head|Post) "https?://[^"]+": .+')
 PHASES = [('-setup', 'Preparing'), ('-stage', 'Staging'), ('-package', 'Packaging')]
 
@@ -40,6 +41,7 @@ class State:
         self.done = set()
         self.debs = set()
         self.failures = []
+        self.diagnostics = collections.deque(maxlen=3)
         self.downloads = {}
         self.downloaded = set()
         self.cache_hits = set()
@@ -84,12 +86,17 @@ class State:
         if match:
             self.failures.append(line)
             notices.append(('error', line))
+        diagnostic = None
         if GO_NETWORK_ERROR.match(line.strip()):
-            notices.append(('error', 'Go network error (target unknown): ' + line.strip()))
+            diagnostic = 'Go network error: ' + line.strip()
         elif ERROR.match(line.strip()):
             # Interleaved output has no reliable target identity. Never attach it
             # to a failing target based on proximity or currently active jobs.
-            notices.append(('error', 'Diagnostic (target unknown): ' + line.strip()))
+            diagnostic = line.strip()
+        if diagnostic:
+            if diagnostic not in self.diagnostics:
+                self.diagnostics.append(diagnostic)
+            notices.append(('error', 'Diagnostic (target unknown): ' + diagnostic))
         if line.startswith('Warning:') and ('retry' in line.lower() or 'retries' in line.lower()):
             notices.append(('warning', line))
         match = re.match(r'^\[build-download\] (start|end|failed|cached) (\S+)(?: (.*))?$', line)
@@ -190,7 +197,8 @@ class Display:
         table.add_column(ratio=2, overflow='ellipsis', no_wrap=True)
         table.add_column(width=9, justify='right', no_wrap=True)
         colors = {'Downloading': 'cyan', 'Preparing': 'blue', 'Building': 'bright_white', 'Staging': 'blue', 'Packaging': 'magenta'}
-        limit = max(1, min(8, self.console.height - (17 if state.failures else 13)))
+        diagnostic_height = 1 + len(state.diagnostics) if state.diagnostics else 0
+        limit = max(1, min(8, self.console.height - (17 if state.failures else 13) - diagnostic_height))
         for name, phase, elapsed, filename in rows[:limit]:
             table.add_row(self.Text(name, style='bold'), self.Text(phase, style=colors[phase]),
                           self.Text(filename, style='dim'), self.Text(duration(elapsed), style='dim'))
@@ -207,8 +215,13 @@ class Display:
             reason = state.failures[0]
             failure = [self.Text('Failed  ' + target, style='bold red'),
                        self.Text(reason, style='red', overflow='ellipsis', no_wrap=True), self.Text('')]
+        diagnostics = []
+        if state.diagnostics:
+            diagnostics = [self.Text('Recent diagnostics (target unknown)', style='yellow')]
+            diagnostics.extend(self.Text(line, style='yellow', overflow='ellipsis', no_wrap=True)
+                               for line in state.diagnostics)
         self.live.update(self.Padding(self.Group(heading, detail, transfers, self.Text(''),
-                                                *failure, table, self.Text(''), extra), (1, 2)), refresh=False)
+                                                *failure, table, *diagnostics, self.Text(''), extra), (1, 2)), refresh=False)
         # Batch persistent events and the live frame into one terminal update.
         stream = self.console.file
         stream.write('\x1b[?2026h')
@@ -238,6 +251,10 @@ class Display:
             self.console.print(self.Text('  ' + transfers, style='dim'))
             for line in self.state.failures[-3:]:
                 self.console.print(self.Text('  ' + line, style='red'))
+            if self.state.diagnostics:
+                self.console.print('  Recent diagnostics (target unknown)', style='yellow')
+                for line in self.state.diagnostics:
+                    self.console.print(self.Text('  ' + line, style='yellow'))
             self.console.print(self.Text('  Full log  ' + str(self.log), style='dim'))
             self.console.print()
         else:
@@ -245,6 +262,10 @@ class Display:
             print(transfers)
             for line in self.state.failures[-3:]:
                 print(line)
+            if self.state.diagnostics:
+                print('Recent diagnostics (target unknown)')
+                for line in self.state.diagnostics:
+                    print(line)
             print('Full log: ' + str(self.log))
 
 
