@@ -252,7 +252,3 @@ gpg --verify \
 验证必须成功，且签名者指纹应与配置的密钥一致。新开终端时，需要重新设置签名环境变量；无需重新生成密钥。
 
 默认源地址为 `https://procursus.owngoal.dev`，可通过 `MEMO_REPO_URI` 指定。生成 Bootstrap 不会发布软件源，也不会自动签署 APT 元数据；软件源还需生成并签署 `Release.gpg` 和 `InRelease`。
-
-## 配方维护
-
-配方位于 `makefiles/`，Debian 元数据位于 `build_info/`，源码补丁位于 `build_patch/`。更新配方时，应核对上游实现、声明构建依赖，并验证受影响软件包的构建与打包结果。
