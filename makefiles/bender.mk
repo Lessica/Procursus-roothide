@@ -28,6 +28,7 @@ bender: bender-setup
 		CXX_$(subst -,_,$(RUST_TARGET))="$(BUILD_WORK)/bender/target-cxx-wrapper" \
 		CFLAGS_$(subst -,_,$(RUST_TARGET))="$(CFLAGS)" CXXFLAGS_$(subst -,_,$(RUST_TARGET))="$(CXXFLAGS)" \
 		CARGO_TARGET_$(subst -,_,$(shell echo $(RUST_TARGET) | tr '[:lower:]' '[:upper:]'))_LINKER="$(BUILD_WORK)/bender/target-cc-wrapper" \
+		BINDGEN_EXTRA_CLANG_ARGS="--target=$(RUST_TARGET) $(CPPFLAGS)" \
 		CFLAGS= CXXFLAGS= cargo build \
 		--release \
 		--locked \
