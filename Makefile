@@ -775,6 +775,9 @@ DEFAULT_GOLANG_FLAGS := \
 
 DEFAULT_SETUP_PY_ENV := \
 	unset MACOSX_DEPLOYMENT_TARGET && \
+	_PYTHON_SYSCONFIGDATA_NAME=_sysconfigdata__darwin_darwin \
+	PYTHONPATH="$$(dirname $(BUILD_STAGE)/python3/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/python*/_sysconfigdata__darwin_darwin.py)" \
+	LDSHARED="$(CC) -bundle -undefined dynamic_lookup" \
 	CFLAGS="$(CFLAGS) -I$(BUILD_STAGE)/python3/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include/$$(ls $(BUILD_STAGE)/python3/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include)" \
 	CXXFLAGS="$(CXXFLAGS) -I$(BUILD_STAGE)/python3/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include/$$(ls $(BUILD_STAGE)/python3/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include)" \
 	CPPFLAGS="$(CPPFLAGS) -I$(BUILD_STAGE)/python3/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include/$$(ls $(BUILD_STAGE)/python3/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include)"
