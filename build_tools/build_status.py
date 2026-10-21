@@ -185,43 +185,57 @@ class Display:
             return
         state = self.state
         rows = state.rows()
-        heading = self.Table.grid(padding=(0, 1))
-        heading.add_row(self.spinner, self.Text('Building packages' if not state.failures else 'Waiting for active tasks to finish', style='bold'))
-        detail = self.Text(f'{len(state.done)} of {len(state.projects)} recipes packaged', style='bright_white')
+        heading = self.Table.grid(padding=(0, 2))
+        heading.add_row(self.spinner,
+                        self.Text('Building packages' if not state.failures else 'Waiting for active tasks to finish', style='bold'),
+                        self.Text(duration(time.monotonic() - state.started), style='dim'))
+        packaging = self.Text('Packaging  ', style='bold')
+        packaging.append(f'{len(state.done)}/{len(state.projects)} recipes completed    {len(state.debs)} DEBs produced', style='bright_white')
+        packaging.append('  (this run)', style='dim')
+        sources = self.Text('Sources    ', style='bold')
+        sources.append(f'{len(state.downloaded)} downloaded    {len(state.cache_hits)} cached files used', style='dim')
         downloading = sum(row[1] == 'Downloading' for row in rows)
-        detail.append(f'    {downloading} downloading', style='cyan' if downloading else 'dim')
-        detail.append(f'    {len(rows)} active    {duration(time.monotonic() - state.started)}', style='dim')
-        table = self.Table.grid(padding=(0, 2), expand=True)
+        active = self.Text(f'Active tasks ({len(rows)})', style='bold')
+        if downloading:
+            active.append(f'    {downloading} downloading', style='cyan')
+        before = [heading, self.Text(''), packaging, sources, self.Text(''), active]
+
+        after = []
+        if state.failures:
+            failures = list(dict.fromkeys(state.failures))
+            top_level = [line for line in failures if line.startswith('make:')]
+            after.extend([self.Text(''), self.Text('Failed targets' if top_level else 'Nested Make failures', style='bold red')])
+            for line in (top_level or failures)[-3:]:
+                match = FAIL.match(line)
+                location, separator, target = match[1].rpartition(': ')
+                text = self.Text('  ' + (target if separator else match[1]) + '  ' + match[2], style='red')
+                if separator:
+                    text.append('  (' + location + ')', style='dim')
+                after.append(text)
+        if state.diagnostics:
+            after.extend([self.Text(''), self.Text('Recent diagnostics — target unknown', style='bold yellow')])
+            after.extend(self.Text('  ' + line, style='yellow', overflow='ellipsis', no_wrap=True)
+                         for line in state.diagnostics)
+        after.extend([self.Text(''), self.Text('Ctrl+C to stop safely. Run the same command to resume.', style='dim')])
+
+        # Reserve space for section headings, wrapping and the overflow count.
+        fixed = self.Padding(self.Group(*before, self.Text(''), *after), (1, 2))
+        fixed_height = len(self.console.render_lines(fixed))
+        limit = max(1, min(8, self.console.height - fixed_height - 1))
+        table = self.Table.grid(padding=(0, 2))
+        table.width = min(100, self.console.width - 4)
         table.add_column(ratio=2, overflow='ellipsis', no_wrap=True)
         table.add_column(width=12, no_wrap=True)
         table.add_column(ratio=2, overflow='ellipsis', no_wrap=True)
         table.add_column(width=9, justify='right', no_wrap=True)
         colors = {'Downloading': 'cyan', 'Preparing': 'blue', 'Building': 'bright_white', 'Staging': 'blue', 'Packaging': 'magenta'}
-        diagnostic_height = 1 + len(state.diagnostics) if state.diagnostics else 0
-        limit = max(1, min(8, self.console.height - (17 if state.failures else 13) - diagnostic_height))
         for name, phase, elapsed, filename in rows[:limit]:
             table.add_row(self.Text(name, style='bold'), self.Text(phase, style=colors[phase]),
                           self.Text(filename, style='dim'), self.Text(duration(elapsed), style='dim'))
         if not rows:
-            table.add_row(self.Text('Resolving dependencies...', style='dim'), '', '', '')
-        for _ in range(limit - max(1, min(len(rows), limit))):
-            table.add_row('', '', '', '')
-        extra = self.Text(f'{len(rows) - limit} more active targets' if len(rows) > limit else 'Ctrl+C to stop safely. Run the same command to resume.', style='dim')
-        transfers = self.Text(f'{len(state.debs)} DEBs produced this run    {len(state.downloaded)} downloaded    {len(state.cache_hits)} source files reused', style='dim')
-        failure = []
-        if state.failures:
-            match = FAIL.match(state.failures[0])
-            target = match[1].rsplit(': ', 1)[-1] if match else 'unknown target'
-            reason = state.failures[0]
-            failure = [self.Text('Failed  ' + target, style='bold red'),
-                       self.Text(reason, style='red', overflow='ellipsis', no_wrap=True), self.Text('')]
-        diagnostics = []
-        if state.diagnostics:
-            diagnostics = [self.Text('Recent diagnostics (target unknown)', style='yellow')]
-            diagnostics.extend(self.Text(line, style='yellow', overflow='ellipsis', no_wrap=True)
-                               for line in state.diagnostics)
-        self.live.update(self.Padding(self.Group(heading, detail, transfers, self.Text(''),
-                                                *failure, table, *diagnostics, self.Text(''), extra), (1, 2)), refresh=False)
+            table.add_row(self.Text('No active tasks.' if state.failures else 'Resolving dependencies...', style='dim'), '', '', '')
+        overflow = [self.Text(f'  {len(rows) - limit} more active targets', style='dim')] if len(rows) > limit else []
+        self.live.update(self.Padding(self.Group(*before, table, *overflow, *after), (1, 2)), refresh=False)
         # Batch persistent events and the live frame into one terminal update.
         stream = self.console.file
         stream.write('\x1b[?2026h')
