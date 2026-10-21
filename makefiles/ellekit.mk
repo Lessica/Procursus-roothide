@@ -83,6 +83,8 @@ endif
 	$(call AFTER_BUILD)
 endif
 
+# This package contains only root-owned files; encode ownership in dpkg-deb.
+ellekit-package: DPKG_DEB += --root-owner-group
 ellekit-package: ellekit-stage
 	# ellekit.mk Package Structure
 	rm -rf $(BUILD_DIST)/ellekit

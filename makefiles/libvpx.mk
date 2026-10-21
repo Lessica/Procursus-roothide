@@ -28,7 +28,7 @@ libvpx:
 else
 libvpx: libvpx-setup
 	cd $(BUILD_WORK)/libvpx && VPX_DARWIN_SDK="$(TARGET_SYSROOT)" \
-		IOS_VERSION_MIN="$(IPHONEOS_DEPLOYMENT_TARGET)" ./configure \
+		IOS_VERSION_MIN="$(IPHONEOS_DEPLOYMENT_TARGET)" AS="$(CC)" ./configure \
 		--prefix=$(MEMO_PREFIX)$(MEMO_SUB_PREFIX) \
 		--disable-dependency-tracking \
 		--enable-shared \
