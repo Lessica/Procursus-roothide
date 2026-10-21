@@ -10,6 +10,7 @@ PYTHON_HOST ?= python$(PYTHON3_MAJOR_V)
 python3-psutil-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://github.com/giampaolo/psutil/archive/refs/tags/release-$(PYTHON3-PSUTIL_VERSION).tar.gz)
 	$(call EXTRACT_TAR,release-$(PYTHON3-PSUTIL_VERSION).tar.gz,psutil-release-$(PYTHON3-PSUTIL_VERSION),python3-psutil)
+	$(call DO_PATCH,python3-psutil,python3-psutil,-p1)
 
 ifneq ($(wildcard $(BUILD_WORK)/python3-psutil/.build_complete),)
 python3-psutil:
@@ -17,10 +18,7 @@ python3-psutil:
 else
 python3-psutil: python3-psutil-setup python3
 	$(PYTHON_HOST) -c 'import sys; assert sys.version_info[:2] == tuple(map(int, "$(PYTHON3_MAJOR_V)".split("."))), "Host Python must match target major/minor"'
-	cd $(BUILD_WORK)/python3-psutil && unset MACOSX_DEPLOYMENT_TARGET && \
-		ARCHFLAGS="-arch $(MEMO_ARCH)" \
-		CFLAGS="$(CFLAGS) -I$(BUILD_BASE)/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include/python$(PYTHON3_MAJOR_V)" \
-		LDSHARED="$(CC) -bundle -lpython$(PYTHON3_MAJOR_V)" \
+	cd $(BUILD_WORK)/python3-psutil && $(DEFAULT_SETUP_PY_ENV) ARCHFLAGS="-arch $(MEMO_ARCH)" \
 		$(PYTHON_HOST) ./setup.py \
 		build \
 		--executable="$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/python3" \

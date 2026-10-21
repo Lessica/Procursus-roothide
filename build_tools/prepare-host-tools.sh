@@ -300,7 +300,7 @@ if [[ $HOST_PLATFORM == linux ]]; then
     fi
     "$host_python_prefix/bin/python3.9" -c 'import sys, ssl, zlib, bz2, lzma, ctypes; assert sys.version_info[:3] == (3, 9, 9)'
     "$host_python_prefix/bin/python3.9" -m pip install --disable-pip-version-check \
-        'pip==24.3.1' 'setuptools==75.3.2' 'wheel==0.45.1' 'Cython==0.29.37'
+        'pip==24.3.1' 'setuptools==70.3.0' 'wheel==0.45.1' 'Cython==0.29.37'
     ln -sfn "$host_python_prefix/bin/python3.9" "$HOST_TOOL_ROOT/bin/python3.9"
 fi
 if [[ $HOST_PLATFORM == linux ]]; then

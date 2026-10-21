@@ -775,6 +775,7 @@ DEFAULT_GOLANG_FLAGS := \
 
 DEFAULT_SETUP_PY_ENV := \
 	unset MACOSX_DEPLOYMENT_TARGET && \
+	_PYTHON_HOST_PLATFORM=darwin \
 	_PYTHON_SYSCONFIGDATA_NAME=_sysconfigdata__darwin_darwin \
 	PYTHONPATH="$$(dirname $(BUILD_STAGE)/python3/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/python*/_sysconfigdata__darwin_darwin.py)" \
 	LDSHARED="$(CC) -bundle -undefined dynamic_lookup" \
