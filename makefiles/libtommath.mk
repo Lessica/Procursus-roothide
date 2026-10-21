@@ -2,7 +2,7 @@ ifneq ($(PROCURSUS),1)
 $(error Use the main Makefile)
 endif
 
-SUBPPROJECTS       += libtommath
+SUBPROJECTS        += libtommath
 LIBTOMMATH_VERSION := 1.2.0
 DEB_LIBTOMMATH_V   ?= $(LIBTOMMATH_VERSION)-2
 

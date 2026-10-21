@@ -1208,9 +1208,11 @@ else
 $(error Install GNU coreutils)
 endif
 
+ifeq ($(UNAME),Darwin)
 ifeq ($(shell sw_vers -productName),macOS)
 ifneq  ($(shell PATH="$(PATH)" file -bi /bin/sh | grep -q 'x-mach-binary; charset=binary' && echo 1),1)
 $(error Install better file from Procursus - sudo apt install file)
+endif
 endif
 endif
 
@@ -1469,6 +1471,7 @@ endif
 		gpg --batch --show-keys "$(BOOTSTRAP_APT_KEYRING)" >/dev/null; \
 		mkdir -p $(BUILD_STRAP)/strap/$(MEMO_PREFIX)/usr/share/keyrings; \
 		cp "$(BOOTSTRAP_APT_KEYRING)" $(BUILD_STRAP)/strap/$(MEMO_PREFIX)/usr/share/keyrings/owngoal-procursus.gpg; \
+		sed -i '/^$$/d' $(BUILD_STRAP)/strap/$(MEMO_PREFIX)/etc/apt/sources.list.d/procursus.sources; \
 		echo 'Signed-By: /usr/share/keyrings/owngoal-procursus.gpg' >> $(BUILD_STRAP)/strap/$(MEMO_PREFIX)/etc/apt/sources.list.d/procursus.sources; \
 	fi
 	export FAKEROOT='fakeroot -i $(BUILD_STAGE)/.fakeroot_bootstrap -s $(BUILD_STAGE)/.fakeroot_bootstrap --'; \
