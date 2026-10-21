@@ -1,0 +1,11 @@
+--- a/tools/icu/icu-generic.gyp
++++ b/tools/icu/icu-generic.gyp
+@@ -56,6 +56,8 @@
+             'cflags_cc!': [ '-fno-rtti' ],
+           }],
+           [ 'OS == "mac" or OS == "ios"', {
++            'cflags_cc': [ '-frtti' ],
++            'cflags_cc!': [ '-fno-rtti' ],
+             'xcode_settings': {'GCC_ENABLE_CPP_RTTI': 'YES' },
+           }],
+           [ 'OS == "win"', {

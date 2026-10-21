@@ -25,8 +25,8 @@ nmap: nmap-setup lua5.3 openssl pcre libssh2 libpcap
 		--without-zenmap \
 		--without-ndiff
 	sed -i 's|$$(CPP)|$$(CPP) $$(CPPFLAGS)|' $(BUILD_WORK)/nmap/{macosx/,}Makefile
-	+$(MAKE) -C $(BUILD_WORK)/nmap
-	+$(MAKE) -C $(BUILD_WORK)/nmap install -j1 \
+	+$(MAKE) -C $(BUILD_WORK)/nmap AR="$(AR)" RANLIB="$(RANLIB)"
+	+$(MAKE) -C $(BUILD_WORK)/nmap install -j1 AR="$(AR)" RANLIB="$(RANLIB)" \
 		DESTDIR=$(BUILD_STAGE)/nmap
 	$(call AFTER_BUILD)
 endif

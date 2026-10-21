@@ -1,0 +1,11 @@
+--- a/tools/v8_gypfiles/toolchain.gypi
++++ b/tools/v8_gypfiles/toolchain.gypi
+@@ -141,7 +141,7 @@
+     ],
+     'conditions': [
+       ['clang', {
+-        'cflags': [ '-Werror', '-Wno-unknown-pragmas' ],
++        'cflags': [ '<(werror)', '-Wno-unknown-pragmas' ],
+       },{
+         'cflags!': [ '-Wall', '-Wextra' ],
+         'cflags': [ '-Wno-return-type' ],

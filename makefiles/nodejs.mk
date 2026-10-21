@@ -16,7 +16,7 @@ else ifeq ($(UNAME),Darwin)
 NODEJS_HOST := mac
 endif
 
-NODEJS_PYTHON ?= python3
+NODEJS_PYTHON ?= python$(PYTHON3_MAJOR_V)
 NODEJS_HOST_ARCH := $(if $(filter x86_64,$(UNAME_M)),x64,$(if $(filter aarch64,$(UNAME_M)),arm64,$(UNAME_M)))
 NODEJS_MACOS_HOST_MIN := $(if $(filter Darwin,$(UNAME)),-mmacosx-version-min=$(MACOSX_DEPLOYMENT_TARGET))
 
