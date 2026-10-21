@@ -27,7 +27,7 @@ redis:
 	@echo "Using previously built redis."
 else
 redis: redis-setup libjemalloc openssl
-	+$(MAKE) -C $(BUILD_WORK)/redis V=1 \
+	+$(MAKE) -C $(BUILD_WORK)/redis V=1 AR="$(AR)" RANLIB="$(RANLIB)" \
 		MALLOC=jemalloc \
 		USE_SYSTEMD=no \
 		uname_S=Darwin \

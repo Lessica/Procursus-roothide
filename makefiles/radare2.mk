@@ -19,7 +19,7 @@ radare2:
 	@echo "Using previously built radare2."
 else
 radare2: radare2-setup capstone libuv1 libzip openssl xxhash lz4 file
-	cd $(BUILD_WORK)/radare2 && GIT_CEILING_DIRECTORIES="$(BUILD_WORK)" ./configure -C \
+	cd $(BUILD_WORK)/radare2 && GIT_CEILING_DIRECTORIES="$(BUILD_WORK)" EXT_SO=dylib ./configure -C \
 		$(DEFAULT_CONFIGURE_FLAGS) \
 		--with-ssl \
 		--with-syszip \
@@ -29,10 +29,10 @@ radare2: radare2-setup capstone libuv1 libzip openssl xxhash lz4 file
 		--with-syscapstone \
 		--with-libuv \
 		PKGCONFIG="$(BUILD_TOOLS)/cross-pkg-config"
-	+GIT_CEILING_DIRECTORIES="$(BUILD_WORK)" $(MAKE) -C $(BUILD_WORK)/radare2 \
+	+GIT_CEILING_DIRECTORIES="$(BUILD_WORK)" $(MAKE) -C $(BUILD_WORK)/radare2 EXT_SO=dylib \
 		HOST_CC="$(firstword $(CC_FOR_BUILD))" HOST_CFLAGS="$(CFLAGS_FOR_BUILD)" HOST_LDFLAGS="$(LDFLAGS_FOR_BUILD)" \
 		HAVE_LIBVERSION=1
-	+GIT_CEILING_DIRECTORIES="$(BUILD_WORK)" $(MAKE) -C $(BUILD_WORK)/radare2 install \
+	+GIT_CEILING_DIRECTORIES="$(BUILD_WORK)" $(MAKE) -C $(BUILD_WORK)/radare2 install EXT_SO=dylib \
 		DESTDIR="$(BUILD_STAGE)/radare2"
 	sed -i 's|$(BUILD_BASE)||g' $(BUILD_STAGE)/radare2/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/pkgconfig/*.pc
 	rm -f $(BUILD_STAGE)/radare2/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/{lib,share}/radare2/last
