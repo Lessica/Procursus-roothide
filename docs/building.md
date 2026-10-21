@@ -2,15 +2,9 @@
 
 Procursus (Relaxin) 使用 GNU Make 构建面向 Relaxin 的 RootHide 软件包。本文介绍宿主准备、跨宿主输入、软件包构建与断点续建；所有命令从仓库根目录执行，除非另有说明。
 
-## 目标与构建参数
+## 构建并发
 
-```bash
-export MEMO_TARGET=iphoneos-arm64-roothide
-export MEMO_CFVER=1900
-export CORE_COUNT=10
-```
-
-Mac 和 Linux 使用相同源码版本、目标及 `MEMO_CFVER`。`CORE_COUNT` 控制构建并发，可按机器资源调整。Debian 架构标识 `iphoneos-arm64e` 表示 RootHide 包格式，不等同于 Mach-O 的 arm64e 架构。
+`CORE_COUNT` 默认按当前设备的 CPU 核心数设置，无需手动指定。如需限制并发，可执行 `export CORE_COUNT=10`。
 
 ## 准备宿主
 
@@ -37,7 +31,7 @@ source build_work/host-tools/host-env.sh
 
 安装系统依赖需要 root 或 sudo。依赖清单位于 [linux-packages.txt](../build_misc/host-tools/linux-packages.txt)。准备入口的 `--deps-only` 只安装系统依赖；`--skip-system-deps` 用于系统依赖已就绪的环境。
 
-每次新开终端，需要重新加载 `host-env.sh` 和构建参数，无需重复准备环境。
+每次新开终端，需要重新加载 `host-env.sh`，无需重复准备环境。
 
 ### 使用 Docker 或 OrbStack
 
@@ -62,7 +56,7 @@ libroothide 和 ElleKit 使用 Xcode 构建；`gettext-localizations` 使用 mac
 
 ### 在 Mac 上生成
 
-加载 Mac 工具环境并设置构建参数后执行：
+加载 Mac 工具环境后执行：
 
 ```bash
 make roothide-xcode-export
@@ -144,7 +138,7 @@ python3 build_tools/build_status.py package SUBPROJECTS="$packages"
 
 ## 断点续建
 
-在同一终端重复原构建命令即可续建。新终端应先加载工具环境、设置目标参数，并在 Linux 上重新设置两个 Mac 输入变量及所需的 `packages` 列表。
+在同一终端重复原构建命令即可续建。新终端应先加载工具环境，并在 Linux 上重新设置两个 Mac 输入变量及所需的 `packages` 列表。
 
 构建复用已有源码、编译缓存和完成标记；打包阶段可能再次执行。保留 `build_work`、`build_stage`、`build_base` 等构建目录，不要通过清理全仓解决单包错误。
 
