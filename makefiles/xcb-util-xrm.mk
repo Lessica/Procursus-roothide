@@ -14,7 +14,7 @@ ifneq ($(wildcard $(BUILD_WORK)/xcb-util-xrm/.build_complete),)
 xcb-util-xrm:
 	@echo "Using previously built xcb-util-xrm."
 else
-xcb-util-xrm: xcb-util-xrm-setup libxcb xcb-util
+xcb-util-xrm: xcb-util-xrm-setup libxcb xcb-util libx11
 	cd $(BUILD_WORK)/xcb-util-xrm && ./configure -C \
 		$(DEFAULT_CONFIGURE_FLAGS)
 	+$(MAKE) -C $(BUILD_WORK)/xcb-util-xrm
