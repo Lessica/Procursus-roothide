@@ -19,7 +19,10 @@ endif
 SHSHD_VERSION := 1.1.1.1
 DEB_SHSHD_V   ?= $(SHSHD_VERSION)
 
-ifneq ($(shell command -v xcrun),)
+ifeq ($(UNAME),Linux)
+SWIFTC ?= $(HOST_TOOL_ROOT)/swift5.9.2/usr/bin/swiftc
+SHSHD_SWIFT_FLAGS := -resource-dir $(BUILD_WORK)/shshd/swift-resources -use-ld=$(shell command -v $(LD))
+else ifneq ($(shell command -v xcrun),)
 SWIFTC ?= $(shell xcrun --find swiftc)
 else
 SWIFTC ?= swiftc
@@ -30,6 +33,15 @@ shshd-setup: setup
 	$(call EXTRACT_TAR,SHSHDaemon-$(SHSHD_VERSION).tar.gz,SHSHDaemon-$(SHSHD_VERSION),shshd)
 	mkdir -p $(BUILD_STAGE)/shshd/$(MEMO_PREFIX){/Library/LaunchDaemons,$(MEMO_SUB_PREFIX)/{sbin,libexec}}
 	sed -i 's|kIOMasterPortDefault|kIOMainPortDefault|' $(BUILD_WORK)/shshd/main.swift
+ifeq ($(UNAME),Linux)
+	# Use Darwin SDK modules without importing the Linux Dispatch module map.
+	mkdir -p $(BUILD_WORK)/shshd/swift-resources
+	for resource in $(TARGET_SYSROOT)/usr/lib/swift/*; do \
+		ln -sfn "$$resource" $(BUILD_WORK)/shshd/swift-resources/; \
+	done
+	ln -sfn $(HOST_TOOL_ROOT)/swift5.9.2/usr/lib/swift/clang $(BUILD_WORK)/shshd/swift-resources/clang
+	ln -sfn $(HOST_TOOL_ROOT)/swift5.9.2/usr/lib/swift/apinotes $(BUILD_WORK)/shshd/swift-resources/apinotes
+endif
 
 ifneq ($(wildcard $(BUILD_WORK)/shshd/.build_complete),)
 shshd:
@@ -38,6 +50,7 @@ else
 shshd: shshd-setup dimentio
 	cd $(BUILD_WORK)/shshd; \
 		SDKROOT="$(TARGET_SYSROOT)" $(SWIFTC) -Osize \
+			$(SHSHD_SWIFT_FLAGS) \
 			--target=$(LLVM_TARGET) \
 			-sdk $(TARGET_SYSROOT) \
 			-I$(BUILD_STAGE)/dimentio/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include \

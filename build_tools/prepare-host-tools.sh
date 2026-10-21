@@ -405,6 +405,22 @@ if [[ $HOST_PLATFORM == linux ]]; then
         tar -xf "$HOST_TOOL_ROOT/cache/$swift_archive" --strip-components=1 -C "$HOST_TOOL_ROOT/swift5.9.2"
     fi
     "$HOST_TOOL_ROOT/swift5.9.2/usr/bin/swiftc" --version
+    # Linux bindists omit the Darwin API notes used by the Clang importer.
+    mkdir -p "$HOST_TOOL_ROOT/swift5.9.2/usr/lib/swift/apinotes"
+    for swift_notes in Dispatch os; do
+        swift_notes_file="$HOST_TOOL_ROOT/swift5.9.2/usr/lib/swift/apinotes/$swift_notes.apinotes"
+        if [[ ! -s $swift_notes_file ]]; then
+            curl --fail --location --retry 3 \
+                "https://raw.githubusercontent.com/apple/swift/swift-5.9.2-RELEASE/apinotes/$swift_notes.apinotes" \
+                -o "$swift_notes_file.part"
+            mv "$swift_notes_file.part" "$swift_notes_file"
+        fi
+        case $swift_notes in
+            Dispatch) swift_notes_sha=b354c48b4da0c515870e9e1c5280b0cb62e7cdb1302b91957048c17ff657481a ;;
+            os) swift_notes_sha=297defcedbf6f0077f29b0552871ce6d7c879b9323b20a64c861f49b48242f9f ;;
+        esac
+        printf '%s  %s\n' "$swift_notes_sha" "$swift_notes_file" | sha256sum -c -
+    done
 fi
 # Source from bash/zsh; retain caller PATH and real HOME.
 {
