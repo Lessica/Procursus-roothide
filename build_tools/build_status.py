@@ -19,6 +19,7 @@ LOSE = re.compile(r'^Reaping losing child (\S+) PID (\d+)')
 FAIL = re.compile(r'^make(?:\[\d+\])?: \*\*\* \[(.+)\] (.+)')
 DEBUG = re.compile(r'^(?:Using jobserver|Need a job token|Live child|Putting child|Obtained token|Reaping |Removing child|Released token|Acquired all)')
 ERROR = re.compile(r'^(?:error(?:\[[^]]+\])?:|.*?fatal error:|Unable to generate bindings:|\[download failed\]|curl:|gpg:.*\b(?:failed|BAD)\b|tar:.*(?:Error|EOF)|gzip:|.*?:\d+(?::\d+)?: (?:fatal )?error:|configure: error:|\[monitor error\])')
+GO_NETWORK_ERROR = re.compile(r'^(?:go: .*|.*@\S+: .*?)(?:Get|Head|Post) "https?://[^"]+": .+')
 PHASES = [('-setup', 'Preparing'), ('-stage', 'Staging'), ('-package', 'Packaging')]
 
 
@@ -80,7 +81,9 @@ class State:
         if match:
             self.failures.append(line)
             notices.append(('error', line))
-        if ERROR.match(line.strip()):
+        if GO_NETWORK_ERROR.match(line.strip()):
+            notices.append(('error', 'Go network error (target unknown): ' + line.strip()))
+        elif ERROR.match(line.strip()):
             # Interleaved output has no reliable target identity. Never attach it
             # to a failing target based on proximity or currently active jobs.
             notices.append(('error', 'Diagnostic (target unknown): ' + line.strip()))
