@@ -20,8 +20,31 @@ LLVM_NATIVE_CMAKE_FLAGS = -G Ninja \
 	-DCMAKE_CXX_COMPILER=$(shell command -v clang++) \
 	-DCMAKE_Swift_COMPILER=$(LLVM_BOOTSTRAP_SWIFTC) \
 	-DSWIFT_PATH_TO_LIBDISPATCH_SOURCE=$(BUILD_WORK)/llvm/libdispatch
+LLVM_RT_SOURCE = $(BUILD_WORK)/llvm/compiler-rt
+LLVM_RT_MACOS_SYSROOT = $(HOST_TOOL_ROOT)/SDK/MacOSX.sdk
+LLVM_RT_CMAKE_FLAGS = -U'COMPILER_RT_INSTALL_*' -DCMAKE_SYSTEM_NAME=Darwin \
+	-DCMAKE_OSX_SYSROOT="$(LLVM_RT_MACOS_SYSROOT)" \
+	-DDARWIN_macosx_CACHED_SYSROOT="$(LLVM_RT_MACOS_SYSROOT)" \
+	-DDARWIN_macosx_OVERRIDE_SDK_VERSION="$(shell python3 -c 'import json; print(json.load(open("$(LLVM_RT_MACOS_SYSROOT)/SDKSettings.json"))["Version"])')" \
+	-DCMAKE_C_COMPILER="$(shell command -v $(CC))" \
+	-DCMAKE_CXX_COMPILER="$(shell command -v $(CXX))" \
+	-DCMAKE_ASM_COMPILER="$(shell command -v $(CC))" \
+	-DCMAKE_OSX_ARCHITECTURES= \
+	-DCMAKE_LINKER="$(shell command -v $(LD))" \
+	-DCMAKE_LIBTOOL="$(shell command -v $(LIBTOOL))" \
+	-DCMAKE_LIPO="$(shell command -v $(LIPO))" \
+	-DCMAKE_AR="$(shell command -v $(AR))" \
+	-DCMAKE_RANLIB="$(shell command -v $(RANLIB))" \
+	-DCMAKE_USER_MAKE_RULES_OVERRIDE="$(BUILD_MISC)/cmake-darwin-cross.cmake" \
+	-DLLVM_CONFIG_PATH="$(BUILD_WORK)/../../native/llvm/bin/llvm-config" \
+	-DCOMPILER_RT_INSTALL_PATH:STRING=lib/clang/$(LLVM_VERSION) \
+	-DCOMPILER_RT_INCLUDE_TESTS=OFF
 else
 LLVM_BOOTSTRAP_SWIFTC = $(shell xcrun --find swiftc)
+LLVM_RT_SOURCE = $(BUILD_WORK)/llvm/llvm
+LLVM_RT_CMAKE_FLAGS = -DCMAKE_C_COMPILER=cc -DCMAKE_CXX_COMPILER=c++ \
+	-DLLVM_ENABLE_PROJECTS="clang;compiler-rt"
+LLVM_RT_LINK_FLAGS = -Wl,-ld_classic
 endif
 LLVM_RT_PLATFORM     := $(if $(findstring iphoneos,$(MEMO_TARGET)),ios,$(if $(findstring appletvos,$(MEMO_TARGET)),tvos,$(if $(findstring watchos,$(MEMO_TARGET)),watchos,osx)))
 ifneq (,$(findstring roothide,$(MEMO_TARGET)))
@@ -262,6 +285,12 @@ endif
 endif
 
 ifeq ($(wildcard $(BUILD_WORK)/llvm/build-compiler-rt/.build_complete),)
+ifeq ($(UNAME),Linux)
+	@test -f "$(LLVM_RT_MACOS_SYSROOT)/SDKSettings.json"
+	@for sdk in macosx iphoneos iphonesimulator appletvos appletvsimulator watchos watchsimulator; do \
+		xcrun --sdk $$sdk --show-sdk-path >/dev/null && xcrun --sdk $$sdk --show-sdk-version >/dev/null || exit 1; \
+	done
+endif
 	# Now we compile compiler-rt.
 	# We do it seperately because CMake will set the correct flags for cross compiling for us,
 	# which we will conflict with.
@@ -283,15 +312,13 @@ ifeq ($(wildcard $(BUILD_WORK)/llvm/build-compiler-rt/.build_complete),)
 	sed -E s/'__IOS_PROHIBITED|__TVOS_PROHIBITED|__WATCHOS_PROHIBITED'//g < $(TARGET_SYSROOT)/usr/include/ucontext.h > $(BUILD_WORK)/llvm/build-compiler-rt/memo-include/ucontext.h
 	sed -E s/'__IOS_PROHIBITED|__TVOS_PROHIBITED|__WATCHOS_PROHIBITED'//g < $(TARGET_SYSROOT)/usr/include/signal.h > $(BUILD_WORK)/llvm/build-compiler-rt/memo-include/signal.h
 	sed -i 's/__API_UNAVAILABLE(.*)//g' $(BUILD_WORK)/llvm/build-compiler-rt/memo-include/*.h
-	mkdir -p $(BUILD_WORK)/llvm/build-compiler-rt && cd $(BUILD_WORK)/llvm/build-compiler-rt && unset CC CXX LD CFLAGS CPPFLAGS CXXFLAGS LDFLAGS && cmake . \
+	mkdir -p $(BUILD_WORK)/llvm/build-compiler-rt && cd $(BUILD_WORK)/llvm/build-compiler-rt && unset CC CXX LD CFLAGS CPPFLAGS CXXFLAGS LDFLAGS && cmake -S $(LLVM_RT_SOURCE) -B . \
 		-DCMAKE_OSX_SYSROOT="$(MACOSX_SYSROOT)" \
 		-G 'Unix Makefiles' \
 		-DCMAKE_BUILD_TYPE=Release \
-		-DCMAKE_C_COMPILER="cc" \
-		-DCMAKE_CXX_COMPILER="c++" \
-		-DCMAKE_C_FLAGS="-isystem $(BUILD_WORK)/llvm/build-compiler-rt/memo-include -Wl,-ld_classic" \
-		-DCMAKE_CXX_FLAGS="-isystem $(BUILD_WORK)/llvm/build-compiler-rt/memo-include -Wl,-ld_classic" \
-		-DLLVM_ENABLE_PROJECTS="clang;compiler-rt" \
+		$(LLVM_RT_CMAKE_FLAGS) \
+		-DCMAKE_C_FLAGS="-isystem $(BUILD_WORK)/llvm/build-compiler-rt/memo-include $(LLVM_RT_LINK_FLAGS)" \
+		-DCMAKE_CXX_FLAGS="-isystem $(BUILD_WORK)/llvm/build-compiler-rt/memo-include $(LLVM_RT_LINK_FLAGS)" \
 		-DCMAKE_INSTALL_PREFIX=$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/llvm-$(LLVM_MAJOR_V) \
 		-DCMAKE_INSTALL_NAME_DIR=$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/llvm-$(LLVM_MAJOR_V)/lib \
 		-DCMAKE_INSTALL_RPATH= \
@@ -319,8 +346,7 @@ ifeq ($(wildcard $(BUILD_WORK)/llvm/build-compiler-rt/.build_complete),)
 		-DDARWIN_tvos_BUILTIN_ALL_POSSIBLE_ARCHS="arm64;arm64e" \
 		-DDARWIN_tvossim_BUILTIN_ALL_POSSIBLE_ARCHS="x86_64;arm64" \
 		-DDARWIN_watchos_BUILTIN_ALL_POSSIBLE_ARCHS="armv7k;arm64_32;arm64;arm64e" \
-		-DDARWIN_watchossim_BUILTIN_ALL_POSSIBLE_ARCHS="x86_64;arm64" \
-		$(BUILD_WORK)/llvm/llvm
+		-DDARWIN_watchossim_BUILTIN_ALL_POSSIBLE_ARCHS="x86_64;arm64"
 	+unset MACOSX_DEPLOYMENT_TARGET IPHONEOS_DEPLOYMENT_TARGET APPLETVOS_DEPLOYMENT_TARGET WATCHOS_DEPLOYMENT_TARGET BRIDGEOS_DEPLOYMENT_TARGET && \
 	$(MAKE) -C $(BUILD_WORK)/llvm/build-compiler-rt install-compiler-rt \
 		DESTDIR="$(BUILD_STAGE)/llvm"
@@ -591,10 +617,10 @@ endif
 	cp -a $(BUILD_STAGE)/llvm/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/llvm-$(LLVM_MAJOR_V)/lib/{objects-Release,{libMLIR,libmlir_*}.dylib} $(BUILD_DIST)/libmlir-$(LLVM_MAJOR_V)/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/llvm-$(LLVM_MAJOR_V)/lib
 
 	# llvm.mk Prep mlir-$(LLVM_MAJOR_V)-tools
-	mkdir -p $(BUILD_DIST)/libmlir-$(LLVM_MAJOR_V)/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/{bin,lib/llvm-$(LLVM_MAJOR_V)/bin}
-	cp -a $(BUILD_STAGE)/llvm/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/llvm-$(LLVM_MAJOR_V)/bin/{mlir-*,tblgen-lsp-server} $(BUILD_DIST)/libmlir-$(LLVM_MAJOR_V)/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/llvm-$(LLVM_MAJOR_V)/bin
-	for file in $(BUILD_DIST)/libmlir-$(LLVM_MAJOR_V)/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/llvm-$(LLVM_MAJOR_V)/bin/{mlir-*,tblgen-lsp-server}; do \
-		$(LN_S) ../lib/llvm-$(LLVM_MAJOR_V)/bin/$$(basename "$$file") $(BUILD_DIST)/libmlir-$(LLVM_MAJOR_V)/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/$$(basename "$$file")-$(LLVM_MAJOR_V); \
+	mkdir -p $(BUILD_DIST)/mlir-$(LLVM_MAJOR_V)-tools/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/{bin,lib/llvm-$(LLVM_MAJOR_V)/bin}
+	cp -a $(BUILD_STAGE)/llvm/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/llvm-$(LLVM_MAJOR_V)/bin/{mlir-*,tblgen-lsp-server} $(BUILD_DIST)/mlir-$(LLVM_MAJOR_V)-tools/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/llvm-$(LLVM_MAJOR_V)/bin
+	for file in $(BUILD_DIST)/mlir-$(LLVM_MAJOR_V)-tools/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/llvm-$(LLVM_MAJOR_V)/bin/{mlir-*,tblgen-lsp-server}; do \
+		$(LN_S) ../lib/llvm-$(LLVM_MAJOR_V)/bin/$$(basename "$$file") $(BUILD_DIST)/mlir-$(LLVM_MAJOR_V)-tools/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/$$(basename "$$file")-$(LLVM_MAJOR_V); \
 	done
 
 	# llvm.mk Prep clang-tools-$(LLVM_MAJOR_V)

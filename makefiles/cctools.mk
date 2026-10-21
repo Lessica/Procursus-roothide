@@ -49,8 +49,8 @@ else
 cctools: cctools-setup llvm uuid tapi xar
 	cd $(BUILD_WORK)/cctools/build && LIBRARY_PATH="$(TARGET_SYSROOT)/usr/lib:$(BUILD_BASE)$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib" meson setup \
 		--cross-file cross.txt \
-		-Dllvm-include-dir="$(BUILD_BASE)$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/llvm-$(LLVM_MAJOR_V)/include" \
-		-Dld64:llvm-include-dir="$(BUILD_BASE)$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/llvm-$(LLVM_MAJOR_V)/include" \
+		-Dllvm-include-dir="$(BUILD_STAGE)/llvm/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/llvm-$(LLVM_MAJOR_V)/include" \
+		-Dld64:llvm-include-dir="$(BUILD_STAGE)/llvm/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/llvm-$(LLVM_MAJOR_V)/include" \
 		-Dld64:supported-archs="x86_64,x86_64h,i386,armv4t,armv5,armv6,armv7,armv7f,armv7k,armv7s,armv6m,armv7m,armv7em,armv8,arm64,arm64e,arm64v8,arm64_32,riscv" \
 		..
 	meson compile -C $(BUILD_WORK)/cctools/build -j$(CORE_COUNT)

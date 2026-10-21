@@ -85,24 +85,46 @@ if [[ -z ${MACOSX_SYSROOT:-} ]]; then
 fi
 test -f "$TARGET_SYSROOT/usr/include/stdio.h"
 test -d "$MACOSX_SYSROOT/System/Library/Frameworks/CoreServices.framework"
-# Older Rust cc/gcc build helpers query SDKs through xcrun even with explicit CC.
+# Rust and compiler-rt query SDKs through xcrun even with explicit compilers.
 {
- printf '#!/usr/bin/env bash\nset -euo pipefail\niphoneos_sdk=%q\nmacosx_sdk=%q\n' "$TARGET_SYSROOT" "$MACOSX_SYSROOT"
+ printf '#!/usr/bin/env bash\nset -euo pipefail\niphoneos_sdk=%q\nmacosx_sdk=%q\nsdk_root=%q\n' "$TARGET_SYSROOT" "$MACOSX_SYSROOT" "$HOST_TOOL_ROOT/SDK"
  cat <<'EOF'
 sdk= operation=
 while (( $# )); do
  case $1 in
   --sdk|-sdk) [[ $# -ge 2 ]] || exit 2; sdk=$2; shift 2 ;;
   --show-sdk-path|-show-sdk-path) operation=path; shift ;;
+  --show-sdk-version|-show-sdk-version) operation=version; shift ;;
   *) echo "Unsupported Linux xcrun argument: $1" >&2; exit 2 ;;
  esac
 done
-[[ $operation == path ]] || { echo 'Linux xcrun supports explicit SDK path queries only' >&2; exit 2; }
+[[ -n $operation ]] || { echo 'Linux xcrun supports SDK path/version queries only' >&2; exit 2; }
 case $sdk in
- iphoneos) printf '%s\n' "$iphoneos_sdk" ;;
- macosx) printf '%s\n' "$macosx_sdk" ;;
+ iphoneos) sdk_path=$iphoneos_sdk ;;
+ macosx) sdk_path=$macosx_sdk ;;
+ iphonesimulator|appletvos|appletvsimulator|watchos|watchsimulator)
+  sdk_path=$(python3 - "$sdk_root" "$sdk" <<'PY'
+import json, pathlib, sys
+matches = []
+for path in pathlib.Path(sys.argv[1]).glob('*.sdk'):
+    metadata = path / 'SDKSettings.json'
+    if metadata.is_file():
+        data = json.loads(metadata.read_text())
+        if data.get('CanonicalName') == sys.argv[2] + data.get('Version', ''):
+            matches.append(path.resolve())
+matches = sorted(set(matches))
+if len(matches) != 1:
+    sys.exit(f'Expected one {sys.argv[2]} SDK in {sys.argv[1]}, found {len(matches)}')
+print(matches[0])
+PY
+  ) ;;
  *) echo "Unsupported Linux xcrun SDK: $sdk" >&2; exit 2 ;;
 esac
+if [[ $operation == path ]]; then
+ printf '%s\n' "$sdk_path"
+else
+ python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["Version"])' "$sdk_path/SDKSettings.json"
+fi
 EOF
 } > "$HOST_TOOL_ROOT/bin/xcrun"
 chmod +x "$HOST_TOOL_ROOT/bin/xcrun"
