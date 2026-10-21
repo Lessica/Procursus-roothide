@@ -783,6 +783,8 @@ DEFAULT_RUST_FLAGS := \
 	$(MEMO_DEPLOYMENT) \
 	SDKROOT="$(TARGET_SYSROOT)" \
 	PKG_CONFIG="$(RUST_TARGET)-pkg-config" \
+	HOST_PKG_CONFIG="pkg-config" HOST_PKG_CONFIG_PATH= HOST_PKG_CONFIG_SYSROOT_DIR=/ \
+	HOST_PKG_CONFIG_LIBDIR="$(shell pkg-config --variable=pc_path pkg-config)" \
 	RUSTFLAGS="-L $(BUILD_BASE)/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib"
 
 export MACOSX_DEPLOYMENT_TARGET #for _lt_dar_allow_undefined in un-updated `configure` in projects

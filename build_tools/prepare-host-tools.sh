@@ -317,8 +317,9 @@ if [[ $HOST_PLATFORM == linux ]]; then
         chmod 755 "$rustup_init"
         "$rustup_init" -y --no-modify-path --profile minimal --default-toolchain none
     fi
-    "$CARGO_HOME/bin/rustup" toolchain install 1.79.0 --profile minimal --target aarch64-apple-ios --no-self-update
-    "$CARGO_HOME/bin/rustup" default 1.79.0
+    "$CARGO_HOME/bin/rustup" toolchain install 1.88.0 --profile minimal --target aarch64-apple-ios --no-self-update
+    "$CARGO_HOME/bin/rustup" default 1.88.0
+    "$CARGO_HOME/bin/cargo" install cargo-c --version 0.10.13 --locked
     case $rust_host in
         aarch64-*) go_arch=arm64; go_sha=a8e177c354d2e4a1b61020aca3562e27ea3e8f8247eca3170e3fa1e0c2f9e771 ;;
         x86_64-*) go_arch=amd64; go_sha=ba79d4526102575196273416239cca418a651e049c2b099f3159db85e7bade7d ;;
