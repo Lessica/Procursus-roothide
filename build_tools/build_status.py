@@ -84,8 +84,19 @@ class State:
                         notices.append(('success', f'{name} recipe packaged'))
         match = FAIL.match(line)
         if match:
-            self.failures.append(line)
-            notices.append(('error', line))
+            target = match[1].rsplit(': ', 1)[-1]
+            name = target
+            for suffix, _ in PHASES:
+                if target.endswith(suffix):
+                    name = target[:-len(suffix)]
+                    break
+            # Configure probes can run Make and fail without failing a recipe.
+            # Only a selected recipe's failure belongs in the failure summary.
+            if name in self.projects:
+                self.failures.append(line)
+                notices.append(('error', line))
+            else:
+                notices.append(('warning', 'Nested Make diagnostic: ' + line))
         diagnostic = None
         if GO_NETWORK_ERROR.match(line.strip()):
             diagnostic = 'Go network error: ' + line.strip()
