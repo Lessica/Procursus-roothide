@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """Optional terminal presentation for the existing Make package target."""
 import argparse
-import collections
 import contextlib
 import os
 import queue
@@ -19,7 +18,7 @@ REMOVE = re.compile(r'^Removing child (\S+) PID (\d+) from chain')
 LOSE = re.compile(r'^Reaping losing child (\S+) PID (\d+)')
 FAIL = re.compile(r'^make(?:\[\d+\])?: \*\*\* \[(.+)\] (.+)')
 DEBUG = re.compile(r'^(?:Using jobserver|Need a job token|Live child|Putting child|Obtained token|Reaping |Removing child|Released token|Acquired all)')
-ERROR = re.compile(r'^(?:error(?:\[[^]]+\])?:|.*?fatal error:|Unable to generate bindings:|\[download failed\]|curl:|gpg:.*(?:failed|BAD)|tar:.*(?:Error|EOF)|gzip:|.*?:\d+(?::\d+)?: (?:fatal )?error:|configure: error:|\[monitor error\])')
+ERROR = re.compile(r'^(?:error(?:\[[^]]+\])?:|.*?fatal error:|Unable to generate bindings:|\[download failed\]|curl:|gpg:.*\b(?:failed|BAD)\b|tar:.*(?:Error|EOF)|gzip:|.*?:\d+(?::\d+)?: (?:fatal )?error:|configure: error:|\[monitor error\])')
 PHASES = [('-setup', 'Preparing'), ('-stage', 'Staging'), ('-package', 'Packaging')]
 
 
@@ -39,8 +38,6 @@ class State:
         self.children = {}
         self.done = set()
         self.failures = []
-        self.failure_reason = None
-        self.errors = collections.deque(maxlen=6)
         self.downloads = {}
         self.downloaded = set()
         self.cache_hits = set()
@@ -81,14 +78,12 @@ class State:
                         notices.append(('success', f'{name} packaged'))
         match = FAIL.match(line)
         if match:
-            if not self.failures:
-                self.failure_reason = next((error for error in reversed(self.errors) if 'fatal error:' in error),
-                                           self.errors[-1] if self.errors else line)
             self.failures.append(line)
             notices.append(('error', line))
         if ERROR.match(line.strip()):
-            self.errors.append(line.strip())
-            notices.append(('error', line))
+            # Interleaved output has no reliable target identity. Never attach it
+            # to a failing target based on proximity or currently active jobs.
+            notices.append(('error', 'Diagnostic (target unknown): ' + line.strip()))
         if line.startswith('Warning:') and ('retry' in line.lower() or 'retries' in line.lower()):
             notices.append(('warning', line))
         match = re.match(r'^\[build-download\] (start|end|failed|cached) (\S+)(?: (.*))?$', line)
@@ -203,7 +198,7 @@ class Display:
         if state.failures:
             match = FAIL.match(state.failures[0])
             target = match[1].rsplit(': ', 1)[-1] if match else 'unknown target'
-            reason = state.failure_reason or state.failures[0]
+            reason = state.failures[0]
             failure = [self.Text('Failed  ' + target, style='bold red'),
                        self.Text(reason, style='red', overflow='ellipsis', no_wrap=True), self.Text('')]
         self.live.update(self.Padding(self.Group(heading, detail, transfers, self.Text(''),
@@ -235,14 +230,14 @@ class Display:
             self.console.print()
             self.console.print(self.Text('  ' + message, style='bold green' if code == 0 else 'bold red'))
             self.console.print(self.Text('  ' + transfers, style='dim'))
-            for line in list(self.state.errors) + self.state.failures[-3:]:
+            for line in self.state.failures[-3:]:
                 self.console.print(self.Text('  ' + line, style='red'))
             self.console.print(self.Text('  Full log  ' + str(self.log), style='dim'))
             self.console.print()
         else:
             print('\n' + message)
             print(transfers)
-            for line in list(self.state.errors) + self.state.failures[-3:]:
+            for line in self.state.failures[-3:]:
                 print(line)
             print('Full log: ' + str(self.log))
 
