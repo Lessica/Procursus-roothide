@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
-# Prepare a self-contained Linux host toolchain in HOST_TOOL_ROOT.
+# Linux preparation entry point: system dependencies and Darwin cross tools/SDKs.
+# Delegate native build tools and host-env.sh to prepare-host-tools.sh.
 set -euo pipefail
 umask 022
 PROJDIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)
 HOST_TOOL_ROOT=${HOST_TOOL_ROOT:-"$PROJDIR/build_work/host-tools"}
 case ${1:-} in
- --help) printf '%s\n' 'Usage: bash config-on-linux.sh [--skip-system-deps|--deps-only]' 'Ubuntu 24.04 / Debian-compatible Linux. Installs native apt dependencies, downloads' 'pinned toolchain/SDK inputs, builds patched host tools and writes host-env.sh.' 'HOST_TOOL_ROOT may be a dedicated directory outside the checkout; HOME is preserved.' 'Set TARGET_SYSROOT and MACOSX_SYSROOT to use explicitly supplied SDKs.' 'Docker containers must use --init to reap fakeroot helper processes.'; exit 0;;
+ --help) printf '%s\n' 'Usage: bash config-on-linux.sh [--skip-system-deps|--deps-only]' 'Linux preparation entry point (Ubuntu 24.04 / Debian-compatible Linux).' 'Installs system dependencies and prepares Darwin cross tools, SDKs, runtime and MIG.' 'Calls build_tools/prepare-host-tools.sh for native tools and host-env.sh.' '--deps-only installs system dependencies only; --skip-system-deps skips installation.' 'Does not build target packages; source host-env.sh, then use the main Makefile.' 'HOST_TOOL_ROOT may be a dedicated directory outside the checkout; HOME is preserved.' 'Set TARGET_SYSROOT and MACOSX_SYSROOT to use explicitly supplied SDKs.' 'Docker containers must use --init to reap fakeroot helper processes.'; exit 0;;
  ''|--skip-system-deps|--deps-only) ;;
  *) echo 'Unknown option; use --help' >&2;exit 2;;
 esac
@@ -17,11 +18,11 @@ mkdir -p "$HOST_TOOL_ROOT"
 if [[ ${1:-} != --skip-system-deps ]]; then
  SUDO=(); [[ $(id -u) == 0 ]] || SUDO=(sudo)
  "${SUDO[@]}" apt-get update
- # Share native dependencies; keep Linux cross-preparation additions here.
+ # This entry point owns all Linux system dependency installation.
+ # Pinned GHC and triehash are prepared from their upstream inputs by the helper.
  mapfile -t linux_packages < "$PROJDIR/build_misc/host-tools/linux-packages.txt"
  "${SUDO[@]}" env DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
-  "${linux_packages[@]}" \
-  clang-18 llvm llvm-18-dev lld make coreutils findutils sed tar bash openssl libtool-bin libncurses-dev wget triehash libplist++-dev libbsd-dev file gperf texinfo help2man rsync
+  "${linux_packages[@]}"
 fi
 [[ ${1:-} != --deps-only ]] || exit 0
 mkdir -p "$HOST_TOOL_ROOT"/{downloads,toolchain,SDK,bin}
@@ -227,7 +228,6 @@ done
 export HOST_TOOL_ROOT TARGET_SYSROOT MACOSX_SYSROOT
 export HOST_CC=${HOST_CC:-clang}
 export HOST_CXX=${HOST_CXX:-clang++}
-HOST_PLATFORM=linux bash "$PROJDIR/build_tools/prepare-host-tools.sh"
 # Apple's Mach interface generator is required by the main setup target.
 mig_commit=f337e600741638896fb6056ce87c6479f74b89a3
 archive="$HOST_TOOL_ROOT/downloads/bootstrap_cmds-$mig_commit.tar.gz"
@@ -241,5 +241,7 @@ mig_src="$HOST_TOOL_ROOT/src/bootstrap_cmds-$mig_commit"
  make -j"${HOST_JOBS:-4}"
  make install
 )
+# Write the environment only after the cross tools and MIG have been prepared.
+HOST_PLATFORM=linux bash "$PROJDIR/build_tools/prepare-host-tools.sh"
 sha256sum "$HOST_TOOL_ROOT"/downloads/* > "$HOST_TOOL_ROOT/downloads.sha256"
 printf 'Ready. Run: source %q\n' "$HOST_TOOL_ROOT/host-env.sh"

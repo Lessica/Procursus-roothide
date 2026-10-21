@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 # Build native tools only. Never change HOME or install target packages.
+# On Linux this is the native-tools helper for config-on-linux.sh, which owns
+# system dependency installation and the Darwin cross toolchain/SDKs/runtime.
 set -euo pipefail
 umask 022
 
@@ -26,8 +28,13 @@ Default: build pinned patched ldid, symredirect, and a Python venv containing
 Cython 0.29.37 / Meson 0.64.0 in HOST_TOOL_ROOT (default build_work/host-tools).
 Source the resulting host-env.sh before using the main Makefile.
 
+Linux users: run bash config-on-linux.sh. It calls this helper for native
+ldid/symredirect, Python tools and GHC/Rust/Go/Swift bootstrap compilers.
+Running this helper alone does not prepare a Linux cross-build environment.
+
 HOST_PLATFORM=macos|linux|ios overrides automatic detection. System dependency
-installation is opt-in, then preparation continues; --print-system-deps only prints.
+options below apply to macOS/iOS only: installation is opt-in, then preparation
+continues; --print-system-deps only prints. Linux dependencies belong to config-on-linux.sh.
 macOS requires Homebrew and full Xcode with the iPhoneOS and macOS SDKs. iOS apt must be run on the iOS host,
 never against a macOS/Linux root. No target packages are installed by default.
 
@@ -53,8 +60,7 @@ if [[ $HOST_PLATFORM == auto ]]; then
 fi
 case $HOST_PLATFORM in
     linux)
-        mapfile -t linux_packages < "$CHECKOUT/build_misc/host-tools/linux-packages.txt"
-        deps=(apt-get install -y "${linux_packages[@]}")
+        [[ -z ${1:-} ]] || fail 'Linux system dependencies are managed by config-on-linux.sh; use bash config-on-linux.sh --deps-only to install them'
         ;;
     macos) deps=(brew install bash make gpatch file-formula ncurses gnu-sed gawk grep gnu-tar findutils coreutils bison flex autoconf automake libtool cmake gettext fakeroot dpkg zstd gnupg groff docbook-xsl po4a openssl@3 libplist pkg-config python@3.12 ninja) ;;
     ios) deps=(apt-get install -y clang make perl ncurses-bin git curl ca-certificates patch pkg-config openssl libssl-dev libplist-dev python3 libpython3.9-dev ninja bash coreutils findutils sed gawk grep tar bison flex autoconf automake libtool cmake gettext fakeroot dpkg zstd gnupg groff docbook-xsl po4a zip unzip xz-utils ldid) ;;
@@ -71,7 +77,7 @@ if [[ ${1:-} == --install-system-deps ]]; then
 fi
 
 for command_name in git patch perl "$HOST_CC" "$HOST_CXX" "$HOST_PYTHON" "$HOST_MAKE" "$HOST_PKG_CONFIG"; do
-    command -v "$command_name" >/dev/null 2>&1 || fail "missing $command_name; see --print-system-deps"
+    command -v "$command_name" >/dev/null 2>&1 || fail "missing $command_name; see --help for system dependency preparation"
 done
 [[ $HOST_JOBS =~ ^[1-9][0-9]*$ ]] || fail 'HOST_JOBS must be a positive integer'
 # Resolve parent symlinks before writing; allow a dedicated external tools directory.
@@ -146,7 +152,7 @@ if [[ $HOST_PLATFORM == ios ]]; then
     [[ -d $MACOSX_SYSROOT/System/Library/Frameworks/CoreServices.framework ]] || fail 'MACOSX_SYSROOT is missing macOS CoreServices.framework'
     HOST_SDKROOT=${HOST_SDKROOT:-$TARGET_SYSROOT}
 fi
-"$HOST_PKG_CONFIG" --exists libcrypto libplist-2.0 || fail 'native libcrypto/libplist-2.0 development files missing; see --print-system-deps'
+"$HOST_PKG_CONFIG" --exists libcrypto libplist-2.0 || fail 'native libcrypto/libplist-2.0 development files missing; see --help for system dependency preparation'
 # Flags are whitespace-separated shell words, not shell programs.
 read -r -a host_cppflags <<< "${HOST_CPPFLAGS:-}"
 read -r -a host_cxxflags <<< "${HOST_CXXFLAGS:--O2 -pipe}"
@@ -445,4 +451,8 @@ fi
     printf '"$PATH"\n'
 } > "$HOST_TOOL_ROOT/host-env.sh.tmp"
 mv -f "$HOST_TOOL_ROOT/host-env.sh.tmp" "$HOST_TOOL_ROOT/host-env.sh"
-printf 'Prepared native tools; source %q\n' "$HOST_TOOL_ROOT/host-env.sh"
+if [[ $HOST_PLATFORM == linux ]]; then
+    printf 'Prepared native tools.\n'
+else
+    printf 'Prepared native tools; source %q\n' "$HOST_TOOL_ROOT/host-env.sh"
+fi
