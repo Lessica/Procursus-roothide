@@ -18,11 +18,11 @@ export DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer
 source build_work/host-tools/host-env.sh
 ```
 
-已安装系统依赖时，省略 `--install-system-deps`。准备脚本负责宿主工具；软件包仍通过主 Makefile 构建。可用 `--print-system-deps` 查看系统依赖安装命令。
+已安装系统依赖时，可省略 `--install-system-deps`。
 
 ### Linux
 
-使用 Ubuntu 24.04。准备入口安装系统依赖、Darwin 交叉工具链及 SDK，并调用宿主工具准备脚本：
+使用 Ubuntu 24.04，执行以下命令准备系统依赖和交叉编译环境：
 
 ```bash
 ./build_tools/prepare_linux_host.sh
@@ -52,7 +52,7 @@ docker exec -it -w /work procursus-build bash
 
 ## 为 Linux 准备 Mac 输入
 
-libroothide 和 ElleKit 使用 Xcode 构建；`gettext-localizations` 使用 macOS locale 数据。Mac 和 Linux 各自准备宿主工具，只传递下面列出的材料。
+Linux 构建需要从 Mac 获取 libroothide、ElleKit 和 locale 数据。两台宿主应使用同一版本的仓库源码。
 
 ### 在 Mac 上生成
 
@@ -115,13 +115,13 @@ packages=$(make MEMO_QUIET=1 print-SUBPROJECTS | tr ' ' '\n' | grep -Ev '^(llvm|
 make package SUBPROJECTS="$packages"
 ```
 
-Swift 属于 LLVM 配方。上述范围不包含完整工具链；若需构建这些包，应按对应配方准备额外输入，尤其是 LLVM 的 Darwin 运行时所需 Apple SDK。`SUBPROJECTS` 选择打包目标，不会关闭它们的必要依赖。
+`SUBPROJECTS` 可指定要构建的配方，其依赖会自动构建。Linux 上构建 LLVM 还需准备相应的 Apple SDK。
 
 保存普通构建日志：
 
 ```bash
 set -o pipefail
-make --output-sync=target package SUBPROJECTS="$packages" 2>&1 | tee -a build_work/linux-build.log
+make --output-sync=target package 2>&1 | tee -a build_work/linux-build.log
 ```
 
 ### 可选终端界面
@@ -129,18 +129,16 @@ make --output-sync=target package SUBPROJECTS="$packages" 2>&1 | tee -a build_wo
 Ubuntu 环境准备完成后，可直接使用终端状态界面：
 
 ```bash
-python3 build_tools/build_status.py package SUBPROJECTS="$packages"
+python3 build_tools/build_status.py package
 ```
 
-完整日志自动追加到 `build_work/build-ui.log`，无需接 `tee`。界面分别显示配方完成数、本轮 DEB 产出数、下载与缓存计数，以及活动任务。下载计数覆盖公共下载逻辑，不包含 Cargo、Go 等工具自行下载的依赖。
-
-失败目标与最近诊断分区显示。诊断可能来自可选探测，不能单凭出现 `error` 判断整个构建失败；最终结果以 Make 退出码为准。`--plain` 可切换为普通输出，`--log` 可指定日志路径。
+界面显示任务状态、构建进度和错误摘要，完整日志保存到 `build_work/build-ui.log`。如需限定构建范围，在命令末尾加上 `SUBPROJECTS="$packages"`。
 
 ## 断点续建
 
 在同一终端重复原构建命令即可续建。新终端应先加载工具环境，并在 Linux 上重新设置两个 Mac 输入变量及所需的 `packages` 列表。
 
-构建复用已有源码、编译缓存和完成标记；打包阶段可能再次执行。保留 `build_work`、`build_stage`、`build_base` 等构建目录，不要通过清理全仓解决单包错误。
+续建会复用已有源码和编译结果，打包阶段可能再次执行。请保留 `build_work`、`build_stage`、`build_base` 等构建目录。
 
 修改已完成配方的源码或编译参数后，需要显式重建该配方，例如：
 
@@ -148,7 +146,7 @@ python3 build_tools/build_status.py package SUBPROJECTS="$packages"
 make rebuild-xcb-util-xrm-package
 ```
 
-`rebuild-*` 用于主动重建，不是普通续建命令。切换目标或宿主时，不要混用宿主工具与编译缓存。
+不同宿主应使用各自的编译缓存。
 
 ## 输出与 Bootstrap
 
@@ -160,16 +158,14 @@ make rebuild-xcb-util-xrm-package
 | `build_work/<目标>/<CF版本>/` | 源码、编译目录和完成标记 |
 | `build_strap/<目标>/<CF版本>/` | Bootstrap 及其组装材料 |
 
-Bootstrap 使用原有入口和 Makefile 中的成员列表，无需先完成全仓构建：
+以下命令按 Makefile 中的成员列表构建 Bootstrap 所需软件包并生成归档，无需先完成全仓构建：
 
 ```bash
 make bootstrap
 ```
 
-RootHide 默认源地址为 `https://procursus.owngoal.dev`，可通过 `MEMO_REPO_URI` 指定。`BOOTSTRAP_APT_KEYRING` 用于导入源公钥，`MEMO_PGP_SIGN_KEY` 用于 Bootstrap 归档的分离签名；两者用途不同。生成软件包或 Bootstrap 不会自动发布软件源。
+RootHide 默认源地址为 `https://procursus.owngoal.dev`，可通过 `MEMO_REPO_URI` 指定。`BOOTSTRAP_APT_KEYRING` 用于导入源公钥，`MEMO_PGP_SIGN_KEY` 用于 Bootstrap 归档的分离签名。软件源发布需另行进行。
 
 ## 配方维护
 
-配方位于 `makefiles/`，Debian 元数据位于 `build_info/`，源码补丁位于 `build_patch/`。修改依赖或配置时，应先核对上游实现，将修复写回配方或补丁，而不是修改已经生成的 Debian 包。
-
-新增或更新配方时显式声明构建依赖，保留 RootHide 语义及已有较新版本，并验证实际受影响的构建与打包步骤。
+配方位于 `makefiles/`，Debian 元数据位于 `build_info/`，源码补丁位于 `build_patch/`。更新配方时，应核对上游实现、声明构建依赖，并验证受影响软件包的构建与打包结果。
