@@ -207,13 +207,51 @@ make rebuild-xcb-util-xrm-package
 | `build_work/<目标>/<CF版本>/` | 源码、编译目录和完成标记 |
 | `build_strap/<目标>/<CF版本>/` | Bootstrap 及其组装材料 |
 
-以下命令按 Makefile 中的成员列表构建 Bootstrap 所需软件包并生成归档，无需先完成全仓构建：
+### 配置签名
+
+Procursus (Relaxin) 的 Bootstrap 归档和 APT 软件源都必须签名，Bootstrap 必须携带用于验证软件源的公钥。私钥保留在 GnuPG 密钥目录，不放入仓库、Bootstrap 或软件源目录。
+
+首次本地验收可生成一把独立的测试密钥。以下命令只需执行一次，按提示设置口令：
+
+```bash
+export GNUPGHOME="$HOME/.gnupg-procursus-test"
+mkdir -p "$GNUPGHOME"
+chmod 700 "$GNUPGHOME"
+export GPG_TTY=$(tty)
+gpg --quick-generate-key "Procursus Relaxin Local Test" rsa3072 sign 1y
+```
+
+在构建终端配置签名身份并导出公钥：
+
+```bash
+export GNUPGHOME="$HOME/.gnupg-procursus-test"
+export GPG_TTY=$(tty)
+export MEMO_PGP_SIGN_KEY=$(gpg --with-colons --list-keys \
+  "Procursus Relaxin Local Test" |
+  awk -F: '$1 == "fpr" {print $10; exit}')
+export BOOTSTRAP_APT_KEYRING="$PWD/build_work/procursus-local-test.gpg"
+
+gpg --yes --output "$BOOTSTRAP_APT_KEYRING" --export "$MEMO_PGP_SIGN_KEY"
+gpg --show-keys --with-fingerprint "$BOOTSTRAP_APT_KEYRING"
+```
+
+正式交付时使用正式签名身份及对应公钥，不能沿用测试密钥。`MEMO_PGP_SIGN_KEY` 指定 Bootstrap 签名密钥的指纹；`BOOTSTRAP_APT_KEYRING` 指向软件源公钥文件。打包时公钥会写入 Bootstrap 的 `/usr/share/keyrings/owngoal-procursus.gpg`，APT 源配置通过 `Signed-By` 引用它。
+
+### 生成并验证 Bootstrap
+
+加载构建环境、Mac 输入及上述签名配置后执行。此命令按 Makefile 成员列表构建所需软件包并组装 Bootstrap，无需先完成全仓构建；已有编译结果会复用。
 
 ```bash
 make bootstrap
+
+gpg --verify \
+  build_strap/iphoneos-arm64-roothide/1900/bootstrap_1900.tar.zst.asc \
+  build_strap/iphoneos-arm64-roothide/1900/bootstrap_1900.tar.zst
 ```
 
-RootHide 默认源地址为 `https://procursus.owngoal.dev`，可通过 `MEMO_REPO_URI` 指定。`BOOTSTRAP_APT_KEYRING` 用于导入源公钥，`MEMO_PGP_SIGN_KEY` 用于 Bootstrap 归档的分离签名。软件源发布需另行进行。
+验证必须成功，且签名者指纹应与配置的密钥一致。新开终端时，需要重新设置签名环境变量；无需重新生成密钥。
+
+默认源地址为 `https://procursus.owngoal.dev`，可通过 `MEMO_REPO_URI` 指定。生成 Bootstrap 不会发布软件源，也不会自动签署 APT 元数据；软件源还需生成并签署 `Release.gpg` 和 `InRelease`。
 
 ## 配方维护
 
