@@ -96,26 +96,25 @@ make roothide-xcode-check
 
 ## 构建软件包
 
-单个配方及其依赖：
-
-```bash
-make xcb-util-xrm-package
-```
-
-所有当前目标启用的配方：
+默认全量构建当前宿主和目标支持的所有配方：
 
 ```bash
 make package
 ```
 
-常规包开发可排除耗时较长的工具链配方：
+构建单个配方及其依赖：
 
 ```bash
-packages=$(make MEMO_QUIET=1 print-SUBPROJECTS | tr ' ' '\n' | grep -Ev '^(llvm|rust|ghc|openjdk|cctools)$' | sort -u | xargs)
-make package SUBPROJECTS="$packages"
+make xcb-util-xrm-package
 ```
 
-`SUBPROJECTS` 可指定要构建的配方，其依赖会自动构建。Linux 上构建 LLVM 还需准备相应的 Apple SDK。
+通过 `SUBPROJECTS` 指定多个配方，以空格分隔：
+
+```bash
+make package SUBPROJECTS="xz zstd"
+```
+
+所选配方的依赖会自动构建。Linux 上构建 LLVM 还需准备相应的 Apple SDK。
 
 保存普通构建日志：
 
@@ -132,11 +131,11 @@ Ubuntu 环境准备完成后，可直接使用终端状态界面：
 python3 build_tools/build_status.py package
 ```
 
-界面显示任务状态、构建进度和错误摘要，完整日志保存到 `build_work/build-ui.log`。如需限定构建范围，在命令末尾加上 `SUBPROJECTS="$packages"`。
+界面显示任务状态、构建进度和错误摘要，完整日志保存到 `build_work/build-ui.log`。如需限定构建范围，在命令末尾加上 `SUBPROJECTS="xz zstd"`。
 
 ## 断点续建
 
-在同一终端重复原构建命令即可续建。新终端应先加载工具环境，并在 Linux 上重新设置两个 Mac 输入变量及所需的 `packages` 列表。
+在同一终端重复原构建命令即可续建。新终端应先加载工具环境，并在 Linux 上重新设置两个 Mac 输入变量。如指定了构建范围，续建时使用相同的 `SUBPROJECTS` 参数。
 
 续建会复用已有源码和编译结果，打包阶段可能再次执行。请保留 `build_work`、`build_stage`、`build_base` 等构建目录。
 
