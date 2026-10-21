@@ -26,7 +26,7 @@ unicorn: unicorn-setup
 	+$(MAKE) -C $(BUILD_WORK)/unicorn/build
 	+$(MAKE) -C $(BUILD_WORK)/unicorn/build install \
 		DESTDIR="$(BUILD_STAGE)/unicorn"
-	cd $(BUILD_WORK)/unicorn/bindings/python && $(DEFAULT_SETUP_PY_ENV) python3 ./setup.py \
+	cd $(BUILD_WORK)/unicorn/bindings/python && unset MACOSX_DEPLOYMENT_TARGET && python3 ./setup.py \
 		build \
 		--executable="$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/python3" \
 		install \
