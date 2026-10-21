@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Build native tools only. Never change HOME or install target packages.
-# On Linux this is the native-tools helper for config-on-linux.sh, which owns
+# On Linux this is the native-tools helper for build_tools/prepare_linux_host.sh, which owns
 # system dependency installation and the Darwin cross toolchain/SDKs/runtime.
 set -euo pipefail
 umask 022
@@ -19,22 +19,22 @@ ROOTHIDE_COMMIT=7764c54759009272b4f2f23c18c62b21794fe6dd
 CCTOOLS_COMMIT=904de2a71d4da6a9b30d2efaf912a10ddc7d9ddb
 TRIEHASH_COMMIT=971282a3aaa3905e63ed1dd5401ea1094e7ea2c3
 
-fail() { printf 'prepare-host-tools: %s\n' "$*" >&2; exit 1; }
+fail() { printf 'prepare_native_tools: %s\n' "$*" >&2; exit 1; }
 usage() {
     cat <<'HELP'
-Usage: build_tools/prepare-host-tools.sh [--print-system-deps|--install-system-deps]
+Usage: build_tools/prepare_native_tools.sh [--print-system-deps|--install-system-deps]
 
 Default: build pinned patched ldid, symredirect, and a Python venv containing
 Cython 0.29.37 / Meson 0.64.0 in HOST_TOOL_ROOT (default build_work/host-tools).
 Source the resulting host-env.sh before using the main Makefile.
 
-Linux users: run bash config-on-linux.sh. It calls this helper for native
+Linux users: run bash build_tools/prepare_linux_host.sh. It calls this helper for native
 ldid/symredirect, Python tools and GHC/Rust/Go/Swift bootstrap compilers.
 Running this helper alone does not prepare a Linux cross-build environment.
 
 HOST_PLATFORM=macos|linux|ios overrides automatic detection. System dependency
 options below apply to macOS/iOS only: installation is opt-in, then preparation
-continues; --print-system-deps only prints. Linux dependencies belong to config-on-linux.sh.
+continues; --print-system-deps only prints. Linux dependencies belong to build_tools/prepare_linux_host.sh.
 macOS requires Homebrew and full Xcode with the iPhoneOS and macOS SDKs. iOS apt must be run on the iOS host,
 never against a macOS/Linux root. No target packages are installed by default.
 
@@ -60,7 +60,7 @@ if [[ $HOST_PLATFORM == auto ]]; then
 fi
 case $HOST_PLATFORM in
     linux)
-        [[ -z ${1:-} ]] || fail 'Linux system dependencies are managed by config-on-linux.sh; use bash config-on-linux.sh --deps-only to install them'
+        [[ -z ${1:-} ]] || fail 'Linux system dependencies are managed by build_tools/prepare_linux_host.sh; use bash build_tools/prepare_linux_host.sh --deps-only to install them'
         ;;
     macos) deps=(brew install bash make gpatch file-formula ncurses gnu-sed gawk grep gnu-tar findutils coreutils bison flex autoconf automake libtool cmake gettext fakeroot dpkg zstd gnupg groff docbook-xsl po4a openssl@3 libplist pkg-config python@3.12 ninja) ;;
     ios) deps=(apt-get install -y clang make perl ncurses-bin git curl ca-certificates patch pkg-config openssl libssl-dev libplist-dev python3 libpython3.9-dev ninja bash coreutils findutils sed gawk grep tar bison flex autoconf automake libtool cmake gettext fakeroot dpkg zstd gnupg groff docbook-xsl po4a zip unzip xz-utils ldid) ;;

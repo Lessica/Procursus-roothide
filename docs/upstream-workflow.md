@@ -32,14 +32,14 @@ Linux 使用 Darwin 交叉工具链（例如 cctools-port）、签名工具和 A
 | `BUILD_ROOT` | 构建根目录；不是发布站点目录 |
 | `CORE_COUNT` | 构建并发参数 |
 
-本分支的 `prepare-host-tools.sh`、固定宿主工具版本和生成的 `host-env.sh` 是后续扩展，不能当作上游原有接口。准备脚本的存在不应破坏已经备好工具链的普通 make 用法。
+本分支的 `build_tools/prepare_native_tools.sh`、固定宿主工具版本和生成的 `host-env.sh` 是后续扩展，不能当作上游原有接口。本分支将上游的根目录 `config-on-linux.sh` 移为 `build_tools/prepare_linux_host.sh`，统一放在构建辅助工具目录。准备脚本的存在不应破坏已经备好工具链的普通 make 用法。
 
 已逐一核对的工具职责：
 
 | 工具 | 普通 Procursus main | RootHide main | 实际职责 |
 | --- | --- | --- | --- |
 | `config-on-linux.sh` | 无 | 有 | Linux 宿主工具链和 SDK 准备 |
-| `prepare-host-tools.sh` | 无 | 无 | 本分支新增：宿主依赖、patched ldid/symredirect、语言引导工具 |
+| `build_tools/prepare_native_tools.sh` | 无 | 无 | 本分支新增：宿主依赖、patched ldid/symredirect、语言引导工具 |
 | `setup_base.sh` | 有 | 有 | 从现有 Deb 填充目标 build_base，必要时调用源码构建；不是安装宿主依赖 |
 | `prosdk.sh` | 有 | 有 | 处理 Deb/SDK 开发材料；不是宿主自动准备替代品 |
 | `compile*.sh` | 有 | 有 | 多目标逐包重建辅助，不是宿主安装器 |

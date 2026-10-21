@@ -1,16 +1,16 @@
 #!/usr/bin/env bash
 # Linux preparation entry point: system dependencies and Darwin cross tools/SDKs.
-# Delegate native build tools and host-env.sh to prepare-host-tools.sh.
+# Delegate native build tools and host-env.sh to prepare_native_tools.sh.
 set -euo pipefail
 umask 022
-PROJDIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)
+PROJDIR=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)
 HOST_TOOL_ROOT=${HOST_TOOL_ROOT:-"$PROJDIR/build_work/host-tools"}
 case ${1:-} in
- --help) printf '%s\n' 'Usage: bash config-on-linux.sh [--skip-system-deps|--deps-only]' 'Linux preparation entry point (Ubuntu 24.04 / Debian-compatible Linux).' 'Installs system dependencies and prepares Darwin cross tools, SDKs, runtime and MIG.' 'Calls build_tools/prepare-host-tools.sh for native tools and host-env.sh.' '--deps-only installs system dependencies only; --skip-system-deps skips installation.' 'Does not build target packages; source host-env.sh, then use the main Makefile.' 'HOST_TOOL_ROOT may be a dedicated directory outside the checkout; HOME is preserved.' 'Set TARGET_SYSROOT and MACOSX_SYSROOT to use explicitly supplied SDKs.' 'Docker containers must use --init to reap fakeroot helper processes.'; exit 0;;
+ --help) printf '%s\n' 'Usage: bash build_tools/prepare_linux_host.sh [--skip-system-deps|--deps-only]' 'Linux preparation entry point (Ubuntu 24.04 / Debian-compatible Linux).' 'Installs system dependencies and prepares Darwin cross tools, SDKs, runtime and MIG.' 'Calls build_tools/prepare_native_tools.sh for native tools and host-env.sh.' '--deps-only installs system dependencies only; --skip-system-deps skips installation.' 'Does not build target packages; source host-env.sh, then use the main Makefile.' 'HOST_TOOL_ROOT may be a dedicated directory outside the checkout; HOME is preserved.' 'Set TARGET_SYSROOT and MACOSX_SYSROOT to use explicitly supplied SDKs.' 'Docker containers must use --init to reap fakeroot helper processes.'; exit 0;;
  ''|--skip-system-deps|--deps-only) ;;
  *) echo 'Unknown option; use --help' >&2;exit 2;;
 esac
-[[ $(uname -s) == Linux ]] || { echo 'Use build_tools/prepare-host-tools.sh on macOS or iOS.' >&2;exit 1; }
+[[ $(uname -s) == Linux ]] || { echo 'Use build_tools/prepare_native_tools.sh on macOS or iOS.' >&2;exit 1; }
 HOST_TOOL_ROOT=$(realpath -m -- "$HOST_TOOL_ROOT")
 case "$PROJDIR/" in "$HOST_TOOL_ROOT/"*) echo 'HOST_TOOL_ROOT must not contain the checkout' >&2;exit 1;; esac
 [[ $HOST_TOOL_ROOT != / && $HOST_TOOL_ROOT != "$(realpath -m -- "$HOME")" ]] || { echo 'HOST_TOOL_ROOT must be a dedicated directory, not / or HOME' >&2;exit 1; }
@@ -242,6 +242,6 @@ mig_src="$HOST_TOOL_ROOT/src/bootstrap_cmds-$mig_commit"
  make install
 )
 # Write the environment only after the cross tools and MIG have been prepared.
-HOST_PLATFORM=linux bash "$PROJDIR/build_tools/prepare-host-tools.sh"
+HOST_PLATFORM=linux bash "$PROJDIR/build_tools/prepare_native_tools.sh"
 sha256sum "$HOST_TOOL_ROOT"/downloads/* > "$HOST_TOOL_ROOT/downloads.sha256"
 printf 'Ready. Run: source %q\n' "$HOST_TOOL_ROOT/host-env.sh"

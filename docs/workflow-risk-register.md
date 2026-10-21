@@ -18,7 +18,7 @@
 | ID | 项目及文件 | 建议处理 | 状态 |
 | --- | --- | --- | --- |
 | W05 | Makefile：Relaxin 默认值范围 | 用户明确本项目只服务 Relaxin；撤回基于“通用RootHide发行版”假设的缩小范围建议。实际只继承两个iPhoneOS RootHide编译目标。保留OwnGoal地址、默认签名策略和专用名称 | 已决策，保留；SSH命名冲突由W03修复 |
-| W06 | config-on-linux.sh / build_tools/prepare-host-tools.sh：准备职责与目录 | 保留Linux交叉准备与公共本机工具分工及既有入口/参数。64项公共Linux依赖集中于build_misc/host-tools/linux-packages.txt；Linux入口只补22项特有依赖，不再重复维护公共清单。SDK路径由Linux入口传入，host-env.sh由公共脚本单独生成并原子替换；调用公共脚本时固定HOST_PLATFORM=linux。保留外部专用工具目录和原缓存/构建顺序 | 去重已完成。原Linux入口85项依赖无删减，显式补齐公共脚本已要求的perl；macOS/iOS依赖不变。已检查依赖打印、deps-only/skip分支、重复执行、SDK导出及中断写入保留旧环境；未实际安装或构建 |
+| W06 | build_tools/prepare_linux_host.sh / build_tools/prepare_native_tools.sh：准备职责与目录 | 保留Linux交叉准备与公共本机工具分工及既有入口/参数。64项公共Linux依赖集中于build_misc/host-tools/linux-packages.txt；Linux入口只补22项特有依赖，不再重复维护公共清单。SDK路径由Linux入口传入，host-env.sh由公共脚本单独生成并原子替换；调用公共脚本时固定HOST_PLATFORM=linux。保留外部专用工具目录和原缓存/构建顺序 | 去重已完成。原Linux入口85项依赖无删减，显式补齐公共脚本已要求的perl；macOS/iOS依赖不变。已检查依赖打印、deps-only/skip分支、重复执行、SDK导出及中断写入保留旧环境；未实际安装或构建 |
 | W07 | makefiles/llvm.mk、shshd.mk：固定 Swift/SDK 路径 | 现有编译器变量支持显式覆盖；未指定准备根时从PATH选择swiftc，资源查询实际编译器。LLVM完整macOS SDK可覆盖，默认保留现有准备输入，否则使用MACOSX_SYSROOT。shshd仍要求选中资源中有apinotes | 已修复选择逻辑。GNU make检查准备/手工/覆盖三种情形，并执行实际资源链接命令配合模拟编译器元数据；未运行LLVM/shshd编译，也未宣称任意Swift版本可用 |
 | W08 | build_misc/llvm/ProcursusNativeArchives.cmake、LLVM/Swift补丁和配方 | 用户只要求最终Deb所带静态库必须是机器码，内部是否LTO由实现决定。当前选择保留已用克隆机制，不为删代码重编LLVM。源码走读确认机制在原配方内部，无额外用户构建入口；后续专项审查仍需覆盖生成源、对象库依赖、编译选项、安装覆盖及最终归档成员 | 不再等待用户选择。保留当前实现；源码走读不作为全量静态库产物验收，本轮没有重做该验收 |
 
