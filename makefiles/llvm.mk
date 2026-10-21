@@ -12,6 +12,16 @@ LLVM_REPOSITORY      := https://github.com/apple/llvm-project.git
 SWIFT_VERSION        := 5.9.2
 SWIFT_SUFFIX         := RELEASE
 SWIFT_SYNTAX_VERSION := 509.0.2
+ifeq ($(UNAME),Linux)
+LLVM_BOOTSTRAP_SWIFTC = $(HOST_TOOL_ROOT)/swift5.9.2/usr/bin/swiftc
+LLVM_NATIVE_CMAKE_FLAGS = -G Ninja \
+	-DCMAKE_C_COMPILER=$(shell command -v clang) \
+	-DCMAKE_CXX_COMPILER=$(shell command -v clang++) \
+	-DCMAKE_Swift_COMPILER=$(LLVM_BOOTSTRAP_SWIFTC) \
+	-DSWIFT_PATH_TO_LIBDISPATCH_SOURCE=$(BUILD_WORK)/llvm/libdispatch
+else
+LLVM_BOOTSTRAP_SWIFTC = $(shell xcrun --find swiftc)
+endif
 LLVM_RT_PLATFORM     := $(if $(findstring iphoneos,$(MEMO_TARGET)),ios,$(if $(findstring appletvos,$(MEMO_TARGET)),tvos,$(if $(findstring watchos,$(MEMO_TARGET)),watchos,osx)))
 ifneq (,$(findstring roothide,$(MEMO_TARGET)))
 # Bundle sealing follows PACK's final per-file entitlement merge.
@@ -44,6 +54,10 @@ llvm-setup: setup
 	$(call EXTRACT_TAR,swift-swift-$(SWIFT_VERSION)-$(SWIFT_SUFFIX).tar.gz,swift-swift-$(SWIFT_VERSION)-$(SWIFT_SUFFIX),llvm/swift)
 	$(call EXTRACT_TAR,swift-cmark-$(SWIFT_VERSION)-$(SWIFT_SUFFIX).tar.gz,swift-cmark-swift-$(SWIFT_VERSION)-$(SWIFT_SUFFIX),llvm/cmark)
 	$(call EXTRACT_TAR,swift-syntax-$(SWIFT_SYNTAX_VERSION).tar.gz,swift-syntax-$(SWIFT_SYNTAX_VERSION),llvm/swift-syntax)
+ifeq ($(UNAME),Linux)
+	$(call GITHUB_ARCHIVE,apple,swift-corelibs-libdispatch,$(SWIFT_VERSION)-$(SWIFT_SUFFIX),swift-$(SWIFT_VERSION)-$(SWIFT_SUFFIX),swift-libdispatch)
+	$(call EXTRACT_TAR,swift-libdispatch-$(SWIFT_VERSION)-$(SWIFT_SUFFIX).tar.gz,swift-corelibs-libdispatch-swift-$(SWIFT_VERSION)-$(SWIFT_SUFFIX),llvm/libdispatch)
+endif
 	$(call DO_PATCH,llvm,llvm,-p1)
 	$(call DO_PATCH,swift,llvm/swift,-p1)
 	cp -a $(BUILD_MISC)/llvm/ProcursusNativeArchives.cmake $(BUILD_WORK)/llvm/llvm/cmake/modules/
@@ -84,9 +98,10 @@ ifeq ($(wildcard $(BUILD_WORK)/../../native/llvm/.build_complete),)
 		-DSWIFT_BUILD_DYNAMIC_STDLIB=FALSE \
 		-DSWIFT_PATH_TO_SWIFT_SYNTAX_SOURCE="$(BUILD_WORK)/llvm/swift-syntax" \
 		-DSWIFT_BUILD_STDLIB_EXTRA_TOOLCHAIN_CONTENT=FALSE \
+		$(LLVM_NATIVE_CMAKE_FLAGS) \
 		$(BUILD_WORK)/llvm/llvm
 	mkdir -p $(BUILD_WORK)/../../native/llvm/share/swift # ¯\_(ツ)_/¯
-	+$(MAKE) -C $(BUILD_WORK)/../../native/llvm swift-components lldb-tblgen
+	+cmake --build $(BUILD_WORK)/../../native/llvm --parallel $(CORE_COUNT) --target swift-components lldb-tblgen
 	touch $(BUILD_WORK)/../../native/llvm/.build_complete
 endif
 
@@ -110,10 +125,10 @@ ifeq ($(wildcard $(BUILD_WORK)/llvm/build/.build_complete),)
 		-DCMAKE_ASM_FLAGS="$(ASFLAGS)" \
 		$(LLVM_CMAKE_FLAGS) \
 		-G Ninja \
-		"-DCMAKE_JOB_POOLS=compile_job_pool=4;link_job_pool=1" \
+		"-DCMAKE_JOB_POOLS=compile_job_pool=$(CORE_COUNT);link_job_pool=1" \
 		-DCMAKE_JOB_POOL_COMPILE=compile_job_pool \
 		-DCMAKE_JOB_POOL_LINK=link_job_pool \
-		-DLLVM_PARALLEL_COMPILE_JOBS=4 \
+		-DLLVM_PARALLEL_COMPILE_JOBS=$(CORE_COUNT) \
 		-DLLVM_PARALLEL_LINK_JOBS=1 \
 		-DSWIFT_PARALLEL_LINK_JOBS=1 \
 		-DLLVM_REVISION=$(LLVM_REVISION) \
@@ -126,7 +141,7 @@ ifeq ($(wildcard $(BUILD_WORK)/llvm/build/.build_complete),)
 		-DLLVM_ENABLE_FFI=ON \
 		-DLLVM_ENABLE_RTTI=ON \
 		-DLLVM_ENABLE_EH=ON \
-		-DCROSS_TOOLCHAIN_FLAGS_NATIVE='-DCMAKE_BUILD_TYPE=Release;-DCMAKE_C_COMPILER=cc;-DCMAKE_CXX_COMPILER=c++;-DCMAKE_OSX_SYSROOT="$(MACOSX_SYSROOT)";-DCMAKE_OSX_ARCHITECTURES="";-DCMAKE_C_FLAGS="$(CFLAGS_FOR_BUILD)";-DCMAKE_CXX_FLAGS="$(CXXFLAGS_FOR_BUILD)";-DCMAKE_EXE_LINKER_FLAGS="$(LDFLAGS_FOR_BUILD)";-DSWIFT_PATH_TO_SWIFT_SYNTAX_SOURCE="$(BUILD_WORK)/llvm/swift-syntax";-DCMAKE_Swift_COMPILER="$(shell xcrun --find swiftc)";-DSWIFT_BUILD_SWIFT_SYNTAX=TRUE' \
+		-DCROSS_TOOLCHAIN_FLAGS_NATIVE='-DCMAKE_BUILD_TYPE=Release;-DCMAKE_C_COMPILER=cc;-DCMAKE_CXX_COMPILER=c++;-DCMAKE_OSX_SYSROOT="$(MACOSX_SYSROOT)";-DCMAKE_OSX_ARCHITECTURES="";-DCMAKE_C_FLAGS="$(CFLAGS_FOR_BUILD)";-DCMAKE_CXX_FLAGS="$(CXXFLAGS_FOR_BUILD)";-DCMAKE_EXE_LINKER_FLAGS="$(LDFLAGS_FOR_BUILD)";-DSWIFT_PATH_TO_SWIFT_SYNTAX_SOURCE="$(BUILD_WORK)/llvm/swift-syntax";-DCMAKE_Swift_COMPILER="$(LLVM_BOOTSTRAP_SWIFTC)";-DSWIFT_BUILD_SWIFT_SYNTAX=TRUE' \
 		-DRUNTIMES_CMAKE_ARGS='-DCMAKE_BUILD_TYPE=$(MEMO_CMAKE_BUILD_TYPE);-DCMAKE_CROSSCOMPILING=true;-DCMAKE_SYSTEM_NAME=Darwin;-DCMAKE_SYSTEM_PROCESSOR=$(shell echo $(GNU_HOST_TRIPLE) | cut -f1 -d-);-DCMAKE_OSX_DEPLOYMENT_TARGET=;-DCMAKE_C_FLAGS=$(OPTIMIZATION_FLAGS) $(PLATFORM_VERSION_MIN) -arch $(MEMO_ARCH) -isysroot $(TARGET_SYSROOT) -isystem $(BUILD_BASE)$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include -isystem $(TARGET_SYSROOT)/usr/include;-DCMAKE_CXX_FLAGS=$(OPTIMIZATION_FLAGS) $(PLATFORM_VERSION_MIN) -arch $(MEMO_ARCH) -isysroot $(TARGET_SYSROOT) -isystem $(BUILD_BASE)$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include -isystem $(TARGET_SYSROOT)/usr/include;-DCMAKE_FIND_ROOT_PATH="$(BUILD_BASE)";-DPKG_CONFIG_EXECUTABLE="$(BUILD_TOOLS)/cross-pkg-config";-DCMAKE_INSTALL_NAME_TOOL="$(I_N_T)";-DCMAKE_INSTALL_PREFIX="$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)";-DCMAKE_INSTALL_NAME_DIR="$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib";-DCMAKE_INSTALL_RPATH=;-DCMAKE_INSTALL_SYSCONFDIR="$(MEMO_PREFIX)/etc";-DCMAKE_OSX_SYSROOT="../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../$(TARGET_SYSROOT)";-DCMAKE_OSX_ARCHITECTURES=$(MEMO_ARCH)' \
 		-DCLANG_VERSION=$(LLVM_VERSION) \
 		-DLLVM_ENABLE_LTO=THIN \
@@ -188,7 +203,7 @@ ifeq ($(wildcard $(BUILD_WORK)/llvm/build/.build_complete),)
 		-DSWIFT_STDLIB_SUPPORT_BACK_DEPLOYMENT=TRUE \
 		-DSWIFT_BUILD_SWIFT_SYNTAX=TRUE \
 		-DSWIFT_PATH_TO_SWIFT_SYNTAX_SOURCE="$(BUILD_WORK)/llvm/swift-syntax" \
-		-DCMAKE_Swift_COMPILER="$(shell xcrun --find swiftc)" \
+		-DCMAKE_Swift_COMPILER="$(LLVM_BOOTSTRAP_SWIFTC)" \
 		-DCMAKE_Swift_FLAGS="-O --target=$(LLVM_TARGET) -sdk $(TARGET_SYSROOT) -I$(BUILD_WORK)/llvm/build-compiler-rt/memo-include" \
 		-DPACKAGE_VENDOR="Procursus" \
 		-DBUG_REPORT_URL="https://github.com/ProcursusTeam/Procursus/issues" \
@@ -205,17 +220,19 @@ ifeq ($(wildcard $(BUILD_WORK)/llvm/build/.build_complete),)
 		-DTERMINFO_LIB="$(BUILD_BASE)$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/libncursesw.dylib" \
 		../llvm
 	mkdir -p $(BUILD_WORK)/llvm/build/share/swift # ¯\_(ツ)_/¯
+ifeq ($(UNAME),Darwin)
 	sed -i 's|-arch\\ $(shell uname -m)\\ -mmacosx-version-min=$(shell sw_vers -productVersion)\\ -isysroot\\ $(MACOSX_SYSROOT)||g' $(BUILD_WORK)/llvm//build/build.ninja
+endif
 	# if something wants arm64e, do not insert -arch arm64
 	sed -i -E -e 's|FLAGS = $(OPTIMIZATION_FLAGS) -arch $(MEMO_ARCH) (.*) -arch arm64e (.*)|FLAGS = $(OPTIMIZATION_FLAGS) -arch arm64e \1 \2|g' $(BUILD_WORK)/llvm//build/build.ninja
 	# same goes for x86_64 and arm64
 	sed -i -E -e 's|FLAGS = $(OPTIMIZATION_FLAGS) -arch $(MEMO_ARCH) (.*) -arch x86_64 (.*)|FLAGS = $(OPTIMIZATION_FLAGS) -arch x86_64 \1 \2|g' $(BUILD_WORK)/llvm//build/build.ninja
 	sed -i -E -e 's|FLAGS = $(OPTIMIZATION_FLAGS) -arch $(MEMO_ARCH) (.*) -arch arm64 (.*)|FLAGS = $(OPTIMIZATION_FLAGS) -arch arm64 \1 \2|g' $(BUILD_WORK)/llvm//build/build.ninja
-	DESTDIR="$(BUILD_STAGE)/llvm" ninja -j4 -C $(BUILD_WORK)/llvm/build
+	DESTDIR="$(BUILD_STAGE)/llvm" ninja -j$(CORE_COUNT) -C $(BUILD_WORK)/llvm/build
 	mkdir -p $(BUILD_WORK)/llvm/build/lib/swift{,_static}/$(PLATFORM)/Cxx{,Stdlib}.swiftmodule
-	DESTDIR="$(BUILD_STAGE)/llvm" ninja -j4 -C $(BUILD_WORK)/llvm/build install
+	DESTDIR="$(BUILD_STAGE)/llvm" ninja -j$(CORE_COUNT) -C $(BUILD_WORK)/llvm/build install
 	# Separate installation-only archives; original components/tools retain LTO.
-	ninja -j4 -C $(BUILD_WORK)/llvm/build procursus-native-static
+	ninja -j$(CORE_COUNT) -C $(BUILD_WORK)/llvm/build procursus-native-static
 	DESTDIR="$(BUILD_STAGE)/llvm" cmake --install $(BUILD_WORK)/llvm/build --component procursus-native-static
 	$(INSTALL) -Dm755 $(BUILD_WORK)/llvm/build/bin/{obj2yaml,yaml2obj} $(BUILD_STAGE)/llvm/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/llvm-$(LLVM_MAJOR_V)/bin/
 	touch $(BUILD_WORK)/llvm/build/.build_complete

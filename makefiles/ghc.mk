@@ -61,7 +61,7 @@ ghc: ghc-setup libffi libgmp10 ncurses
 		--with-gmp-includes="$(BUILD_BASE)/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include" \
 		--with-gmp-libraries="$(BUILD_BASE)/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib" \
 		$(GHC_CONFIG_ARGS) && \
-	$(MAKE) -C $(BUILD_WORK)/ghc PATH="$(abspath $(BUILD_WORK)/ghc/probin):$(PATH)" && \
+	$(MAKE) -S -C $(BUILD_WORK)/ghc PATH="$(abspath $(BUILD_WORK)/ghc/probin):$(PATH)" && \
 	$(MAKE) -C $(BUILD_WORK)/ghc install -j1 \
 		DESTDIR=$(BUILD_STAGE)/ghc \
 		PATH="$(abspath $(BUILD_WORK)/ghc/probin):$(PATH)"

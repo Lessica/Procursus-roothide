@@ -18,7 +18,7 @@ RUST_HOST_CXX_COMMAND := $(if $(filter Darwin,$(UNAME)),$(CXX),$(CXX_FOR_BUILD))
 RUST_TARGET_ENV := $(subst -,_,$(RUST_TARGET))
 RUST_TARGET_UPPER := $(shell printf '%s' '$(RUST_TARGET)' | tr '[:lower:]-' '[:upper:]_')
 ifeq ($(findstring apple-ios,$(RUST_TARGET)),apple-ios)
-RUST_TARGET_CFLAGS := -arch $(MEMO_ARCH) -target $(RUST_TARGET) -isysroot $(TARGET_SYSROOT) $(PLATFORM_VERSION_MIN)
+RUST_TARGET_CFLAGS := -arch $(MEMO_ARCH) -target $(RUST_TARGET) -isysroot $(TARGET_SYSROOT) $(PLATFORM_VERSION_MIN) -fembed-bitcode=off
 else ifeq ($(findstring apple-darwin,$(RUST_TARGET)),apple-darwin)
 RUST_TARGET_CFLAGS := -arch $(MEMO_ARCH) -target $(RUST_TARGET) -isysroot $(MACOSX_SYSROOT) -mmacosx-version-min=$(MACOSX_DEPLOYMENT_TARGET)
 else
@@ -39,10 +39,12 @@ rust-setup: setup
 	cp -f "$(BUILD_INFO)/rust_config.toml" "$(BUILD_WORK)/rust/config.toml"
 	sed -i -e 's|PROCURSUS_BUILD_DIR|$(abspath $(BUILD_WORK)/rust/build)|g' \
 		-e 's|PROCURSUS_BUILD_HOST|$(RUST_BUILD_HOST)|g' \
-		-e 's|PROCURSUS_TARGET|$(RUST_TARGET)|g' \
 		-e 's|PROCURSUS_INSTALL_PREFIX|$(abspath $(BUILD_STAGE)/rust/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX))|g' \
 		-e 's|PROCURSUS_HOST_CC|$(abspath $(RUST_TARGET_CC_WRAPPER))|g' \
 		-e 's|PROCURSUS_HOST_CXX|$(abspath $(RUST_TARGET_CXX_WRAPPER))|g' \
+		-e 's|PROCURSUS_TARGET_AR|$(shell command -v $(AR))|g' \
+		-e 's|PROCURSUS_TARGET_RANLIB|$(shell command -v $(RANLIB))|g' \
+		-e 's|PROCURSUS_TARGET|$(RUST_TARGET)|g' \
 		-e 's|PROCURSUS_HOST_LINKER|$(abspath $(RUST_TARGET_CC_WRAPPER))|g' "$(BUILD_WORK)/rust/config.toml"
 	printf '%s\n' '#!/bin/sh' 'exec $(RUST_HOST_CC_COMMAND) "$$@" $(RUST_HOST_CFLAGS)' > "$(RUST_HOST_CC_WRAPPER)"
 	printf '%s\n' '#!/bin/sh' 'exec $(RUST_HOST_CXX_COMMAND) "$$@" $(RUST_HOST_CFLAGS)' > "$(RUST_HOST_CXX_WRAPPER)"

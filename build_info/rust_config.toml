@@ -29,4 +29,6 @@ channel = "stable"
 [target."PROCURSUS_TARGET"]
 cc = "PROCURSUS_HOST_CC"
 cxx = "PROCURSUS_HOST_CXX"
+ar = "PROCURSUS_TARGET_AR"
+ranlib = "PROCURSUS_TARGET_RANLIB"
 linker = "PROCURSUS_HOST_LINKER"

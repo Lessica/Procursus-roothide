@@ -19,6 +19,7 @@ xfe: xfe-setup fox1.6 gettext fontconfig freetype libpng16 libxft libxrandr libx
 	rm -f $(BUILD_WORK)/xfe/config.cache
 	cd $(BUILD_WORK)/xfe && ./configure -C \
 		$(DEFAULT_CONFIGURE_FLAGS) \
+		CXXFLAGS="$(CXXFLAGS) -std=gnu++14" \
 		--enable-release \
 		--with-x \
 		--disable-sn \
@@ -26,7 +27,7 @@ xfe: xfe-setup fox1.6 gettext fontconfig freetype libpng16 libxft libxrandr libx
 		ac_cv_func_malloc_0_nonnull=yes \
 		FOX_CONFIG="$(BUILD_BASE)/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/fox-config"
 	+$(MAKE) -C $(BUILD_WORK)/xfe \
-		CXXFLAGS+=\ -I$(BUILD_BASE)/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include/fox-1.6
+		CXXFLAGS="$(CXXFLAGS) -std=gnu++14 -I$(BUILD_BASE)/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include/fox-1.6"
 	+$(MAKE) -C $(BUILD_WORK)/xfe install \
 		DESTDIR=$(BUILD_STAGE)/xfe
 	$(call AFTER_BUILD)

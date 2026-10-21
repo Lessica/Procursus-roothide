@@ -1,0 +1,20 @@
+--- a/cctools/libstuff/writeout.c
++++ b/cctools/libstuff/writeout.c
+@@ -154,6 +154,8 @@
+ 		system_error("clock_gettime failed");
+ 		return;
+ 	    }
++	    toc_timeval.tv_sec = toc_timespec.tv_sec;
++	    toc_timeval.tv_usec = toc_timespec.tv_nsec / 1000;
+ #endif /* HAVE_CLOCK_GETTIME */
+ #if 0
+ 	} else {
+@@ -162,6 +164,8 @@
+ 		system_error("gettimeofday failed");
+ 		return;
+ 	    }
++	    toc_timespec.tv_sec = toc_timeval.tv_sec;
++	    toc_timespec.tv_nsec = toc_timeval.tv_usec * 1000;
+ #endif /* !HAVE_CLOCK_GETTIME */
+ #if 0
+ 	}

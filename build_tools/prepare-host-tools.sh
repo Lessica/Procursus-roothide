@@ -52,7 +52,7 @@ if [[ $HOST_PLATFORM == auto ]]; then
     esac
 fi
 case $HOST_PLATFORM in
-    linux) deps=(apt-get install -y build-essential clang perl git curl ca-certificates patch pkg-config libssl-dev zlib1g-dev libbz2-dev liblzma-dev libffi-dev libplist-dev python3 python3-venv python3-dev ninja-build autoconf automake libtool bison flex cmake gettext gawk autopoint fakeroot dpkg-dev zstd gnupg groff docbook-xsl docbook-xml libxml2-utils itstool xsltproc po4a zip unzip xz-utils lzip tcl ghc protobuf-compiler neovim luajit lua-lpeg lua-mpack bsdextrautils nodejs libmodule-build-perl ruby asciidoctor asciidoc-base xmlto intltool gtk-doc-tools) ;;
+    linux) deps=(apt-get install -y build-essential clang perl git curl ca-certificates patch pkg-config libssl-dev zlib1g-dev libbz2-dev liblzma-dev libffi-dev libplist-dev python3 python3-venv python3-dev ninja-build autoconf automake libtool bison flex cmake gettext gawk autopoint fakeroot dpkg-dev zstd gnupg groff docbook-xsl docbook-xml libxml2-utils itstool xsltproc po4a zip unzip xz-utils lzip tcl ghc protobuf-compiler neovim luajit lua-lpeg lua-mpack bsdextrautils nodejs libmodule-build-perl ruby asciidoctor asciidoc-base xmlto intltool gtk-doc-tools libedit-dev libicu-dev libxml2-dev libsqlite3-dev libcurl4-openssl-dev uuid-dev) ;;
     macos) deps=(brew install bash make gpatch file-formula ncurses gnu-sed gawk grep gnu-tar findutils coreutils bison flex autoconf automake libtool cmake gettext fakeroot dpkg zstd gnupg groff docbook-xsl po4a openssl@3 libplist pkg-config python@3.12 ninja) ;;
     ios) deps=(apt-get install -y clang make perl ncurses-bin git curl ca-certificates patch pkg-config openssl libssl-dev libplist-dev python3 libpython3.9-dev ninja bash coreutils findutils sed gawk grep tar bison flex autoconf automake libtool cmake gettext fakeroot dpkg zstd gnupg groff docbook-xsl po4a zip unzip xz-utils ldid) ;;
     *) fail 'HOST_PLATFORM must be macos, linux or ios' ;;
@@ -384,6 +384,27 @@ if [[ $HOST_PLATFORM == linux ]]; then
     mkdir -p "$HOST_TOOL_ROOT/go1.22.4"
     tar -xf "$go_archive" --strip-components=1 -C "$HOST_TOOL_ROOT/go1.22.4"
     "$HOST_TOOL_ROOT/go1.22.4/bin/go" version
+    # Swift's parser uses SwiftSyntax and needs a native bootstrap compiler.
+    case $(uname -m) in
+        aarch64|arm64) swift_platform=ubuntu2204-aarch64; swift_suffix=ubuntu22.04-aarch64 ;;
+        x86_64) swift_platform=ubuntu2204; swift_suffix=ubuntu22.04 ;;
+        *) fail 'unsupported Linux Swift host architecture' ;;
+    esac
+    swift_archive="swift-5.9.2-RELEASE-$swift_suffix.tar.gz"
+    swift_url="https://download.swift.org/swift-5.9.2-release/$swift_platform/swift-5.9.2-RELEASE/$swift_archive"
+    for swift_file in "$swift_archive" "$swift_archive.sig"; do
+        if [[ ! -s $HOST_TOOL_ROOT/cache/$swift_file ]]; then
+            curl --fail --location --retry 3 "$swift_url${swift_file#"$swift_archive"}" -o "$HOST_TOOL_ROOT/cache/$swift_file.part"
+            mv "$HOST_TOOL_ROOT/cache/$swift_file.part" "$HOST_TOOL_ROOT/cache/$swift_file"
+        fi
+    done
+    gpg --batch --yes --dearmor --output "$HOST_TOOL_ROOT/cache/swift-release-key.gpg" "$CHECKOUT/build_misc/swift-release-key.asc"
+    gpgv --keyring "$HOST_TOOL_ROOT/cache/swift-release-key.gpg" "$HOST_TOOL_ROOT/cache/$swift_archive.sig" "$HOST_TOOL_ROOT/cache/$swift_archive"
+    if [[ ! -x $HOST_TOOL_ROOT/swift5.9.2/usr/bin/swiftc ]]; then
+        mkdir -p "$HOST_TOOL_ROOT/swift5.9.2"
+        tar -xf "$HOST_TOOL_ROOT/cache/$swift_archive" --strip-components=1 -C "$HOST_TOOL_ROOT/swift5.9.2"
+    fi
+    "$HOST_TOOL_ROOT/swift5.9.2/usr/bin/swiftc" --version
 fi
 # Source from bash/zsh; retain caller PATH and real HOME.
 {

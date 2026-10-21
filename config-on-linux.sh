@@ -22,7 +22,7 @@ if [[ ${1:-} != --skip-system-deps ]]; then
   openssl gnupg libtool libtool-bin automake autoconf bison flex groff fakeroot dpkg-dev zstd \
   xz-utils lzip libncurses-dev wget cmake docbook-xsl docbook-xml libxml2-utils itstool xsltproc python3 python3-dev python3-venv git pkg-config \
   autopoint po4a zip unzip triehash ninja-build curl libssl-dev libplist-dev libplist++-dev \
-  libbz2-dev liblzma-dev libffi-dev zlib1g-dev libbsd-dev file gettext gperf texinfo help2man rsync tcl ghc protobuf-compiler neovim luajit lua-lpeg lua-mpack bsdextrautils nodejs libmodule-build-perl ruby asciidoctor asciidoc-base xmlto intltool gtk-doc-tools
+  libbz2-dev liblzma-dev libffi-dev zlib1g-dev libbsd-dev file gettext gperf texinfo help2man rsync tcl ghc protobuf-compiler neovim luajit lua-lpeg lua-mpack bsdextrautils nodejs libmodule-build-perl ruby asciidoctor asciidoc-base xmlto intltool gtk-doc-tools libedit-dev libicu-dev libxml2-dev libsqlite3-dev libcurl4-openssl-dev uuid-dev
 fi
 [[ ${1:-} != --deps-only ]] || exit 0
 mkdir -p "$HOST_TOOL_ROOT"/{downloads,toolchain,SDK,bin}
@@ -115,6 +115,12 @@ echo "f137bf519be7f08303923b28bdc0fdfd87ca0533e15ad9050eedda2f6d59b420  $archive
 ld64_src="$HOST_TOOL_ROOT/src/cctools-port-$ld64_commit"
 mkdir -p "$HOST_TOOL_ROOT/src"
 [[ -d $ld64_src ]] || tar -xf "$archive" -C "$HOST_TOOL_ROOT/src"
+timestamp_patch="$PROJDIR/build_patch/host-cctools/archive-timestamps.patch"
+if patch -d "$ld64_src" -p1 --forward --dry-run < "$timestamp_patch" >/dev/null 2>&1; then
+ patch -d "$ld64_src" -p1 < "$timestamp_patch"
+else
+ patch -d "$ld64_src" -p1 --reverse --dry-run < "$timestamp_patch" >/dev/null
+fi
 (
  unset CC CXX CPP CFLAGS CXXFLAGS CPPFLAGS LDFLAGS LD AR RANLIB NM SDKROOT MACOSX_DEPLOYMENT_TARGET
  cd "$ld64_src/cctools"
@@ -123,10 +129,15 @@ mkdir -p "$HOST_TOOL_ROOT/src"
   --prefix="$HOST_TOOL_ROOT/ld64-lto" --with-libtapi="$HOST_TOOL_ROOT/toolchain/linux/iphone" \
   --with-llvm-config="$(command -v llvm-config-18)"
  make -C ld64 -j"${HOST_JOBS:-4}"
+ make -C libmacho -j"${HOST_JOBS:-4}"
+ make -C libstuff -j"${HOST_JOBS:-4}"
+ make -C misc -j"${HOST_JOBS:-4}" strip
 )
 install -m755 "$ld64_src/cctools/ld64/src/ld/ld" "$toolbin/ld"
+install -m755 "$ld64_src/cctools/misc/strip" "$toolbin/strip"
 # Bundled strip invokes its configured target-prefixed linker for Mach-O objects.
 ln -sfn ld "$toolbin/aarch64-apple-darwin14-ld"
+ln -sfn ld "$toolbin/aarch64-apple-darwin-ld"
 # Build the matching compiler-rt builtins with upstream's Darwin source selection,
 # including os_version_check. This is the iOS arm64 cross-link runtime, not a
 # target LLVM/Swift package build or an arm64e ABI substitute.

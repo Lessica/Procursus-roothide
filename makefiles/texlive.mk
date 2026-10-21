@@ -52,7 +52,7 @@ texlive: texlive-setup cairo fontconfig freetype graphite2 harfbuzz icu4c libgd 
 		--disable-xindy --disable-all-pkgs --without-x \
 		--enable-web2c --with-system-icu
 	# 2 - build the native generators used by the cross build.
-	$(MAKE) -C $(BUILD_WORK)/texlive/host/texk/kpathsea
+	$(MAKE) -C $(BUILD_WORK)/texlive/host
 	$(MAKE) -C $(BUILD_WORK)/texlive/host/texk/web2c/web2c
 	$(MAKE) -C $(BUILD_WORK)/texlive/host/texk/web2c himktables tangle ctangle tie otangle
 
@@ -87,11 +87,14 @@ texlive: texlive-setup cairo fontconfig freetype graphite2 harfbuzz icu4c libgd 
 
 	# 2 - make for host
 	$(MAKE) -C $(BUILD_WORK)/texlive/target \
+		AR="$(AR)" RANLIB="$(RANLIB)" \
 		PATH="$(abspath $(BUILD_WORK)/texlive/host/texk/web2c):$(abspath $(BUILD_WORK)/texlive/host/bin):$(PATH)"
 
 	# 3 - make install strip for host
 	rm -rf $(BUILD_STAGE)/texlive
 	$(MAKE) -C $(BUILD_WORK)/texlive/target world \
+		AR="$(AR)" RANLIB="$(RANLIB)" \
+		PATH="$(abspath $(BUILD_WORK)/texlive/host/texk/web2c):$(abspath $(BUILD_WORK)/texlive/host/bin):$(PATH)" \
 		DESTDIR=$(BUILD_STAGE)/texlive
 
 	# Post-install only needs portable shell scripts and native kpsewhich.

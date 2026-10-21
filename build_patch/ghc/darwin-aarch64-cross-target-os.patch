@@ -1,0 +1,66 @@
+--- a/compiler/GHC/CmmToAsm/AArch64/Ppr.hs
++++ b/compiler/GHC/CmmToAsm/AArch64/Ppr.hs
+@@ -487,34 +487,32 @@
+     text "\tstrh" <+> pprOp platform o1 <> comma <+> pprOp platform o2
+   STR _f o1 o2 -> text "\tstr" <+> pprOp platform o1 <> comma <+> pprOp platform o2
+ 
+-#if defined(darwin_HOST_OS)
+-  LDR _f o1 (OpImm (ImmIndex lbl' off)) | Just (_info, lbl) <- dynamicLinkerLabelInfo lbl' ->
++  LDR _f o1 (OpImm (ImmIndex lbl' off)) | platformOS platform == OSDarwin, Just (_info, lbl) <- dynamicLinkerLabelInfo lbl' ->
+     text "\tadrp" <+> pprOp platform o1 <> comma <+> pdoc platform lbl <> text "@gotpage" $$
+     text "\tldr" <+> pprOp platform o1 <> comma <+> text "[" <> pprOp platform o1 <> comma <+> pdoc platform lbl <> text "@gotpageoff" <> text "]" $$
+     text "\tadd" <+> pprOp platform o1 <> comma <+> pprOp platform o1 <> comma <+> char '#' <> int off -- TODO: check that off is in 12bits.
+ 
+-  LDR _f o1 (OpImm (ImmIndex lbl off)) | isForeignLabel lbl ->
++  LDR _f o1 (OpImm (ImmIndex lbl off)) | platformOS platform == OSDarwin, isForeignLabel lbl ->
+     text "\tadrp" <+> pprOp platform o1 <> comma <+> pdoc platform lbl <> text "@gotpage" $$
+     text "\tldr" <+> pprOp platform o1 <> comma <+> text "[" <> pprOp platform o1 <> comma <+> pdoc platform lbl <> text "@gotpageoff" <> text "]" $$
+     text "\tadd" <+> pprOp platform o1 <> comma <+> pprOp platform o1 <> comma <+> char '#' <> int off -- TODO: check that off is in 12bits.
+ 
+-  LDR _f o1 (OpImm (ImmIndex lbl off)) ->
++  LDR _f o1 (OpImm (ImmIndex lbl off)) | platformOS platform == OSDarwin ->
+     text "\tadrp" <+> pprOp platform o1 <> comma <+> pdoc platform lbl <> text "@page" $$
+     text "\tadd" <+> pprOp platform o1 <> comma <+> pprOp platform o1 <> comma <+> pdoc platform lbl <> text "@pageoff" $$
+     text "\tadd" <+> pprOp platform o1 <> comma <+> pprOp platform o1 <> comma <+> char '#' <> int off -- TODO: check that off is in 12bits.
+ 
+-  LDR _f o1 (OpImm (ImmCLbl lbl')) | Just (_info, lbl) <- dynamicLinkerLabelInfo lbl' ->
++  LDR _f o1 (OpImm (ImmCLbl lbl')) | platformOS platform == OSDarwin, Just (_info, lbl) <- dynamicLinkerLabelInfo lbl' ->
+     text "\tadrp" <+> pprOp platform o1 <> comma <+> pdoc platform lbl <> text "@gotpage" $$
+     text "\tldr" <+> pprOp platform o1 <> comma <+> text "[" <> pprOp platform o1 <> comma <+> pdoc platform lbl <> text "@gotpageoff" <> text "]"
+ 
+-  LDR _f o1 (OpImm (ImmCLbl lbl)) | isForeignLabel lbl ->
++  LDR _f o1 (OpImm (ImmCLbl lbl)) | platformOS platform == OSDarwin, isForeignLabel lbl ->
+     text "\tadrp" <+> pprOp platform o1 <> comma <+> pdoc platform lbl <> text "@gotpage" $$
+     text "\tldr" <+> pprOp platform o1 <> comma <+> text "[" <> pprOp platform o1 <> comma <+> pdoc platform lbl <> text "@gotpageoff" <> text "]"
+ 
+-  LDR _f o1 (OpImm (ImmCLbl lbl)) ->
++  LDR _f o1 (OpImm (ImmCLbl lbl)) | platformOS platform == OSDarwin ->
+     text "\tadrp" <+> pprOp platform o1 <> comma <+> pdoc platform lbl <> text "@page" $$
+     text "\tadd" <+> pprOp platform o1 <> comma <+> pprOp platform o1 <> comma <+> pdoc platform lbl <> text "@pageoff"
+-#else
+   LDR _f o1 (OpImm (ImmIndex lbl' off)) | Just (_info, lbl) <- dynamicLinkerLabelInfo lbl' ->
+     text "\tadrp" <+> pprOp platform o1 <> comma <+> text ":got:" <> pdoc platform lbl $$
+     text "\tldr" <+> pprOp platform o1 <> comma <+> text "[" <> pprOp platform o1 <> comma <+> text ":got_lo12:" <> pdoc platform lbl <> text "]" $$
+@@ -541,7 +539,6 @@
+   LDR _f o1 (OpImm (ImmCLbl lbl)) ->
+     text "\tadrp" <+> pprOp platform o1 <> comma <+> pdoc platform lbl $$
+     text "\tadd" <+> pprOp platform o1 <> comma <+> pprOp platform o1 <> comma <+> text ":lo12:" <> pdoc platform lbl
+-#endif
+ 
+   LDR _f o1@(OpReg W8 (RegReal (RealRegSingle i))) o2 | i < 32 ->
+     text "\tldrb" <+> pprOp platform o1 <> comma <+> pprOp platform o2
+--- a/compiler/GHC/Platform/Regs.hs
++++ b/compiler/GHC/Platform/Regs.hs
+@@ -108,7 +108,11 @@
+    ArchS390X   -> S390X.freeReg
+    ArchSPARC   -> SPARC.freeReg
+    ArchARM {}  -> ARM.freeReg
+-   ArchAArch64 -> AArch64.freeReg
++   ArchAArch64 ->
++    -- x18 is reserved by the target Darwin ABI, including Linux cross builds.
++    if platformOS platform == OSDarwin
++      then \reg -> reg /= 18 && AArch64.freeReg reg
++      else AArch64.freeReg
+    ArchRISCV64 -> RISCV64.freeReg
+    arch
+     | arch `elem` [ArchPPC, ArchPPC_64 ELF_V1, ArchPPC_64 ELF_V2] ->
