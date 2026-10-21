@@ -6,7 +6,6 @@ SUBPROJECTS += ghc
 GHC_VERSION := 9.2.2
 DEB_GHC_V   ?= $(GHC_VERSION)-1
 GHC_BOOTSTRAP ?= ghc
-GHC_SPHINXBUILD ?= sphinx-build
 
 ifeq ($(UNAME),Darwin)
 GHC_STAGE0_CC := $(abspath $(BUILD_WORK)/ghc/probin/ghc-stage0-cc)
@@ -16,7 +15,6 @@ endif
 
 ghc-setup: setup
 	command -v "$(GHC_BOOTSTRAP)" >/dev/null || { echo "GHC native bootstrap compiler not found: $(GHC_BOOTSTRAP)" >&2; exit 1; }
-	command -v "$(GHC_SPHINXBUILD)" >/dev/null || { echo "GHC host Sphinx is required; see build_misc/ghc/requirements-sphinx.txt" >&2; exit 1; }
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://downloads.haskell.org/~ghc/$(GHC_VERSION)/ghc-$(GHC_VERSION)-src.tar.xz{$(comma).sig})
 	$(call PGP_VERIFY,ghc-$(GHC_VERSION)-src.tar.xz)
 	$(call EXTRACT_TAR,ghc-$(GHC_VERSION)-src.tar.xz,ghc-$(GHC_VERSION),ghc)
@@ -35,7 +33,6 @@ endif
 
 	echo "HADDOCK_DOCS=NO" > $(BUILD_WORK)/ghc/mk/build.mk
 	echo "BuildFlavour  = quick-cross-ncg" >> $(BUILD_WORK)/ghc/mk/build.mk
-	echo "BUILD_MAN=YES" >> $(BUILD_WORK)/ghc/mk/build.mk
 
 ifeq (,$(findstring darwin,$(MEMO_TARGET)))
 GHC_CONFIG_ARGS := --disable-large-address-space
@@ -50,8 +47,7 @@ ghc:
 else
 ghc: ghc-setup libffi libgmp10 ncurses
 	+unset CC CPP CXX CFLAGS CPPFLAGS CXXFLAGS LDFLAGS && export PATH="$(abspath $(BUILD_WORK)/ghc/probin):$(PATH)" && \
-	cd $(BUILD_WORK)/ghc && { test ! -f config.cache || sed -i -e '/^ac_cv_path_SPHINXBUILD=/d' -e '/^fp_cv_sphinx_version=/d' config.cache; } && \
-	GHC="$(GHC_BOOTSTRAP)" SPHINXBUILD="$(GHC_SPHINXBUILD)" $(GHC_STAGE0_ENV) ./configure -C \
+	cd $(BUILD_WORK)/ghc && GHC="$(GHC_BOOTSTRAP)" $(GHC_STAGE0_ENV) ./configure -C \
 		$(DEFAULT_CONFIGURE_FLAGS) \
 		--host="$$($(BUILD_MISC)/config.guess)" \
 		--target="$(GNU_HOST_TRIPLE)" \
@@ -99,7 +95,9 @@ ghc-package: ghc-stage
 
 	# ghc.mk Prep ghc
 	cp -a $(BUILD_STAGE)/ghc/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/{bin,lib} $(BUILD_DIST)/ghc/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)
-	cp -a $(BUILD_STAGE)/ghc/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share/man $(BUILD_DIST)/ghc/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share
+	if [ -d "$(BUILD_STAGE)/ghc/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share/man" ]; then \
+		cp -a $(BUILD_STAGE)/ghc/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share/man $(BUILD_DIST)/ghc/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share; \
+	fi
 	find $(BUILD_DIST)/ghc \( -name "*.p_*" -o -name "*_p.*" \) -type f -delete
 
 	# ghc.mk Prep ghc-prof

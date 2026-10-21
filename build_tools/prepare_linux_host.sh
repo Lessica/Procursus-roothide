@@ -19,7 +19,7 @@ if [[ ${1:-} != --skip-system-deps ]]; then
  SUDO=(); [[ $(id -u) == 0 ]] || SUDO=(sudo)
  "${SUDO[@]}" apt-get update
  # This entry point owns all Linux system dependency installation.
- # Pinned GHC and triehash are prepared from their upstream inputs by the helper.
+ # Incompatible bootstrap tools are prepared separately by the helper.
  mapfile -t linux_packages < "$PROJDIR/build_misc/host-tools/linux-packages.txt"
  "${SUDO[@]}" env DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
   "${linux_packages[@]}"

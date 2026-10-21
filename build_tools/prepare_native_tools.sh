@@ -24,8 +24,9 @@ usage() {
     cat <<'HELP'
 Usage: build_tools/prepare_native_tools.sh [--print-system-deps|--install-system-deps]
 
-Default: build pinned patched ldid, symredirect, and a Python venv containing
-Cython 0.29.37 / Meson 0.64.0 in HOST_TOOL_ROOT (default build_work/host-tools).
+Default: prepare patched ldid, symredirect and required native tools in
+HOST_TOOL_ROOT (default build_work/host-tools). Linux uses distribution tools
+except for incompatible or unavailable bootstrap dependencies.
 Source the resulting host-env.sh before using the main Makefile.
 
 Linux users: run bash build_tools/prepare_linux_host.sh. It calls this helper for native
@@ -181,6 +182,14 @@ apply_patch() {
         fail "patch does not apply cleanly: $patchfile"
     fi
 }
+if [[ $HOST_PLATFORM == linux ]]; then
+    # Use the distribution tools even when resuming an older private setup.
+    for host_tool in triehash meson cython python3 go; do
+        [[ -x /usr/bin/$host_tool ]] || fail "missing $host_tool; rerun build_tools/prepare_linux_host.sh"
+        ln -sfn "/usr/bin/$host_tool" "$HOST_TOOL_ROOT/bin/$host_tool"
+    done
+    ln -sfn /usr/bin/python3 "$HOST_TOOL_ROOT/bin/python"
+else
 # Triehash v0.3 is a portable Perl script; Homebrew has no formula for it.
 # Keep the pinned original plus a native-interpreter copy inside this checkout.
 fetch_source triehash https://github.com/julian-klode/triehash.git "$TRIEHASH_COMMIT"
@@ -193,6 +202,7 @@ pathlib.Path(output).write_bytes(b'#!' + os.fsencode(perl) + b' -w\n' + b''.join
 os.chmod(output, 0o755)
 PYTHON
 perl -c "$HOST_TOOL_ROOT/bin/triehash"
+fi
 fetch_source ldid https://github.com/ProcursusTeam/ldid.git "$LDID_COMMIT"
 for patch_name in bundle-code-signing-flags.patch entitlement-memory.patch preserve-linkedit-extent.patch; do
     apply_patch "$HOST_TOOL_ROOT/src/ldid" "$CHECKOUT/build_patch/ldid/$patch_name"
@@ -232,14 +242,15 @@ if [[ $HOST_PLATFORM == ios ]]; then
     "$host_sign_ldid" -S "$HOST_TOOL_ROOT/bin/ldid"
     "$host_sign_ldid" -S "$HOST_TOOL_ROOT/bin/symredirect"
 fi
+if [[ $HOST_PLATFORM != linux ]]; then
 if [[ ! -e $HOST_TOOL_ROOT/venv ]]; then
-    "$HOST_PYTHON" -m venv --without-pip "$HOST_TOOL_ROOT/venv" || fail 'Python venv creation failed; Linux needs python3-venv, iOS needs the complete native libpython3.9 standard library'
+    "$HOST_PYTHON" -m venv --without-pip "$HOST_TOOL_ROOT/venv" || fail 'Python venv creation failed; iOS needs the complete native libpython3.9 standard library'
 fi
 [[ ! -L $HOST_TOOL_ROOT/venv && -x $HOST_TOOL_ROOT/venv/bin/python ]] || fail 'invalid local Python venv'
 if ! "$HOST_TOOL_ROOT/venv/bin/python" -m pip --version >/dev/null 2>&1; then
     # --without-ensurepip in Python's configure skips automatic installation;
     # it does not remove the stdlib ensurepip module or bundled wheels.
-    "$HOST_TOOL_ROOT/venv/bin/python" -m ensurepip --upgrade || fail 'venv ensurepip failed; restore the Python ensurepip module/bundled wheels (on Debian/Ubuntu install python3-venv), then rerun'
+    "$HOST_TOOL_ROOT/venv/bin/python" -m ensurepip --upgrade || fail 'venv ensurepip failed; restore the Python ensurepip module/bundled wheels, then rerun'
 fi
 "$HOST_TOOL_ROOT/venv/bin/python" -m pip install --disable-pip-version-check \
     'pip==24.3.1' 'setuptools==75.3.2' 'wheel==0.45.1'
@@ -247,10 +258,13 @@ fi
     'Cython==0.29.37' 'meson==0.64.0' 'commonmark==0.9.1' 'Mako==1.3.8' 'asciidoc==10.2.0'
 "$HOST_TOOL_ROOT/venv/bin/python" -c 'import Cython; assert Cython.__version__ == "0.29.37"'
 "$HOST_TOOL_ROOT/venv/bin/meson" --version
-"$HOST_TOOL_ROOT/venv/bin/python" -m pip install --disable-pip-version-check \
-    -r "$CHECKOUT/build_misc/ghc/requirements-sphinx.txt"
-"$HOST_TOOL_ROOT/venv/bin/sphinx-build" --version
+fi
 if [[ $HOST_PLATFORM == linux ]]; then
+    # Retire the helper's former Sphinx link when reusing an existing tools root.
+    if [[ -L $HOST_TOOL_ROOT/bin/sphinx-build && $(readlink "$HOST_TOOL_ROOT/bin/sphinx-build") == "$HOST_TOOL_ROOT/venv/bin/sphinx-build" ]]; then
+        rm "$HOST_TOOL_ROOT/bin/sphinx-build"
+    fi
+    # GHC 9.2.2 hsc2hs requires base < 4.17; Ubuntu GHC 9.4.7 has base 4.17.2.0.
     host_ghc_prefix="$HOST_TOOL_ROOT/ghc9.2.8"
     case $(uname -m) in
         aarch64|arm64) host_ghc_arch=aarch64; host_ghc_sha=645433359d8ad9e7b286f85ef5111db1b787ee3712c24c5dfde7c62769aa59a4 ;;
@@ -258,24 +272,6 @@ if [[ $HOST_PLATFORM == linux ]]; then
         *) fail 'unsupported Linux GHC host architecture' ;;
     esac
     mkdir -p "$HOST_TOOL_ROOT/downloads"
-    # The official Debian 10 bindist needs libffi.so.7; keep it private to GHC.
-    if [[ ! -f $host_ghc_prefix/lib/libffi.so.7 ]]; then
-        host_ffi_archive="$HOST_TOOL_ROOT/downloads/libffi-3.3.tar.gz"
-        if [[ ! -f $host_ffi_archive ]]; then
-            curl --fail --location --retry 3 -o "$host_ffi_archive.part" https://sourceware.org/pub/libffi/libffi-3.3.tar.gz
-            mv "$host_ffi_archive.part" "$host_ffi_archive"
-        fi
-        printf '%s  %s\n' 72fba7922703ddfa7a028d513ac15a85c8d54c8d67f55fa5a4802885dc652056 "$host_ffi_archive" | sha256sum -c -
-        mkdir -p "$HOST_TOOL_ROOT/src/ghc-libffi-3.3"
-        tar -xf "$host_ffi_archive" --strip-components=1 -C "$HOST_TOOL_ROOT/src/ghc-libffi-3.3"
-        (
-            unset CC CXX CPP CFLAGS CXXFLAGS CPPFLAGS LDFLAGS LD AR RANLIB NM SDKROOT
-            cd "$HOST_TOOL_ROOT/src/ghc-libffi-3.3"
-            CC=cc ./configure --prefix="$host_ghc_prefix" --libdir="$host_ghc_prefix/lib" --disable-static
-            "$HOST_MAKE" -j"$HOST_JOBS"
-            "$HOST_MAKE" install
-        )
-    fi
     if [[ ! -x $host_ghc_prefix/bin/ghc ]]; then
         host_ghc_archive="$HOST_TOOL_ROOT/downloads/ghc-9.2.8-$host_ghc_arch-deb10-linux.tar.xz"
         if [[ ! -f $host_ghc_archive ]]; then
@@ -287,44 +283,37 @@ if [[ $HOST_PLATFORM == linux ]]; then
         tar -xf "$host_ghc_archive" --strip-components=1 -C "$HOST_TOOL_ROOT/src/ghc-bootstrap-9.2.8"
         (
             unset CC CXX CPP CFLAGS CXXFLAGS CPPFLAGS LDFLAGS LD AR RANLIB NM SDKROOT
-            export LD_LIBRARY_PATH="$host_ghc_prefix/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
             cd "$HOST_TOOL_ROOT/src/ghc-bootstrap-9.2.8"
+            # The bindist already contains libffi.so.7; no separate libffi build.
+            export LD_LIBRARY_PATH="$PWD/rts/dist/build${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
             ./configure --prefix="$host_ghc_prefix"
             "$HOST_MAKE" -j"$HOST_JOBS" install
         )
     fi
     for host_ghc_tool in ghc ghc-pkg hsc2hs runghc; do
-        {
-            printf '#!/usr/bin/env bash\nexport LD_LIBRARY_PATH=%q${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}\n' "$host_ghc_prefix/lib"
-            printf 'exec %q "$@"\n' "$host_ghc_prefix/bin/$host_ghc_tool"
-        } > "$HOST_TOOL_ROOT/bin/$host_ghc_tool"
-        chmod +x "$HOST_TOOL_ROOT/bin/$host_ghc_tool"
+        ln -sfn "$host_ghc_prefix/bin/$host_ghc_tool" "$HOST_TOOL_ROOT/bin/$host_ghc_tool"
     done
     [[ $("$HOST_TOOL_ROOT/bin/ghc" --numeric-version) == 9.2.8 ]] || fail 'GHC bootstrap preparation failed'
     "$HOST_TOOL_ROOT/bin/ghc-pkg" check
     # Duktape's upstream source generator still requires Python 2 and PyYAML.
-    host_python2_prefix="$HOST_TOOL_ROOT/python2.7"
-    host_python2_archive="$HOST_TOOL_ROOT/cache/Python-2.7.18.tar.xz"
-    if [[ ! -x $host_python2_prefix/bin/python2.7 ]]; then
+    host_python2_prefix="$HOST_TOOL_ROOT/pypy2.7"
+    case $(uname -m) in
+        aarch64|arm64) pypy_arch=aarch64; pypy_sha=f22a1be607deeaa4f9be6bc63aae09fe4fb5b990d6a23aa4e7c5960dc5d93c96 ;;
+        x86_64) pypy_arch=linux64; pypy_sha=aa3bb92dbb529fa2d4920895b16d67a810b0c709207857d56cfe4a6e3b41e02a ;;
+    esac
+    host_python2_archive="$HOST_TOOL_ROOT/cache/pypy2.7-v7.3.20-$pypy_arch.tar.bz2"
+    if [[ ! -x $host_python2_prefix/bin/pypy ]]; then
         if [[ ! -f $host_python2_archive ]]; then
             curl --fail --location --retry 3 -o "$host_python2_archive.part" \
-                https://www.python.org/ftp/python/2.7.18/Python-2.7.18.tar.xz
+                "https://downloads.python.org/pypy/pypy2.7-v7.3.20-$pypy_arch.tar.bz2"
             mv "$host_python2_archive.part" "$host_python2_archive"
         fi
-        printf '%s  %s\n' b62c0e7937551d0cc02b8fd5cb0f544f9405bafc9a54d3808ed4594812edef43 "$host_python2_archive" | sha256sum -c -
-        mkdir -p "$HOST_TOOL_ROOT/src/host-python2.7"
-        tar -xf "$host_python2_archive" --strip-components=1 -C "$HOST_TOOL_ROOT/src/host-python2.7"
-        (
-            unset CC CXX CPP CFLAGS CXXFLAGS CPPFLAGS LDFLAGS LDSHARED AR RANLIB LD NM CONFIG_SITE MACOSX_DEPLOYMENT_TARGET
-            cd "$HOST_TOOL_ROOT/src/host-python2.7"
-            CC="$HOST_CC" CXX="$HOST_CXX" CFLAGS="-O2 -std=gnu89" ./configure \
-                --prefix="$host_python2_prefix" --with-ensurepip=no
-            "$HOST_MAKE" -j "$HOST_JOBS"
-            "$HOST_MAKE" altinstall
-        )
+        printf '%s  %s\n' "$pypy_sha" "$host_python2_archive" | sha256sum -c -
+        mkdir -p "$host_python2_prefix"
+        tar -xf "$host_python2_archive" --strip-components=1 -C "$host_python2_prefix"
     fi
-    "$host_python2_prefix/bin/python2.7" -c 'import sys, zlib; assert sys.version_info[:3] == (2, 7, 18)'
-    if ! "$host_python2_prefix/bin/python2.7" -c 'import yaml; assert yaml.__version__ == "5.3.1"' 2>/dev/null; then
+    "$host_python2_prefix/bin/pypy" -c 'import sys, zlib; assert sys.version_info[:2] == (2, 7)'
+    if ! "$host_python2_prefix/bin/pypy" -c 'import yaml; assert yaml.__version__ == "5.3.1"' 2>/dev/null; then
         host_yaml_archive="$HOST_TOOL_ROOT/cache/PyYAML-5.3.1.tar.gz"
         if [[ ! -f $host_yaml_archive ]]; then
             curl --fail --location --retry 3 -o "$host_yaml_archive.part" \
@@ -334,65 +323,47 @@ if [[ $HOST_PLATFORM == linux ]]; then
         printf '%s  %s\n' b8eac752c5e14d3eca0e6dd9199cd627518cb5ec06add0de9d32baeee6fe645d "$host_yaml_archive" | sha256sum -c -
         mkdir -p "$HOST_TOOL_ROOT/src/host-pyyaml"
         tar -xf "$host_yaml_archive" --strip-components=1 -C "$HOST_TOOL_ROOT/src/host-pyyaml"
-        (cd "$HOST_TOOL_ROOT/src/host-pyyaml" && "$host_python2_prefix/bin/python2.7" setup.py --without-libyaml install --prefix="$host_python2_prefix")
+        (cd "$HOST_TOOL_ROOT/src/host-pyyaml" && "$host_python2_prefix/bin/pypy" setup.py --without-libyaml install --prefix="$host_python2_prefix")
     fi
-    "$host_python2_prefix/bin/python2.7" -c 'import yaml; assert yaml.safe_load("test: yes")["test"] is True'
-    ln -sfn "$host_python2_prefix/bin/python2.7" "$HOST_TOOL_ROOT/bin/python2"
+    "$host_python2_prefix/bin/pypy" -c 'import yaml; assert yaml.safe_load("test: yes")["test"] is True'
+    ln -sfn "$host_python2_prefix/bin/pypy" "$HOST_TOOL_ROOT/bin/python2"
     # Python package recipes use the target's 3.9 ABI, independently of Meson.
-    host_python_prefix="$HOST_TOOL_ROOT/python3.9"
-    host_python_archive="$HOST_TOOL_ROOT/cache/Python-3.9.9.tar.xz"
+    # Ubuntu 24.04 has no Python 3.9 package. Use Astral's relocatable CPython
+    # distribution; the host patch version need not equal target Python 3.9.9.
+    host_python_prefix="$HOST_TOOL_ROOT/python3.9-standalone"
+    case $(uname -m) in
+        aarch64|arm64) python_arch=aarch64; python_sha=d840efd9d81ad557019ebd0d435828fc32101cd01be82046087b4aee463dca0c ;;
+        x86_64) python_arch=x86_64; python_sha=866745efbee219a3f9b9d54ee1477ebf92542bb9ff9f6591a7e5a3643a0d4214 ;;
+    esac
+    host_python_archive="$HOST_TOOL_ROOT/cache/cpython-3.9.24+20251014-$python_arch-unknown-linux-gnu-install_only.tar.gz"
     if [[ ! -x $host_python_prefix/bin/python3.9 ]]; then
         if [[ ! -f $host_python_archive ]]; then
             curl --fail --location --retry 3 -o "$host_python_archive.part" \
-                https://www.python.org/ftp/python/3.9.9/Python-3.9.9.tar.xz
+                "https://github.com/astral-sh/python-build-standalone/releases/download/20251014/$(basename "$host_python_archive")"
             mv "$host_python_archive.part" "$host_python_archive"
         fi
-        printf '%s  %s\n' 06828c04a573c073a4e51c4292a27c1be4ae26621c3edc7cf9318418ce3b6d27 "$host_python_archive" | sha256sum -c -
-        mkdir -p "$HOST_TOOL_ROOT/src/host-python3.9"
-        tar -xf "$host_python_archive" --strip-components=1 -C "$HOST_TOOL_ROOT/src/host-python3.9"
-        (
-            unset CC CXX CPP CFLAGS CXXFLAGS CPPFLAGS LDFLAGS LDSHARED AR RANLIB LD NM CONFIG_SITE MACOSX_DEPLOYMENT_TARGET
-            cd "$HOST_TOOL_ROOT/src/host-python3.9"
-            CC="$HOST_CC" CXX="$HOST_CXX" ./configure --prefix="$host_python_prefix" --with-ensurepip=install
-            "$HOST_MAKE" -j "$HOST_JOBS"
-            "$HOST_MAKE" altinstall
-        )
+        printf '%s  %s\n' "$python_sha" "$host_python_archive" | sha256sum -c -
+        mkdir -p "$host_python_prefix"
+        tar -xf "$host_python_archive" --strip-components=1 -C "$host_python_prefix"
     fi
-    "$host_python_prefix/bin/python3.9" -c 'import sys, ssl, zlib, bz2, lzma, ctypes; assert sys.version_info[:3] == (3, 9, 9)'
-    "$host_python_prefix/bin/python3.9" -m pip install --disable-pip-version-check \
-        'pip==24.3.1' 'setuptools==70.3.0' 'wheel==0.45.1' 'Cython==0.29.37'
+    "$host_python_prefix/bin/python3.9" -c 'import sys, ssl, zlib, bz2, lzma, ctypes, setuptools; assert sys.version_info[:3] == (3, 9, 24)'
     ln -sfn "$host_python_prefix/bin/python3.9" "$HOST_TOOL_ROOT/bin/python3.9"
 fi
 if [[ $HOST_PLATFORM == linux ]]; then
     export CARGO_HOME="$HOST_TOOL_ROOT/cargo" RUSTUP_HOME="$HOST_TOOL_ROOT/rustup"
-    case $(uname -m) in
-        aarch64|arm64) rust_host=aarch64-unknown-linux-gnu; rustup_sha=1cffbf51e63e634c746f741de50649bbbcbd9dbe1de363c9ecef64e278dba2b2 ;;
-        x86_64) rust_host=x86_64-unknown-linux-gnu; rustup_sha=6aeece6993e902708983b209d04c0d1dbb14ebb405ddb87def578d41f920f56d ;;
-        *) fail 'unsupported Linux Rust host architecture' ;;
-    esac
-    if [[ ! -x $CARGO_HOME/bin/rustup ]]; then
-        rustup_init="$HOST_TOOL_ROOT/cache/rustup-init-1.27.1-$rust_host"
-        curl --fail --location --retry 3 -o "$rustup_init" "https://static.rust-lang.org/rustup/archive/1.27.1/$rust_host/rustup-init"
-        printf '%s  %s\n' "$rustup_sha" "$rustup_init" | sha256sum -c -
-        chmod 755 "$rustup_init"
-        "$rustup_init" -y --no-modify-path --profile minimal --default-toolchain none
-    fi
-    "$CARGO_HOME/bin/rustup" toolchain install 1.88.0 --profile minimal --target aarch64-apple-ios --no-self-update
-    "$CARGO_HOME/bin/rustup" default 1.88.0
+    # Ubuntu supplies rustup, but not the aarch64-apple-ios standard library.
+    mkdir -p "$CARGO_HOME/bin"
+    ln -sfn /usr/bin/rustup "$CARGO_HOME/bin/rustup"
+    for rust_tool in cargo rustc rustdoc; do
+        ln -sfn "/usr/bin/$rust_tool" "$CARGO_HOME/bin/$rust_tool"
+    done
+    /usr/bin/rustup toolchain install 1.88.0 --profile minimal --target aarch64-apple-ios --no-self-update
+    /usr/bin/rustup default 1.88.0
+    # Ubuntu cargo-c 0.9.19 (Cargo 0.70) cannot resolve the locked rav1e
+    # quickcheck/rand features. cargo-c 0.10.13 also requires Rust >= 1.85.
     "$CARGO_HOME/bin/cargo" install cargo-c --version 0.10.13 --locked
-    case $rust_host in
-        aarch64-*) go_arch=arm64; go_sha=a8e177c354d2e4a1b61020aca3562e27ea3e8f8247eca3170e3fa1e0c2f9e771 ;;
-        x86_64-*) go_arch=amd64; go_sha=ba79d4526102575196273416239cca418a651e049c2b099f3159db85e7bade7d ;;
-    esac
-    go_archive="$HOST_TOOL_ROOT/cache/go1.22.4.linux-$go_arch.tar.gz"
-    if [[ ! -f $go_archive ]]; then
-        curl --fail --location --retry 3 -o "$go_archive.part" "https://go.dev/dl/go1.22.4.linux-$go_arch.tar.gz"
-        mv "$go_archive.part" "$go_archive"
-    fi
-    printf '%s  %s\n' "$go_sha" "$go_archive" | sha256sum -c -
-    mkdir -p "$HOST_TOOL_ROOT/go1.22.4"
-    tar -xf "$go_archive" --strip-components=1 -C "$HOST_TOOL_ROOT/go1.22.4"
-    "$HOST_TOOL_ROOT/go1.22.4/bin/go" version
+    host_go_root=$(/usr/bin/go env GOROOT)
+    /usr/bin/go version
     # Swift's parser uses SwiftSyntax and needs a native bootstrap compiler.
     case $(uname -m) in
         aarch64|arm64) swift_platform=ubuntu2204-aarch64; swift_suffix=ubuntu22.04-aarch64 ;;
@@ -441,10 +412,15 @@ fi
     if [[ $HOST_PLATFORM == macos ]]; then printf 'export LIBTOOLIZE=glibtoolize\n'; fi
     if [[ $HOST_PLATFORM == linux ]]; then
         printf 'export CARGO_HOME=%q\nexport RUSTUP_HOME=%q\n' "$CARGO_HOME" "$RUSTUP_HOME"
-        printf 'export GOPATH=%q\nexport GOCACHE=%q\nexport GOROOT_BOOTSTRAP=%q\n' "$HOST_TOOL_ROOT/go-work" "$HOST_TOOL_ROOT/cache/go-build" "$HOST_TOOL_ROOT/go1.22.4"
+        printf 'export GOPATH=%q\nexport GOCACHE=%q\nexport GOROOT_BOOTSTRAP=%q\n' "$HOST_TOOL_ROOT/go-work" "$HOST_TOOL_ROOT/cache/go-build" "$host_go_root"
     fi
-    printf 'export PATH=%q:%q:' "$HOST_TOOL_ROOT/bin" "$HOST_TOOL_ROOT/venv/bin"
-    if [[ $HOST_PLATFORM == linux ]]; then printf '%q:%q:' "$CARGO_HOME/bin" "$HOST_TOOL_ROOT/go1.22.4/bin"; fi
+    printf 'export PATH=%q:' "$HOST_TOOL_ROOT/bin"
+    if [[ $HOST_PLATFORM == linux ]]; then
+        # Prefer distribution tools over an older private Python environment.
+        printf '%q:/usr/bin:' "$CARGO_HOME/bin"
+    else
+        printf '%q:' "$HOST_TOOL_ROOT/venv/bin"
+    fi
     if [[ $HOST_PLATFORM == macos && -n ${host_gnu_paths[*]:-} ]]; then
         for host_gnu_path in "${host_gnu_paths[@]}"; do printf '%q:' "$host_gnu_path"; done
     fi
