@@ -125,6 +125,8 @@ mkdir -p "$HOST_TOOL_ROOT/src"
  make -C ld64 -j"${HOST_JOBS:-4}"
 )
 install -m755 "$ld64_src/cctools/ld64/src/ld/ld" "$toolbin/ld"
+# Bundled strip invokes its configured target-prefixed linker for Mach-O objects.
+ln -sfn ld "$toolbin/aarch64-apple-darwin14-ld"
 # Build the matching compiler-rt builtins with upstream's Darwin source selection,
 # including os_version_check. This is the iOS arm64 cross-link runtime, not a
 # target LLVM/Swift package build or an arm64e ABI substitute.
@@ -168,6 +170,10 @@ printf '%s\n' 'int main(void) { return __builtin_available(iOS 18.0, *) ? 0 : 1;
 # Exercise both LTO modes through the same driver used by target recipes.
 printf '%s\n' 'int procursus_lto_probe(void) { return 0; }' > "$runtime_src/build/archive-probe.c"
 printf '%s\n' 'int procursus_lto_probe(void); int main(void) { return procursus_lto_probe(); }' > "$runtime_src/build/archive-main.c"
+"$HOST_TOOL_ROOT/bin/aarch64-apple-darwin-clang" --target=arm64-apple-ios16.0 \
+ -isysroot "$TARGET_SYSROOT" -c "$runtime_src/build/archive-probe.c" \
+ -o "$runtime_src/build/strip-probe.o"
+"$HOST_TOOL_ROOT/bin/aarch64-apple-darwin-strip" -x "$runtime_src/build/strip-probe.o"
 for lto_mode in full thin; do
  "$HOST_TOOL_ROOT/bin/aarch64-apple-darwin-clang" --target=arm64-apple-ios16.0 \
   -isysroot "$TARGET_SYSROOT" -flto="$lto_mode" "$runtime_src/build/availability.c" \
