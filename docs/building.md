@@ -1,6 +1,6 @@
-# 开发者构建指南
+# Linux 开发者构建指南
 
-Procursus (Relaxin) 使用 GNU Make 构建面向 Relaxin 的 RootHide 软件包。本文介绍宿主准备、跨宿主输入、软件包构建与断点续建；所有命令从仓库根目录执行，除非另有说明。
+本文介绍在 Ubuntu 24.04 上全量构建 Procursus (Relaxin) 软件包、生成 Bootstrap 和断点续建。Mac 仅用于提供 Linux 构建所需的材料。所有命令从仓库根目录执行，除非另有说明。
 
 ## 构建并发
 
@@ -8,30 +8,7 @@ Procursus (Relaxin) 使用 GNU Make 构建面向 Relaxin 的 RootHide 软件包�
 
 ## 准备宿主
 
-### macOS
-
-需要完整 Xcode、Homebrew 和 Git。选择包含 iPhoneOS SDK 的 Xcode 后，安装依赖并准备宿主工具：
-
-```bash
-export DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer
-./build_tools/prepare_native_tools.sh --install-system-deps
-source build_work/host-tools/host-env.sh
-```
-
-已安装系统依赖时，可省略 `--install-system-deps`。
-
-### Linux
-
-使用 Ubuntu 24.04，执行以下命令准备系统依赖和交叉编译环境：
-
-```bash
-./build_tools/prepare_linux_host.sh
-source build_work/host-tools/host-env.sh
-```
-
-安装系统依赖需要 root 或 sudo。依赖清单位于 [linux-packages.txt](../build_misc/host-tools/linux-packages.txt)。准备入口的 `--deps-only` 只安装系统依赖；`--skip-system-deps` 用于系统依赖已就绪的环境。
-
-每次新开终端，需要重新加载 `host-env.sh`，无需重复准备环境。
+Linux 宿主支持 arm64 和 x86_64，需要联网获取系统依赖、源码及引导工具链。已有 Linux 服务器可直接在仓库目录执行准备命令；使用容器则先按下面的步骤创建环境。
 
 ### 使用 Docker 或 OrbStack
 
@@ -44,15 +21,42 @@ git archive HEAD | docker exec -i procursus-build tar -x -C /work
 docker exec -it -w /work procursus-build bash
 ```
 
-进入容器后执行前述 Linux 准备命令。源码位于容器自己的文件系统中；`git archive HEAD` 不包含未提交修改和本地构建缓存。后续可用以下命令重新进入同一容器：
+进入容器后，继续执行下一节的 Linux 准备命令。源码位于容器自己的文件系统中；`git archive HEAD` 不包含未提交修改和本地构建缓存。后续可用以下命令重新进入同一容器：
 
 ```bash
 docker exec -it -w /work procursus-build bash
 ```
 
+### Linux
+
+使用 Ubuntu 24.04，执行以下命令准备系统依赖和交叉编译环境：
+
+```bash
+./build_tools/prepare_linux_host.sh
+source build_work/host-tools/host-env.sh
+```
+
+安装系统依赖需要 root 或 sudo。依赖清单位于 [linux-packages.txt](../build_misc/host-tools/linux-packages.txt)。准备入口的 `--deps-only` 只安装系统依赖；`--skip-system-deps` 用于系统依赖已就绪的环境。
+
+准备脚本也会配置 Python、GHC、Rust、Go 和 Swift 等宿主引导工具，无需从 Mac 复制这些工具。OpenJDK 配方会自行下载宿主 JDK。
+
+每次新开终端，需要重新加载 `host-env.sh`，无需重复准备环境。
+
 ## 为 Linux 准备 Mac 输入
 
 Linux 全量构建需要从 Mac 获取 libroothide、ElleKit、locale 数据和 LLVM 运行时所需的 Apple SDK。两台宿主应使用同一版本的仓库源码。
+
+### 准备材料提供端
+
+需要完整 Xcode、Homebrew 和 Git。选择包含 iPhoneOS SDK 的 Xcode 后，安装依赖并准备宿主工具：
+
+```bash
+export DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer
+./build_tools/prepare_native_tools.sh --install-system-deps
+source build_work/host-tools/host-env.sh
+```
+
+已安装系统依赖时，可省略 `--install-system-deps`。
 
 ### 在 Mac 上生成
 
@@ -64,7 +68,7 @@ make ellekit-package
 tar -cf build_work/mac-locale.tar -C /usr/share locale
 ```
 
-从当前选定的 Xcode 收集额外 SDK。请先在 Xcode 设置的 Platforms 或 Components 页面 中安装 iOS、tvOS 和 watchOS 平台支持，确保以下 SDK 查询均能成功：
+从当前选定的 Xcode 收集额外 SDK。请先在 Xcode 设置的 Platforms 或 Components 页面中安装 iOS、tvOS 和 watchOS 平台支持，确保以下 SDK 查询均能成功：
 
 ```bash
 (
@@ -120,7 +124,16 @@ export GETTEXT_LOCALIZATIONS_INPUT="$PWD/build_work/locale"
 (
 set -e
 make roothide-xcode-check
-test -f "$HOST_TOOL_ROOT/SDK/MacOSX.sdk/SDKSettings.json"
+test -f "$GETTEXT_LOCALIZATIONS_INPUT/en_US.UTF-8/LC_CTYPE"
+test -f "$GETTEXT_LOCALIZATIONS_INPUT/en_US.UTF-8/LC_COLLATE"
+dpkg-deb -f build_dist/iphoneos-arm64-roothide/1900/ellekit/ellekit_*.deb Package Version Architecture
+python3 - "$HOST_TOOL_ROOT/SDK/MacOSX.sdk/SDKSettings.json" <<'PYSDK'
+import json, sys
+with open(sys.argv[1]) as f:
+    sdk = json.load(f)
+assert sdk['CanonicalName'] == 'macosx' + sdk['Version']
+print('LLVM macOS SDK:', sdk['Version'])
+PYSDK
 for sdk in macosx iphoneos iphonesimulator appletvos appletvsimulator watchos watchsimulator; do
     xcrun --sdk "$sdk" --show-sdk-path
     xcrun --sdk "$sdk" --show-sdk-version
@@ -128,7 +141,7 @@ done
 )
 ```
 
-检查目标会验证 libroothide 输入与当前源码及目标是否匹配。Linux 默认构建列表不包含 ElleKit；从 Mac 传入的 Debian 包保留在输出目录中。
+上述检查必须全部成功后再开始构建。libroothide 输入会与当前源码及目标核对；SDK 检查用于确认 Linux 能找到所需的平台。Linux 默认构建列表不包含 ElleKit；从 Mac 传入的 Debian 包保留在输出目录中。
 
 ## 构建软件包
 
@@ -173,7 +186,7 @@ python3 build_tools/build_status.py package
 
 在同一终端重复原构建命令即可续建。新终端应先加载工具环境，并在 Linux 上重新设置两个 Mac 输入变量。如指定了构建范围，续建时使用相同的 `SUBPROJECTS` 参数。
 
-续建会复用已有源码和编译结果，打包阶段可能再次执行。请保留 `build_work`、`build_stage`、`build_base` 等构建目录。
+续建会复用已有源码和编译结果，打包阶段可能再次执行。请保留 `build_source`、`build_work`、`build_stage`、`build_base` 和 `build_dist`，以及已传入的 Mac 材料。
 
 修改已完成配方的源码或编译参数后，需要显式重建该配方，例如：
 
@@ -187,6 +200,7 @@ make rebuild-xcb-util-xrm-package
 
 | 目录 | 内容 |
 | --- | --- |
+| `build_source/` | 下载的源码归档 |
 | `build_dist/<目标>/<CF版本>/<配方>/` | Debian 软件包 |
 | `build_stage/<目标>/<CF版本>/` | 各配方的安装暂存文件 |
 | `build_base/<目标>/<CF版本>/` | 供其他配方使用的目标依赖 |
