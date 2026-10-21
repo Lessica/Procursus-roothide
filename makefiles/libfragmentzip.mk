@@ -20,7 +20,7 @@ libfragmentzip:
 	@echo "Using previously built libfragmentzip."
 else
 libfragmentzip: libfragmentzip-setup libgeneral libzip curl
-	cd $(BUILD_WORK)/libfragmentzip && CFLAGS="$(CFLAGS) -Werror=implicit-function-declaration" ./autogen.sh \
+	cd $(BUILD_WORK)/libfragmentzip && autoreconf -i && CFLAGS="$(CFLAGS) -Werror=implicit-function-declaration" ./configure \
 		$(DEFAULT_CONFIGURE_FLAGS) \
 		zlib_LIBS="-L$(TARGET_SYSROOT)/usr/lib -lz" \
 		zlib_CFLAGS="-I$(TARGET_SYSROOT)/usr/include"
