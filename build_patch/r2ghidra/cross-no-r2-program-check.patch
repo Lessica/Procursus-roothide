@@ -1,0 +1,53 @@
+--- a/configure
++++ b/configure
+@@ -427,34 +427,6 @@
+ if [ $? = 0 ]; then
+ echo yes; HAVE_PKGCFG_R_ANAL=1;
+ R2ANAL_LDFLAGS=$tmp; fi; fi
+-ochof "checking for r2... "
+-if [ -x "${R2}" ]; then
+-	FIND=${R2}
+-else
+-	FIND=""
+-	IFS=:
+-	for A in ${PATH} ; do
+-		if [ -x "${A}/r2" ]; then
+-			FIND="${A}/r2"
+-			break;
+-		fi
+-	done
+-	unset IFS
+-fi
+-if [ -n "${FIND}" ]; then
+-	ocho ${FIND};
+-HAVE_R2=1
+-	R2=${FIND}
+-else
+-	HAVE_R2=0
+-	R2=r2
+-if [ "" = 1 ]; then
+-echo "Cannot find r2" >&2
+-else
+-echo no
+-fi
+-	echo "error: This program is required." >&2
+-	exit 1 ; fi
+ ochof "checking for bison... "
+ if [ -x "${BISON}" ]; then
+ 	FIND=${BISON}
+--- a/configure.acr
++++ b/configure.acr
+@@ -9,13 +9,9 @@
+ PKGCFG! R2_CFLAGS R2_LDFLAGS r_core
+ PKGCFG! R2ASM_CFLAGS R2ASM_LDFLAGS r_asm
+ PKGCFG! R2ANAL_CFLAGS R2ANAL_LDFLAGS r_anal
+-CHKPRG! R2 r2
+ CHKPRG BISON bison
+ CHKPRG FLEX flex
+ 
+-EXEC! R2_PREFIX r2 -H R2_PREFIX ;
+-EXEC! R2_USER_PLUGINS r2 -H R2_USER_PLUGINS ;
+-EXEC! R2_LIBR_PLUGINS r2 -H R2_LIBR_PLUGINS ;
+ 
+ SUBDIRS config.mk ;
+ 

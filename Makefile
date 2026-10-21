@@ -786,7 +786,9 @@ DEFAULT_SETUP_PY_ENV := \
 DEFAULT_RUST_FLAGS := \
 	$(MEMO_DEPLOYMENT) \
 	SDKROOT="$(TARGET_SYSROOT)" \
+	CARGO_PROFILE_RELEASE_STRIP=none \
 	PKG_CONFIG="$(RUST_TARGET)-pkg-config" \
+	CARGO_TARGET_$(subst -,_,$(shell echo $(RUST_TARGET) | tr '[:lower:]' '[:upper:]'))_LINKER="$(CC)" \
 	HOST_PKG_CONFIG="pkg-config" HOST_PKG_CONFIG_PATH= HOST_PKG_CONFIG_SYSROOT_DIR=/ \
 	HOST_PKG_CONFIG_LIBDIR="$(shell pkg-config --variable=pc_path pkg-config)" \
 	RUSTFLAGS="-L $(BUILD_BASE)/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib"

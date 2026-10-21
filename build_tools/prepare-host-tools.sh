@@ -235,7 +235,7 @@ fi
 "$HOST_TOOL_ROOT/venv/bin/python" -m pip install --disable-pip-version-check \
     'pip==24.3.1' 'setuptools==75.3.2' 'wheel==0.45.1'
 "$HOST_TOOL_ROOT/venv/bin/python" -m pip install --disable-pip-version-check \
-    'Cython==0.29.37' 'meson==0.64.0' 'commonmark==0.9.1'
+    'Cython==0.29.37' 'meson==0.64.0' 'commonmark==0.9.1' 'Mako==1.3.8'
 "$HOST_TOOL_ROOT/venv/bin/python" -c 'import Cython; assert Cython.__version__ == "0.29.37"'
 "$HOST_TOOL_ROOT/venv/bin/meson" --version
 "$HOST_TOOL_ROOT/venv/bin/python" -m pip install --disable-pip-version-check \

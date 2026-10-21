@@ -17,7 +17,7 @@ gnuchess:
 else
 gnuchess: gnuchess-setup ncurses readline gettext
 	cd $(BUILD_WORK)/gnuchess && ./configure -C \
-		$(DEFAULT_CONFIGURE_FLAGS) \
+		$(DEFAULT_CONFIGURE_FLAGS) CXXFLAGS="$(CXXFLAGS) -std=gnu++11" \
 		ac_cv_func_malloc_0_nonnull=yes \
 		ac_cv_func_realloc_0_nonnull=yes
 	+$(MAKE) -C $(BUILD_WORK)/gnuchess \

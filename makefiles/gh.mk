@@ -16,11 +16,11 @@ gh:
 	@echo "Using previously built gh."
 else
 gh: gh-setup
-	cd $(BUILD_WORK)/gh && CGO_CC="$(CC_FOR_BUILD)" go build \
+	cd $(BUILD_WORK)/gh && CC="$(CC_FOR_BUILD)" CXX="$(CXX_FOR_BUILD)" CGO_CFLAGS="$(CFLAGS_FOR_BUILD)" CGO_CXXFLAGS="$(CXXFLAGS_FOR_BUILD)" CGO_CPPFLAGS="$(CPPFLAGS_FOR_BUILD)" CGO_LDFLAGS="$(LDFLAGS_FOR_BUILD)" go build \
 		-trimpath \
 		-o $(BUILD_WORK)/gh/bin/gh-host \
 		$(BUILD_WORK)/gh/cmd/gh
-	cd $(BUILD_WORK)/gh && go run $(BUILD_WORK)/gh/cmd/gen-docs \
+	cd $(BUILD_WORK)/gh && CC="$(CC_FOR_BUILD)" CXX="$(CXX_FOR_BUILD)" CGO_CFLAGS="$(CFLAGS_FOR_BUILD)" CGO_CXXFLAGS="$(CXXFLAGS_FOR_BUILD)" CGO_CPPFLAGS="$(CPPFLAGS_FOR_BUILD)" CGO_LDFLAGS="$(LDFLAGS_FOR_BUILD)" go run $(BUILD_WORK)/gh/cmd/gen-docs \
 		--man-page \
 		--doc-path $(BUILD_WORK)/gh/share/man/man1/
 	sed -e "66s|manpages||" -i $(BUILD_WORK)/gh/Makefile
