@@ -243,30 +243,51 @@ class Display:
 
     def finish(self, code, interrupted):
         outcome = 'Interrupted' if interrupted else 'Build complete' if code == 0 else 'Build failed'
-        message = f'{outcome}. {len(self.state.done)}/{len(self.state.projects)} recipes packaged in this run. Exit code {code}.'
-        transfers = f'{len(self.state.debs)} DEBs produced this run. {len(self.state.downloaded)} downloaded. {len(self.state.cache_hits)} source files reused.'
-        if self.console:
-            self.console.print()
-            self.console.print(self.Text('  ' + message, style='bold green' if code == 0 else 'bold red'))
-            self.console.print(self.Text('  ' + transfers, style='dim'))
-            for line in self.state.failures[-3:]:
-                self.console.print(self.Text('  ' + line, style='red'))
-            if self.state.diagnostics:
-                self.console.print('  Recent diagnostics (target unknown)', style='yellow')
-                for line in self.state.diagnostics:
-                    self.console.print(self.Text('  ' + line, style='yellow'))
-            self.console.print(self.Text('  Full log  ' + str(self.log), style='dim'))
-            self.console.print()
-        else:
-            print('\n' + message)
-            print(transfers)
-            for line in self.state.failures[-3:]:
-                print(line)
-            if self.state.diagnostics:
-                print('Recent diagnostics (target unknown)')
-                for line in self.state.diagnostics:
-                    print(line)
-            print('Full log: ' + str(self.log))
+        def emit(message='', style=None):
+            if self.console:
+                self.console.print(self.Text('  ' + message if message else '', style=style))
+            else:
+                print('  ' + message if message else '')
+
+        emit()
+        emit(outcome, 'bold green' if code == 0 else 'bold red')
+        emit(f'Exit code: {code}', 'dim')
+
+        emit()
+        emit('Packaging — this run', 'bold')
+        emit(f'  Recipes completed: {len(self.state.done)} / {len(self.state.projects)}')
+        emit(f'  DEBs produced:     {len(self.state.debs)}')
+
+        emit()
+        emit('Sources — this run', 'bold')
+        emit(f'  Downloaded:        {len(self.state.downloaded)}')
+        emit(f'  Cached files used: {len(self.state.cache_hits)}')
+
+        # Top-level failures identify recipes; nested Make failures usually
+        # repeat the same failure as it propagates. Keep those in the full log.
+        failures = list(dict.fromkeys(self.state.failures))
+        top_level = [line for line in failures if line.startswith('make:')]
+        if failures:
+            emit()
+            emit('Failed targets' if top_level else 'Nested Make failures', 'bold red')
+            for line in top_level or failures[-3:]:
+                match = FAIL.match(line)
+                location, separator, target = match[1].rpartition(': ')
+                emit(f'  {target if separator else match[1]} ({match[2]})', 'red')
+                if separator:
+                    emit('    ' + location, 'dim')
+
+        if self.state.diagnostics:
+            emit()
+            emit('Recent diagnostics', 'bold yellow')
+            emit('Target unknown; these lines are not assigned to the targets above.', 'dim')
+            for line in self.state.diagnostics:
+                emit('  ' + line, 'yellow')
+
+        emit()
+        emit('Full log', 'bold')
+        emit('  ' + str(self.log), 'dim')
+        emit()
 
 
 def run(command, projects, work, log, interactive):
