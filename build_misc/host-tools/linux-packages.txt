@@ -1,3 +1,4 @@
+apt-utils
 asciidoc-base
 asciidoctor
 autoconf
