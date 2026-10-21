@@ -14,6 +14,7 @@ SWIFT_SUFFIX         := RELEASE
 SWIFT_SYNTAX_VERSION := 509.0.2
 ifeq ($(UNAME),Linux)
 LLVM_BOOTSTRAP_SWIFTC = $(HOST_TOOL_ROOT)/swift5.9.2/usr/bin/swiftc
+LLVM_TARGET_SWIFT_FLAGS = -resource-dir $(BUILD_WORK)/llvm/swift-resources -use-ld=$(shell command -v $(LD))
 LLVM_NATIVE_CMAKE_FLAGS = -G Ninja \
 	-DCMAKE_C_COMPILER=$(shell command -v clang) \
 	-DCMAKE_CXX_COMPILER=$(shell command -v clang++) \
@@ -57,28 +58,41 @@ llvm-setup: setup
 ifeq ($(UNAME),Linux)
 	$(call GITHUB_ARCHIVE,apple,swift-corelibs-libdispatch,$(SWIFT_VERSION)-$(SWIFT_SUFFIX),swift-$(SWIFT_VERSION)-$(SWIFT_SUFFIX),swift-libdispatch)
 	$(call EXTRACT_TAR,swift-libdispatch-$(SWIFT_VERSION)-$(SWIFT_SUFFIX).tar.gz,swift-corelibs-libdispatch-swift-$(SWIFT_VERSION)-$(SWIFT_SUFFIX),llvm/libdispatch)
+	# Keep Darwin SDK modules separate from the Linux bootstrap's modules.
+	mkdir -p $(BUILD_WORK)/llvm/swift-resources
+	for resource in $(TARGET_SYSROOT)/usr/lib/swift/*; do \
+		ln -sfn "$$resource" $(BUILD_WORK)/llvm/swift-resources/; \
+	done
+	ln -sfn $(HOST_TOOL_ROOT)/swift5.9.2/usr/lib/swift/clang $(BUILD_WORK)/llvm/swift-resources/clang
+	ln -sfn $(BUILD_WORK)/llvm/swift/apinotes $(BUILD_WORK)/llvm/swift-resources/apinotes
 endif
 	$(call DO_PATCH,llvm,llvm,-p1)
 	$(call DO_PATCH,swift,llvm/swift,-p1)
 	cp -a $(BUILD_MISC)/llvm/ProcursusNativeArchives.cmake $(BUILD_WORK)/llvm/llvm/cmake/modules/
-	sed -i "s|VERBATIM COMMAND mig |VERBATIM COMMAND mig -I$(BUILD_BASE)$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include |" $(BUILD_WORK)/llvm/lldb/tools/debugserver/source/CMakeLists.txt
-	sed -i 's|#define HAS_FLOAT128 1|#define HAS_FLOAT128 0|g' $(BUILD_WORK)/llvm/flang/include/flang/Runtime/float128.h
+	@set -e; header="$(BUILD_WORK)/llvm/lldb/tools/debugserver/source/CMakeLists.txt"; sed "/VERBATIM COMMAND mig -I/!s|VERBATIM COMMAND mig |VERBATIM COMMAND mig -I$(BUILD_BASE)$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include |" "$$header" > "$$header.tmp"; \
+		if cmp -s "$$header.tmp" "$$header"; then rm -f "$$header.tmp"; else mv -f "$$header.tmp" "$$header"; fi
+	@set -e; header="$(BUILD_WORK)/llvm/flang/include/flang/Runtime/float128.h"; sed 's|#define HAS_FLOAT128 1|#define HAS_FLOAT128 0|g' "$$header" > "$$header.tmp"; \
+		if cmp -s "$$header.tmp" "$$header"; then rm -f "$$header.tmp"; else mv -f "$$header.tmp" "$$header"; fi
 	mkdir -p $(BUILD_WORK)/llvm/build
 	mkdir -p $(BUILD_WORK)/../../native/llvm/lib/swift
 ifeq (,$(findstring darwin,$(MEMO_TARGET)))
-	sed -i 's|isysroot $${CMAKE_OSX_SYSROOT}|isysroot $${CMAKE_FIND_ROOT_PATH}|' $(BUILD_WORK)/llvm/lldb/tools/debugserver/source/CMakeLists.txt
+	@set -e; header="$(BUILD_WORK)/llvm/lldb/tools/debugserver/source/CMakeLists.txt"; sed 's|isysroot $${CMAKE_OSX_SYSROOT}|isysroot $${CMAKE_FIND_ROOT_PATH}|' "$$header" > "$$header.tmp"; \
+		if cmp -s "$$header.tmp" "$$header"; then rm -f "$$header.tmp"; else mv -f "$$header.tmp" "$$header"; fi
 endif
 	# maybe we can do something about it instead of disabling dsc code, see dyld source code
-	sed -i '/define SDK_HAS_NEW_DYLD_INTROSPECTION_SPIS/d' $(BUILD_WORK)/llvm/lldb/source/Host/macosx/objcxx/HostInfoMacOSX.mm
-	sed -i 's/if TARGET_OS_IPHONE/if 0/g' $(BUILD_WORK)/llvm/lldb/source/Plugins/ObjectFile/Mach-O/ObjectFileMachO.cpp
-	sed -i 's/# Include CMake modules/set(SWIFT_BUILD_SWIFT_SYNTAX TRUE)/g' $(BUILD_WORK)/llvm/swift/CMakeLists.txt
+	@set -e; header="$(BUILD_WORK)/llvm/lldb/source/Host/macosx/objcxx/HostInfoMacOSX.mm"; sed '/define SDK_HAS_NEW_DYLD_INTROSPECTION_SPIS/d' "$$header" > "$$header.tmp"; \
+		if cmp -s "$$header.tmp" "$$header"; then rm -f "$$header.tmp"; else mv -f "$$header.tmp" "$$header"; fi
+	@set -e; header="$(BUILD_WORK)/llvm/lldb/source/Plugins/ObjectFile/Mach-O/ObjectFileMachO.cpp"; sed 's/if TARGET_OS_IPHONE/if 0/g' "$$header" > "$$header.tmp"; \
+		if cmp -s "$$header.tmp" "$$header"; then rm -f "$$header.tmp"; else mv -f "$$header.tmp" "$$header"; fi
+	@set -e; header="$(BUILD_WORK)/llvm/swift/CMakeLists.txt"; sed 's/# Include CMake modules/set(SWIFT_BUILD_SWIFT_SYNTAX TRUE)/g' "$$header" > "$$header.tmp"; \
+		if cmp -s "$$header.tmp" "$$header"; then rm -f "$$header.tmp"; else mv -f "$$header.tmp" "$$header"; fi
 
 ifneq ($(wildcard $(BUILD_WORK)/llvm/.build_complete),)
 llvm:
 	@echo "Using previously built llvm."
 else
 llvm: llvm-setup libffi libedit ncurses xz xar zstd
-ifeq ($(wildcard $(BUILD_WORK)/../../native/llvm/.build_complete),)
+ifeq ($(and $(wildcard $(BUILD_WORK)/../../native/llvm/.build_complete),$(wildcard $(BUILD_WORK)/../../native/llvm/bin/llvm-config),$(wildcard $(BUILD_WORK)/../../native/llvm/bin/clang-pseudo-gen),$(wildcard $(BUILD_WORK)/../../native/llvm/bin/clang-tidy-confusable-chars-gen),$(wildcard $(BUILD_WORK)/../../native/llvm/bin/mlir-tblgen),$(wildcard $(BUILD_WORK)/../../native/llvm/bin/mlir-pdll),$(wildcard $(BUILD_WORK)/../../native/llvm/bin/mlir-linalg-ods-yaml-gen)),)
 	mkdir -p $(BUILD_WORK)/../../native/llvm && cd $(BUILD_WORK)/../../native/llvm && unset CC CXX LD CFLAGS CPPFLAGS CXXFLAGS LDFLAGS && cmake . \
 		-DCMAKE_BUILD_TYPE=Release \
 		-DCMAKE_C_COMPILER=cc \
@@ -89,7 +103,7 @@ ifeq ($(wildcard $(BUILD_WORK)/../../native/llvm/.build_complete),)
 		-DSWIFT_INCLUDE_TESTS=OFF \
 		-DSWIFT_BUILD_RUNTIME_WITH_HOST_COMPILER=ON \
 		-DLLVM_TARGETS_TO_BUILD="X86;AArch64" \
-		-DLLVM_ENABLE_PROJECTS="clang;lldb" \
+		-DLLVM_ENABLE_PROJECTS="clang;lldb;clang-tools-extra;mlir" \
 		-DLLVM_ENABLE_RUNTIMES="libcxxabi;libcxx" \
 		-DLLVM_EXTERNAL_PROJECTS="cmark;swift" \
 		-DLLVM_EXTERNAL_SWIFT_SOURCE_DIR="$(BUILD_WORK)/llvm/swift" \
@@ -101,7 +115,7 @@ ifeq ($(wildcard $(BUILD_WORK)/../../native/llvm/.build_complete),)
 		$(LLVM_NATIVE_CMAKE_FLAGS) \
 		$(BUILD_WORK)/llvm/llvm
 	mkdir -p $(BUILD_WORK)/../../native/llvm/share/swift # ¯\_(ツ)_/¯
-	+cmake --build $(BUILD_WORK)/../../native/llvm --parallel $(CORE_COUNT) --target swift-components lldb-tblgen
+	+cmake --build $(BUILD_WORK)/../../native/llvm --parallel $(CORE_COUNT) --target swift-components lldb-tblgen llvm-config clang-pseudo-gen clang-tidy-confusable-chars-gen mlir-tblgen mlir-pdll mlir-linalg-ods-yaml-gen
 	touch $(BUILD_WORK)/../../native/llvm/.build_complete
 endif
 
@@ -123,6 +137,8 @@ ifeq ($(wildcard $(BUILD_WORK)/llvm/build/.build_complete),)
 	cd $(BUILD_WORK)/llvm/build && cmake . \
 		$(DEFAULT_CMAKE_FLAGS) \
 		-DCMAKE_ASM_FLAGS="$(ASFLAGS)" \
+		-DCMAKE_ASM-ATT_COMPILER="$(shell command -v $(CC))" \
+		-DCMAKE_ASM-ATT_FLAGS="$(ASFLAGS)" \
 		$(LLVM_CMAKE_FLAGS) \
 		-G Ninja \
 		"-DCMAKE_JOB_POOLS=compile_job_pool=$(CORE_COUNT);link_job_pool=1" \
@@ -142,7 +158,7 @@ ifeq ($(wildcard $(BUILD_WORK)/llvm/build/.build_complete),)
 		-DLLVM_ENABLE_RTTI=ON \
 		-DLLVM_ENABLE_EH=ON \
 		-DCROSS_TOOLCHAIN_FLAGS_NATIVE='-DCMAKE_BUILD_TYPE=Release;-DCMAKE_C_COMPILER=cc;-DCMAKE_CXX_COMPILER=c++;-DCMAKE_OSX_SYSROOT="$(MACOSX_SYSROOT)";-DCMAKE_OSX_ARCHITECTURES="";-DCMAKE_C_FLAGS="$(CFLAGS_FOR_BUILD)";-DCMAKE_CXX_FLAGS="$(CXXFLAGS_FOR_BUILD)";-DCMAKE_EXE_LINKER_FLAGS="$(LDFLAGS_FOR_BUILD)";-DSWIFT_PATH_TO_SWIFT_SYNTAX_SOURCE="$(BUILD_WORK)/llvm/swift-syntax";-DCMAKE_Swift_COMPILER="$(LLVM_BOOTSTRAP_SWIFTC)";-DSWIFT_BUILD_SWIFT_SYNTAX=TRUE' \
-		-DRUNTIMES_CMAKE_ARGS='-DCMAKE_BUILD_TYPE=$(MEMO_CMAKE_BUILD_TYPE);-DCMAKE_CROSSCOMPILING=true;-DCMAKE_SYSTEM_NAME=Darwin;-DCMAKE_SYSTEM_PROCESSOR=$(shell echo $(GNU_HOST_TRIPLE) | cut -f1 -d-);-DCMAKE_OSX_DEPLOYMENT_TARGET=;-DCMAKE_C_FLAGS=$(OPTIMIZATION_FLAGS) $(PLATFORM_VERSION_MIN) -arch $(MEMO_ARCH) -isysroot $(TARGET_SYSROOT) -isystem $(BUILD_BASE)$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include -isystem $(TARGET_SYSROOT)/usr/include;-DCMAKE_CXX_FLAGS=$(OPTIMIZATION_FLAGS) $(PLATFORM_VERSION_MIN) -arch $(MEMO_ARCH) -isysroot $(TARGET_SYSROOT) -isystem $(BUILD_BASE)$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include -isystem $(TARGET_SYSROOT)/usr/include;-DCMAKE_FIND_ROOT_PATH="$(BUILD_BASE)";-DPKG_CONFIG_EXECUTABLE="$(BUILD_TOOLS)/cross-pkg-config";-DCMAKE_INSTALL_NAME_TOOL="$(I_N_T)";-DCMAKE_INSTALL_PREFIX="$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)";-DCMAKE_INSTALL_NAME_DIR="$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib";-DCMAKE_INSTALL_RPATH=;-DCMAKE_INSTALL_SYSCONFDIR="$(MEMO_PREFIX)/etc";-DCMAKE_OSX_SYSROOT="../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../$(TARGET_SYSROOT)";-DCMAKE_OSX_ARCHITECTURES=$(MEMO_ARCH)' \
+		-DRUNTIMES_CMAKE_ARGS='-DCMAKE_USER_MAKE_RULES_OVERRIDE=$(BUILD_MISC)/cmake-darwin-cross.cmake;-DCMAKE_BUILD_TYPE=$(MEMO_CMAKE_BUILD_TYPE);-DCMAKE_CROSSCOMPILING=true;-DCMAKE_SYSTEM_NAME=Darwin;-DCMAKE_SYSTEM_PROCESSOR=$(shell echo $(GNU_HOST_TRIPLE) | cut -f1 -d-);-DCMAKE_OSX_DEPLOYMENT_TARGET=;-DCMAKE_C_FLAGS=$(OPTIMIZATION_FLAGS) $(PLATFORM_VERSION_MIN) -arch $(MEMO_ARCH) -isysroot $(TARGET_SYSROOT) -isystem $(BUILD_BASE)$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include -isystem $(TARGET_SYSROOT)/usr/include;-DCMAKE_CXX_FLAGS=$(OPTIMIZATION_FLAGS) $(PLATFORM_VERSION_MIN) -arch $(MEMO_ARCH) -isysroot $(TARGET_SYSROOT) -isystem $(BUILD_BASE)$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include -isystem $(TARGET_SYSROOT)/usr/include;-DCMAKE_FIND_ROOT_PATH="$(BUILD_BASE)";-DPKG_CONFIG_EXECUTABLE="$(BUILD_TOOLS)/cross-pkg-config";-DCMAKE_INSTALL_NAME_TOOL="$(I_N_T)";-DCMAKE_INSTALL_PREFIX="$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)";-DCMAKE_INSTALL_NAME_DIR="$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib";-DCMAKE_INSTALL_RPATH=;-DCMAKE_INSTALL_SYSCONFDIR="$(MEMO_PREFIX)/etc";-DCMAKE_OSX_SYSROOT="../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../$(TARGET_SYSROOT)";-DCMAKE_OSX_ARCHITECTURES=$(MEMO_ARCH)' \
 		-DCLANG_VERSION=$(LLVM_VERSION) \
 		-DLLVM_ENABLE_LTO=THIN \
 		-DPROCURSUS_NATIVE_STATIC_ARCHIVES=ON \
@@ -186,6 +202,12 @@ ifeq ($(wildcard $(BUILD_WORK)/llvm/build/.build_complete),)
 		-DSWIFT_NATIVE_CLANG_TOOLS_PATH="$(BUILD_WORK)/../../native/llvm/bin" \
 		-DSWIFT_NATIVE_LLVM_TOOLS_PATH="$(BUILD_WORK)/../../native/llvm/bin" \
 		-DLLVM_TABLEGEN="$(BUILD_WORK)/../../native/llvm/bin/llvm-tblgen" \
+		-DLLVM_CONFIG_PATH="$(BUILD_WORK)/../../native/llvm/bin/llvm-config" \
+		-DCLANG_PSEUDO_GEN="$(BUILD_WORK)/../../native/llvm/bin/clang-pseudo-gen" \
+		-DCLANG_TIDY_CONFUSABLE_CHARS_GEN="$(BUILD_WORK)/../../native/llvm/bin/clang-tidy-confusable-chars-gen" \
+		-DMLIR_TABLEGEN="$(BUILD_WORK)/../../native/llvm/bin/mlir-tblgen" \
+		-DMLIR_PDLL_TABLEGEN="$(BUILD_WORK)/../../native/llvm/bin/mlir-pdll" \
+		-DMLIR_LINALG_ODS_YAML_GEN="$(BUILD_WORK)/../../native/llvm/bin/mlir-linalg-ods-yaml-gen" \
 		-DCLANG_TABLEGEN="$(BUILD_WORK)/../../native/llvm/bin/clang-tblgen" \
 		-DLLDB_TABLEGEN="$(BUILD_WORK)/../../native/llvm/bin/lldb-tblgen" \
 		-DLLDB_TABLEGEN_EXE="$(BUILD_WORK)/../../native/llvm/bin/lldb-tblgen" \
@@ -204,7 +226,8 @@ ifeq ($(wildcard $(BUILD_WORK)/llvm/build/.build_complete),)
 		-DSWIFT_BUILD_SWIFT_SYNTAX=TRUE \
 		-DSWIFT_PATH_TO_SWIFT_SYNTAX_SOURCE="$(BUILD_WORK)/llvm/swift-syntax" \
 		-DCMAKE_Swift_COMPILER="$(LLVM_BOOTSTRAP_SWIFTC)" \
-		-DCMAKE_Swift_FLAGS="-O --target=$(LLVM_TARGET) -sdk $(TARGET_SYSROOT) -I$(BUILD_WORK)/llvm/build-compiler-rt/memo-include" \
+		-DCMAKE_Swift_FLAGS="-O --target=$(LLVM_TARGET) -sdk $(TARGET_SYSROOT) $(LLVM_TARGET_SWIFT_FLAGS) -I$(BUILD_WORK)/llvm/build-compiler-rt/memo-include" \
+		-DSWIFT_LIPO="$(shell command -v $(LIPO))" \
 		-DPACKAGE_VENDOR="Procursus" \
 		-DBUG_REPORT_URL="https://github.com/ProcursusTeam/Procursus/issues" \
 		-DFFI_INCLUDE_PATH="$(BUILD_WORK)/llvm/build-compiler-rt/memo-include" \

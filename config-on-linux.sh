@@ -131,10 +131,15 @@ fi
  make -C ld64 -j"${HOST_JOBS:-4}"
  make -C libmacho -j"${HOST_JOBS:-4}"
  make -C libstuff -j"${HOST_JOBS:-4}"
- make -C misc -j"${HOST_JOBS:-4}" strip
+ make -C misc -j"${HOST_JOBS:-4}" strip lipo
 )
 install -m755 "$ld64_src/cctools/ld64/src/ld/ld" "$toolbin/ld"
 install -m755 "$ld64_src/cctools/misc/strip" "$toolbin/strip"
+install -m755 "$ld64_src/cctools/misc/lipo" "$toolbin/lipo"
+# lipo must inspect bitcode with the producing host compiler's libLTO.
+rm -f "$HOST_TOOL_ROOT/bin/aarch64-apple-darwin-lipo"
+printf '#!/usr/bin/env bash\nexport LIBLTO_PATH=%q\nexec %q "$@"\n' "$(llvm-config-18 --libdir)/libLTO.so" "$toolbin/lipo" > "$HOST_TOOL_ROOT/bin/aarch64-apple-darwin-lipo"
+chmod +x "$HOST_TOOL_ROOT/bin/aarch64-apple-darwin-lipo"
 # Bundled strip invokes its configured target-prefixed linker for Mach-O objects.
 ln -sfn ld "$toolbin/aarch64-apple-darwin14-ld"
 ln -sfn ld "$toolbin/aarch64-apple-darwin-ld"
