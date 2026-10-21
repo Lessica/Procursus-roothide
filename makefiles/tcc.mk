@@ -27,7 +27,7 @@ tcc:
 else
 tcc: tcc-setup
 	cd $(BUILD_WORK)/tcc-host && CFLAGS="$(CFLAGS_FOR_BUILD)" CPPFLAGS="$(CPPFLAGS_FOR_BUILD)" LDFLAGS="$(LDFLAGS_FOR_BUILD)" ./configure \
-		--cc="$(CC_FOR_BUILD)" --ar="$(AR)" \
+		--cc="$(CC_FOR_BUILD)" --ar="$(AR_FOR_BUILD)" \
 		--source-path=$(BUILD_WORK)/tcc-host \
 		--extra-cflags="$(CFLAGS_FOR_BUILD)" \
 		--extra-ldflags="$(LDFLAGS_FOR_BUILD)" \
