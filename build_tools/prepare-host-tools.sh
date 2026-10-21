@@ -242,6 +242,57 @@ fi
     -r "$CHECKOUT/build_misc/ghc/requirements-sphinx.txt"
 "$HOST_TOOL_ROOT/venv/bin/sphinx-build" --version
 if [[ $HOST_PLATFORM == linux ]]; then
+    host_ghc_prefix="$HOST_TOOL_ROOT/ghc9.2.8"
+    case $(uname -m) in
+        aarch64|arm64) host_ghc_arch=aarch64; host_ghc_sha=645433359d8ad9e7b286f85ef5111db1b787ee3712c24c5dfde7c62769aa59a4 ;;
+        x86_64) host_ghc_arch=x86_64; host_ghc_sha=10d1be25487bcf99ac8eb77beaa220c85e69f8c1106f4219ce019206ecc0ac51 ;;
+        *) fail 'unsupported Linux GHC host architecture' ;;
+    esac
+    mkdir -p "$HOST_TOOL_ROOT/downloads"
+    # The official Debian 10 bindist needs libffi.so.7; keep it private to GHC.
+    if [[ ! -f $host_ghc_prefix/lib/libffi.so.7 ]]; then
+        host_ffi_archive="$HOST_TOOL_ROOT/downloads/libffi-3.3.tar.gz"
+        if [[ ! -f $host_ffi_archive ]]; then
+            curl --fail --location --retry 3 -o "$host_ffi_archive.part" https://sourceware.org/pub/libffi/libffi-3.3.tar.gz
+            mv "$host_ffi_archive.part" "$host_ffi_archive"
+        fi
+        printf '%s  %s\n' 72fba7922703ddfa7a028d513ac15a85c8d54c8d67f55fa5a4802885dc652056 "$host_ffi_archive" | sha256sum -c -
+        mkdir -p "$HOST_TOOL_ROOT/src/ghc-libffi-3.3"
+        tar -xf "$host_ffi_archive" --strip-components=1 -C "$HOST_TOOL_ROOT/src/ghc-libffi-3.3"
+        (
+            unset CC CXX CPP CFLAGS CXXFLAGS CPPFLAGS LDFLAGS LD AR RANLIB NM SDKROOT
+            cd "$HOST_TOOL_ROOT/src/ghc-libffi-3.3"
+            CC=cc ./configure --prefix="$host_ghc_prefix" --libdir="$host_ghc_prefix/lib" --disable-static
+            "$HOST_MAKE" -j"$HOST_JOBS"
+            "$HOST_MAKE" install
+        )
+    fi
+    if [[ ! -x $host_ghc_prefix/bin/ghc ]]; then
+        host_ghc_archive="$HOST_TOOL_ROOT/downloads/ghc-9.2.8-$host_ghc_arch-deb10-linux.tar.xz"
+        if [[ ! -f $host_ghc_archive ]]; then
+            curl --fail --location --retry 3 -o "$host_ghc_archive.part" "https://downloads.haskell.org/~ghc/9.2.8/ghc-9.2.8-$host_ghc_arch-deb10-linux.tar.xz"
+            mv "$host_ghc_archive.part" "$host_ghc_archive"
+        fi
+        printf '%s  %s\n' "$host_ghc_sha" "$host_ghc_archive" | sha256sum -c -
+        mkdir -p "$HOST_TOOL_ROOT/src/ghc-bootstrap-9.2.8"
+        tar -xf "$host_ghc_archive" --strip-components=1 -C "$HOST_TOOL_ROOT/src/ghc-bootstrap-9.2.8"
+        (
+            unset CC CXX CPP CFLAGS CXXFLAGS CPPFLAGS LDFLAGS LD AR RANLIB NM SDKROOT
+            export LD_LIBRARY_PATH="$host_ghc_prefix/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+            cd "$HOST_TOOL_ROOT/src/ghc-bootstrap-9.2.8"
+            ./configure --prefix="$host_ghc_prefix"
+            "$HOST_MAKE" -j"$HOST_JOBS" install
+        )
+    fi
+    for host_ghc_tool in ghc ghc-pkg hsc2hs runghc; do
+        {
+            printf '#!/usr/bin/env bash\nexport LD_LIBRARY_PATH=%q${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}\n' "$host_ghc_prefix/lib"
+            printf 'exec %q "$@"\n' "$host_ghc_prefix/bin/$host_ghc_tool"
+        } > "$HOST_TOOL_ROOT/bin/$host_ghc_tool"
+        chmod +x "$HOST_TOOL_ROOT/bin/$host_ghc_tool"
+    done
+    [[ $("$HOST_TOOL_ROOT/bin/ghc" --numeric-version) == 9.2.8 ]] || fail 'GHC bootstrap preparation failed'
+    "$HOST_TOOL_ROOT/bin/ghc-pkg" check
     # Duktape's upstream source generator still requires Python 2 and PyYAML.
     host_python2_prefix="$HOST_TOOL_ROOT/python2.7"
     host_python2_archive="$HOST_TOOL_ROOT/cache/Python-2.7.18.tar.xz"
