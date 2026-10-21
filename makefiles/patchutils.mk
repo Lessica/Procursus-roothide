@@ -7,7 +7,10 @@ PATCHUTILS_VERSION := 0.4.2
 DEB_PATCHUTILS_V   ?= $(PATCHUTILS_VERSION)-1
 
 patchutils-setup: setup
-	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),http://cyberelk.net/tim/data/patchutils/stable/patchutils-$(PATCHUTILS_VERSION).tar.xz{$(comma).sig})
+	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://distfiles.gentoo.org/distfiles/1b/patchutils-$(PATCHUTILS_VERSION).tar.xz)
+	# Original cyberelk.net release signature; signer 4629AFE960EC20BEC12E3104B7C20D079491EA63.
+	# Gentoo mirrors the archive but not its detached signature.
+	cp $(BUILD_MISC)/patchutils/patchutils-$(PATCHUTILS_VERSION).tar.xz.sig $(BUILD_SOURCE)/
 	$(call PGP_VERIFY,patchutils-$(PATCHUTILS_VERSION).tar.xz)
 	$(call EXTRACT_TAR,patchutils-$(PATCHUTILS_VERSION).tar.xz,patchutils-$(PATCHUTILS_VERSION),patchutils)
 

@@ -620,7 +620,7 @@ ifdef ($(MEMO_ALT_LTO_LIB))
 OPTIMIZATION_FLAGS += -lto_library $(MEMO_ALT_LTO_LIB)
 endif
 
-CFLAGS              := $(OPTIMIZATION_FLAGS) -arch $(MEMO_ARCH) -isysroot $(TARGET_SYSROOT) $(PLATFORM_VERSION_MIN) -isystem $(BUILD_BASE)$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include -isystem $(BUILD_BASE)$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)$(MEMO_ALT_PREFIX)/include -F$(BUILD_BASE)$(MEMO_PREFIX)/System/Library/Frameworks -F$(BUILD_BASE)$(MEMO_PREFIX)/Library/Frameworks
+CFLAGS              := $(OPTIMIZATION_FLAGS) -arch $(MEMO_ARCH) -isysroot $(TARGET_SYSROOT) $(PLATFORM_VERSION_MIN) -isystem $(TARGET_SYSROOT)/usr/include/c++/v1 -isystem $(BUILD_BASE)$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include/c++/v1 -isystem $(BUILD_BASE)$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include -isystem $(BUILD_BASE)$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)$(MEMO_ALT_PREFIX)/include/c++/v1 -isystem $(BUILD_BASE)$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)$(MEMO_ALT_PREFIX)/include -F$(BUILD_BASE)$(MEMO_PREFIX)/System/Library/Frameworks -F$(BUILD_BASE)$(MEMO_PREFIX)/Library/Frameworks
 CXXFLAGS            := $(CFLAGS)
 ASFLAGS             := $(CFLAGS)
 CPPFLAGS            := -arch $(MEMO_ARCH) $(PLATFORM_VERSION_MIN) -isysroot $(TARGET_SYSROOT) -isystem $(BUILD_BASE)$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include -isystem $(BUILD_BASE)$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)$(MEMO_ALT_PREFIX)/include -Wno-error-implicit-function-declaration
@@ -873,13 +873,17 @@ EXTRACT_TAR = if [ ! -d $(BUILD_WORK)/$(3) ] || [ "$(4)" = "1" ]; then \
 DOWNLOAD_FILE = if [ ! -f "$(1)" ]; then \
 					echo "Downloading $(2) => $(1)"; \
 					TEMP_FILE=$$(mktemp); \
-					if [ -z "$$LIST" ]; then \
-						$(CURL) --output \
-							$$TEMP_FILE $(2) || exit 1; \
-					else \
-						$(CURL) --output \
-							$$TEMP_FILE $(2) || exit 1; \
-					fi; \
+					$(CURL) --output "$$TEMP_FILE" $(2) || { \
+						status=$$?; \
+						case $$status in \
+							22) reason='HTTP error (see status above)' ;; \
+							5|6) reason='DNS/proxy name resolution failed' ;; \
+							7|18|28|35|52|55|56|60) reason='Network/TLS/timeout or incomplete transfer' ;; \
+							*) reason='Transfer or local I/O error' ;; \
+						esac; \
+						printf '\n[download failed] URL: %s\n[download failed] curl exit: %s (%s). See curl error above.\n[download failed] Destination not cached: %s\n' "$(2)" "$$status" "$$reason" "$(1)" >&2; \
+						rm -f "$$TEMP_FILE"; exit "$$status"; \
+					}; \
 					mkdir -p $$(dirname "$(1)") && mv $$TEMP_FILE "$(1)"; \
 				else echo "$(1) already downloaded."; fi
 
@@ -1134,7 +1138,7 @@ GIT_CLONE = if [ ! -d "$(BUILD_WORK)/$(3)" ]; then \
 ifneq ($(call HAS_COMMAND,curl),1)
 $(error Install curl)
 else
-CURL := curl --fail -L --create-dirs
+CURL := curl --fail -L --create-dirs --retry 3 --retry-delay 3 --connect-timeout 30 --speed-limit 1 --speed-time 60
 endif
 
 ifneq ($(call HAS_COMMAND,triehash),1)
