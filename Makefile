@@ -872,9 +872,11 @@ EXTRACT_TAR = if [ ! -d $(BUILD_WORK)/$(3) ] || [ "$(4)" = "1" ]; then \
 
 DOWNLOAD_FILE = if [ ! -f "$(1)" ]; then \
 					echo "Downloading $(2) => $(1)"; \
+					if [ "$(BUILD_STATUS_EVENTS)" = 1 ]; then printf '\n[build-download] start %s %s\n' '$@' "$(2)"; fi; \
 					TEMP_FILE=$$(mktemp); \
 					$(CURL) --output "$$TEMP_FILE" $(2) || { \
 						status=$$?; \
+						if [ "$(BUILD_STATUS_EVENTS)" = 1 ]; then printf '\n[build-download] failed %s\n' '$@'; fi; \
 						case $$status in \
 							22) reason='HTTP error (see status above)' ;; \
 							5|6) reason='DNS/proxy name resolution failed' ;; \
@@ -884,8 +886,10 @@ DOWNLOAD_FILE = if [ ! -f "$(1)" ]; then \
 						printf '\n[download failed] URL: %s\n[download failed] curl exit: %s (%s). See curl error above.\n[download failed] Destination not cached: %s\n' "$(2)" "$$status" "$$reason" "$(1)" >&2; \
 						rm -f "$$TEMP_FILE"; exit "$$status"; \
 					}; \
-					mkdir -p $$(dirname "$(1)") && mv $$TEMP_FILE "$(1)"; \
-				else echo "$(1) already downloaded."; fi
+					mkdir -p $$(dirname "$(1)") && mv $$TEMP_FILE "$(1)" || exit 1; \
+					if [ "$(BUILD_STATUS_EVENTS)" = 1 ]; then printf '\n[build-download] end %s\n' '$@'; fi; \
+				else echo "$(1) already downloaded."; \
+					if [ "$(BUILD_STATUS_EVENTS)" = 1 ]; then printf '\n[build-download] cached %s %s\n' '$@' "$(2)"; fi; fi
 
 DOWNLOAD_FILES = LIST="$$(echo $(2))"; \
 				for url in $$LIST; do \
@@ -1116,11 +1120,9 @@ PACK = \
 	$(FAKEROOT) $(DPKG_DEB) -b $(BUILD_DIST)/$(1) $(BUILD_DIST)/../$$(echo $@ | sed 's/-package//')/$$(grep Package: $(BUILD_DIST)/$(1)/DEBIAN/control | cut -f2 -d ' ')_$($(2))_$$(grep Architecture: $(BUILD_DIST)/$(1)/DEBIAN/control | cut -f2 -d ' ').deb
 
 GITHUB_ARCHIVE = if [ "x$(5)" != "x" ]; then \
-					([ ! -f "$(BUILD_SOURCE)/$(5)-$(3).tar.gz" ] || exit 0) && \
 						$(call DOWNLOAD_FILE,$(BUILD_SOURCE)/$(5)-$(3).tar.gz, \
 							https://github.com/$(1)/$(2)/archive/$(4).tar.gz); \
 				else \
-					([ ! -f "$(BUILD_SOURCE)/$(2)-$(3).tar.gz" ] || exit 0) && \
 						$(call DOWNLOAD_FILE,$(BUILD_SOURCE)/$(2)-$(3).tar.gz, \
 							https://github.com/$(1)/$(2)/archive/$(4).tar.gz); \
 				fi

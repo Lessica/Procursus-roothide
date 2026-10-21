@@ -201,6 +201,42 @@ make --output-sync=target package SUBPROJECTS="$packages" 2>&1 | tee -a build_wo
 build_dist/iphoneos-arm64-roothide/1900/<配方名称>/
 ```
 
+## 可选：终端状态界面
+
+在 Ubuntu 容器中安装一次界面依赖：
+
+```bash
+apt-get install -y python3-rich
+```
+
+保持前面的环境变量与 `packages` 设置，在 `/work` 执行：
+
+```bash
+python3 build_tools/build_status.py package SUBPROJECTS="$packages"
+```
+
+不要接 `tee`。完整输出自动追加到 `build_work/build-ui.log`。另一个容器终端可以查看日志：
+
+```bash
+tail -f /work/build_work/build-ui.log
+```
+
+界面使用英文，保留终端历史。任务区优先显示下载，并展示准备、编译和打包状态；汇总分别显示正在下载、本轮已下载和复用源码缓存的数量。下载完成和缓存复用按不同 URL 去重，不是配方数；未通过公共下载逻辑的下载不会计入。短时下载也会留下完成记录。
+
+打包完成数只统计本轮成功结束的打包目标，已有编译缓存另列。计数不代表耗时百分比，一个配方可能生成多个 Debian 包。
+
+发生错误后，失败目标和最近捕获的错误原因固定显示，直到其他活跃任务退出；完整诊断以日志为准。Ctrl-C 可中断整个构建进程组并保留缓存。处理问题后执行同一条 Python 命令续建。
+
+关闭动态显示可加 `--plain`；输出被重定向时也会自动回退普通输出。普通模式不依赖 Rich：
+
+```bash
+python3 build_tools/build_status.py --plain package SUBPROJECTS="$packages"
+```
+
+也可直接使用第 9 步的 Make 命令。`--log /path/to/build.log` 可指定日志，`--make gmake` 可选择 GNU Make；`CORE_COUNT=10` 等 Make 变量沿用原有含义。
+
+如需在 Mac 使用界面，在已准备好的 Python 虚拟环境中安装 `rich==13.7.1`，不要修改系统 Python。
+
 ## 中断后继续
 
 如果仍在同一终端，处理错误后重新执行上面的 `make package` 命令即可。如果换了终端，先重新执行第 8 步的环境加载和 `export` 命令，再重新生成 `packages` 并启动构建；不需要重新解包已导入的材料。
