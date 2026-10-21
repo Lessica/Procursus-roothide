@@ -98,7 +98,7 @@ export GETTEXT_LOCALIZATIONS_INPUT="$PWD/build_work/locale"
 make roothide-xcode-check
 ```
 
-检查目标会验证 libroothide 输入与当前源码及目标是否匹配。ElleKit 已在 Mac 打包，Linux 批量构建时将其排除即可；其 Debian 包保留在输出目录中。
+检查目标会验证 libroothide 输入与当前源码及目标是否匹配。Linux 默认构建列表不包含 ElleKit；从 Mac 传入的 Debian 包保留在输出目录中。
 
 ## 构建软件包
 
@@ -114,10 +114,10 @@ make xcb-util-xrm-package
 make package
 ```
 
-Linux 中需要排除已在 Mac 打包的 ElleKit。常规包开发也可排除耗时较长的工具链配方：
+常规包开发可排除耗时较长的工具链配方：
 
 ```bash
-packages=$(make MEMO_QUIET=1 print-SUBPROJECTS | tr ' ' '\n' | grep -Ev '^(llvm|rust|ghc|openjdk|cctools|ellekit)$' | sort -u | xargs)
+packages=$(make MEMO_QUIET=1 print-SUBPROJECTS | tr ' ' '\n' | grep -Ev '^(llvm|rust|ghc|openjdk|cctools)$' | sort -u | xargs)
 make package SUBPROJECTS="$packages"
 ```
 

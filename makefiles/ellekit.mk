@@ -13,7 +13,9 @@ endif
 
 ### HOLD: reevaluate patches and build steps each release until this is removed
 
+ifneq ($(UNAME),Linux)
 SUBPROJECTS     += ellekit
+endif
 ELLEKIT_COMMIT  := 5fe185d0f83da32570d4b89ba1c3cde6062e8c33
 ELLEKIT_VERSION := 0.1+git20221221.$(shell echo $(ELLEKIT_COMMIT) | cut -c -7)
 DEB_ELLEKIT_V   ?= $(ELLEKIT_VERSION)
