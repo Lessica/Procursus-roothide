@@ -35,7 +35,7 @@ ifneq ($(filter -flto%,$(CFLAGS)),)
 	cp -a $(BUILD_WORK)/libcrack/lib/.libs/libcrack.a $(BUILD_STAGE)/libcrack/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
 endif
 	$(INSTALL) -Dm 644 $(BUILD_WORK)/libcrack/dicts/libcrack-words -t "$(BUILD_STAGE)/libcrack/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share/libcrack"
-	$(call AFTER_BUILD)
+	$(call AFTER_BUILD,copy)
 endif
 
 libcrack-package: libcrack-stage
