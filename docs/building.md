@@ -52,7 +52,7 @@ docker exec -it -w /work procursus-build bash
 
 ## 为 Linux 准备 Mac 输入
 
-Linux 构建需要从 Mac 获取 libroothide、ElleKit 和 locale 数据。两台宿主应使用同一版本的仓库源码。
+Linux 全量构建需要从 Mac 获取 libroothide、ElleKit、locale 数据和 LLVM 运行时所需的 Apple SDK。两台宿主应使用同一版本的仓库源码。
 
 ### 在 Mac 上生成
 
@@ -64,11 +64,37 @@ make ellekit-package
 tar -cf build_work/mac-locale.tar -C /usr/share locale
 ```
 
+从当前选定的 Xcode 收集额外 SDK。请先在 Xcode 设置的 Platforms 或 Components 页面 中安装 iOS、tvOS 和 watchOS 平台支持，确保以下 SDK 查询均能成功：
+
+```bash
+(
+set -e
+mkdir -p build_work/apple-sdks
+for sdk in macosx iphonesimulator appletvos appletvsimulator watchos watchsimulator; do
+    sdk_path=$(xcrun --sdk "$sdk" --show-sdk-path)
+    case "$sdk" in
+        macosx) sdk_name=MacOSX ;;
+        iphonesimulator) sdk_name=iPhoneSimulator ;;
+        appletvos) sdk_name=AppleTVOS ;;
+        appletvsimulator) sdk_name=AppleTVSimulator ;;
+        watchos) sdk_name=WatchOS ;;
+        watchsimulator) sdk_name=WatchSimulator ;;
+    esac
+    mkdir -p "build_work/apple-sdks/$sdk_name.sdk"
+    cp -R "$sdk_path/." "build_work/apple-sdks/$sdk_name.sdk/"
+done
+tar -cf build_work/apple-sdks.tar -C build_work/apple-sdks .
+)
+```
+
+如有查询或复制失败，补齐对应平台后再继续。Linux 准备脚本已提供 iPhoneOS SDK；这里的 MacOSX SDK 供 LLVM 运行时使用，不替换准备脚本配置的基础 macOS SDK。
+
 需要传递的材料：
 
 | 材料 | Mac 路径 | Linux 用途 |
 | --- | --- | --- |
 | libroothide 导出包 | `build_work/iphoneos-arm64-roothide/1900/libroothide-xcode.tar` | libroothide 构建输入 |
+| Apple SDK | `build_work/apple-sdks.tar` | LLVM 运行时构建输入 |
 | locale 数据 | `build_work/mac-locale.tar` | gettext-localizations 构建输入 |
 | ElleKit Debian 包 | `build_dist/iphoneos-arm64-roothide/1900/ellekit/` | 合并到最终软件包输出 |
 
@@ -80,6 +106,7 @@ tar -cf build_work/mac-locale.tar -C /usr/share locale
 docker exec procursus-build mkdir -p /work/build_work/iphoneos-arm64-roothide/1900 /work/build_dist/iphoneos-arm64-roothide/1900
 docker cp build_work/iphoneos-arm64-roothide/1900/libroothide-xcode.tar procursus-build:/work/build_work/iphoneos-arm64-roothide/1900/
 docker cp build_work/mac-locale.tar procursus-build:/work/build_work/
+docker cp build_work/apple-sdks.tar procursus-build:/work/build_work/
 docker cp build_dist/iphoneos-arm64-roothide/1900/ellekit procursus-build:/work/build_dist/iphoneos-arm64-roothide/1900/
 ```
 
@@ -87,9 +114,18 @@ docker cp build_dist/iphoneos-arm64-roothide/1900/ellekit procursus-build:/work/
 
 ```bash
 tar -xf build_work/mac-locale.tar -C build_work
+tar -xf build_work/apple-sdks.tar -C "$HOST_TOOL_ROOT/SDK"
 export ROOTHIDE_XCODE_INPUT="$PWD/build_work/iphoneos-arm64-roothide/1900/libroothide-xcode.tar"
 export GETTEXT_LOCALIZATIONS_INPUT="$PWD/build_work/locale"
+(
+set -e
 make roothide-xcode-check
+test -f "$HOST_TOOL_ROOT/SDK/MacOSX.sdk/SDKSettings.json"
+for sdk in macosx iphoneos iphonesimulator appletvos appletvsimulator watchos watchsimulator; do
+    xcrun --sdk "$sdk" --show-sdk-path
+    xcrun --sdk "$sdk" --show-sdk-version
+done
+)
 ```
 
 检查目标会验证 libroothide 输入与当前源码及目标是否匹配。Linux 默认构建列表不包含 ElleKit；从 Mac 传入的 Debian 包保留在输出目录中。
@@ -114,7 +150,7 @@ make xcb-util-xrm-package
 make package SUBPROJECTS="xz zstd"
 ```
 
-所选配方的依赖会自动构建。Linux 上构建 LLVM 还需准备相应的 Apple SDK。
+所选配方的依赖会自动构建。
 
 保存普通构建日志：
 
