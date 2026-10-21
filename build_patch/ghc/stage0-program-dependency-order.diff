@@ -25,7 +25,7 @@ diff --git a/rules/package-config.mk b/rules/package-config.mk
 +$1_$2_BOOTSTRAP_GLOBAL_PACKAGE_DB = $$(shell $$(GHC_STAGE0) --print-global-package-db)
 +$1_$2_HC_PKGCONF = -clear-package-db -package-db $$($1_$2_BOOTSTRAP_GLOBAL_PACKAGE_DB)
 +$1_$2_GHC_PKG_OPTS = --package-db=$$($1_$2_BOOTSTRAP_GLOBAL_PACKAGE_DB)
-+$1_$2_CONFIGURE_OPTS = --package-db=global
++$1_$2_CONFIGURE_OPTS = --package-db=clear --package-db=global
 +endif
  else
  $1_$2_HC_PKGCONF = 
