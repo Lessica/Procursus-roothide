@@ -1117,7 +1117,9 @@ PACK = \
 	mkdir -p $(BUILD_ROOT)/pack-cache/$(MEMO_TARGET)/$(MEMO_CFVER); \
 	rm -rf $(BUILD_ROOT)/pack-cache/$(MEMO_TARGET)/$(MEMO_CFVER)/$(1); \
 	cp -a $(BUILD_DIST)/$(1) $(BUILD_ROOT)/pack-cache/$(MEMO_TARGET)/$(MEMO_CFVER)/; \
-	$(FAKEROOT) $(DPKG_DEB) -b $(BUILD_DIST)/$(1) $(BUILD_DIST)/../$$(echo $@ | sed 's/-package//')/$$(grep Package: $(BUILD_DIST)/$(1)/DEBIAN/control | cut -f2 -d ' ')_$($(2))_$$(grep Architecture: $(BUILD_DIST)/$(1)/DEBIAN/control | cut -f2 -d ' ').deb
+	deb="$(BUILD_DIST)/../$$(echo $@ | sed 's/-package//')/$$(grep Package: $(BUILD_DIST)/$(1)/DEBIAN/control | cut -f2 -d ' ')_$($(2))_$$(grep Architecture: $(BUILD_DIST)/$(1)/DEBIAN/control | cut -f2 -d ' ').deb"; \
+	$(FAKEROOT) $(DPKG_DEB) -b $(BUILD_DIST)/$(1) "$$deb" && \
+	if [ "$(BUILD_STATUS_EVENTS)" = 1 ]; then printf '\n[build-deb] %s\n' "$$deb"; fi
 
 GITHUB_ARCHIVE = if [ "x$(5)" != "x" ]; then \
 						$(call DOWNLOAD_FILE,$(BUILD_SOURCE)/$(5)-$(3).tar.gz, \

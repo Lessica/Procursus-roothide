@@ -38,6 +38,7 @@ class State:
         self.projects = set(projects)
         self.children = {}
         self.done = set()
+        self.debs = set()
         self.failures = []
         self.downloads = {}
         self.downloaded = set()
@@ -47,6 +48,8 @@ class State:
     def consume(self, line):
         line = clean(line)
         notices = []
+        if line.startswith('[build-deb] '):
+            self.debs.add(line.removeprefix('[build-deb] ').strip())
         match = CHILD.match(line)
         if match:
             key, target, pid = match.groups()
@@ -76,7 +79,7 @@ class State:
                     name = target[:-8]
                     if name not in self.done:
                         self.done.add(name)
-                        notices.append(('success', f'{name} packaged'))
+                        notices.append(('success', f'{name} recipe packaged'))
         match = FAIL.match(line)
         if match:
             self.failures.append(line)
@@ -177,7 +180,7 @@ class Display:
         rows = state.rows()
         heading = self.Table.grid(padding=(0, 1))
         heading.add_row(self.spinner, self.Text('Building packages' if not state.failures else 'Waiting for active tasks to finish', style='bold'))
-        detail = self.Text(f'{len(state.done)} of {len(state.projects)} packaged', style='bright_white')
+        detail = self.Text(f'{len(state.done)} of {len(state.projects)} recipes packaged', style='bright_white')
         downloading = sum(row[1] == 'Downloading' for row in rows)
         detail.append(f'    {downloading} downloading', style='cyan' if downloading else 'dim')
         detail.append(f'    {len(rows)} active    {duration(time.monotonic() - state.started)}', style='dim')
@@ -196,7 +199,7 @@ class Display:
         for _ in range(limit - max(1, min(len(rows), limit))):
             table.add_row('', '', '', '')
         extra = self.Text(f'{len(rows) - limit} more active targets' if len(rows) > limit else 'Ctrl+C to stop safely. Run the same command to resume.', style='dim')
-        transfers = self.Text(f'{len(state.downloaded)} downloaded    {len(state.cache_hits)} source files reused', style='dim')
+        transfers = self.Text(f'{len(state.debs)} DEBs produced this run    {len(state.downloaded)} downloaded    {len(state.cache_hits)} source files reused', style='dim')
         failure = []
         if state.failures:
             match = FAIL.match(state.failures[0])
@@ -227,8 +230,8 @@ class Display:
 
     def finish(self, code, interrupted):
         outcome = 'Interrupted' if interrupted else 'Build complete' if code == 0 else 'Build failed'
-        message = f'{outcome}. {len(self.state.done)}/{len(self.state.projects)} packaged in this run. Exit code {code}.'
-        transfers = f'{len(self.state.downloaded)} downloaded. {len(self.state.cache_hits)} source files reused.'
+        message = f'{outcome}. {len(self.state.done)}/{len(self.state.projects)} recipes packaged in this run. Exit code {code}.'
+        transfers = f'{len(self.state.debs)} DEBs produced this run. {len(self.state.downloaded)} downloaded. {len(self.state.cache_hits)} source files reused.'
         if self.console:
             self.console.print()
             self.console.print(self.Text('  ' + message, style='bold green' if code == 0 else 'bold red'))
@@ -297,7 +300,7 @@ def run(command, projects, work, log, interactive):
                     for line in item.splitlines():
                         for kind, message in state.consume(line):
                             display.notice(kind, message)
-                    if not interactive and not DEBUG.match(item) and not item.startswith('[build-download]'):
+                    if not interactive and not DEBUG.match(item) and not item.startswith(('[build-download]', '[build-deb]')):
                         sys.stdout.write(item)
                         sys.stdout.flush()
             except queue.Empty:
