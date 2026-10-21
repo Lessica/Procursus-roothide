@@ -20,7 +20,7 @@ SHSHD_VERSION := 1.1.1.1
 DEB_SHSHD_V   ?= $(SHSHD_VERSION)
 
 ifeq ($(UNAME),Linux)
-SWIFTC ?= $(HOST_TOOL_ROOT)/swift5.9.2/usr/bin/swiftc
+SWIFTC ?= $(if $(HOST_TOOL_ROOT),$(HOST_TOOL_ROOT)/swift5.9.2/usr/bin/swiftc,swiftc)
 SHSHD_SWIFT_FLAGS := -resource-dir $(BUILD_WORK)/shshd/swift-resources -use-ld=$(shell command -v $(LD))
 else ifneq ($(shell command -v xcrun),)
 SWIFTC ?= $(shell xcrun --find swiftc)
@@ -39,8 +39,10 @@ ifeq ($(UNAME),Linux)
 	for resource in $(TARGET_SYSROOT)/usr/lib/swift/*; do \
 		ln -sfn "$$resource" $(BUILD_WORK)/shshd/swift-resources/; \
 	done
-	ln -sfn $(HOST_TOOL_ROOT)/swift5.9.2/usr/lib/swift/clang $(BUILD_WORK)/shshd/swift-resources/clang
-	ln -sfn $(HOST_TOOL_ROOT)/swift5.9.2/usr/lib/swift/apinotes $(BUILD_WORK)/shshd/swift-resources/apinotes
+	resource_dir="$$($(SWIFTC) -print-target-info | python3 -c 'import json,sys; print(json.load(sys.stdin)["paths"]["runtimeResourcePath"])')" && \
+		test -d "$$resource_dir/clang" && test -d "$$resource_dir/apinotes" && \
+		ln -sfn "$$resource_dir/clang" $(BUILD_WORK)/shshd/swift-resources/clang && \
+		ln -sfn "$$resource_dir/apinotes" $(BUILD_WORK)/shshd/swift-resources/apinotes
 endif
 
 ifneq ($(wildcard $(BUILD_WORK)/shshd/.build_complete),)

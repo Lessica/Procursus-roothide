@@ -1,28 +1,27 @@
 #!/usr/bin/env bash
-# Prepare a self-contained Linux host toolchain inside this checkout.
+# Prepare a self-contained Linux host toolchain in HOST_TOOL_ROOT.
 set -euo pipefail
 umask 022
 PROJDIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)
 HOST_TOOL_ROOT=${HOST_TOOL_ROOT:-"$PROJDIR/build_work/host-tools"}
 case ${1:-} in
- --help) printf '%s\n' 'Usage: bash config-on-linux.sh [--skip-system-deps|--deps-only]' 'Ubuntu 24.04 / Debian-compatible Linux. Installs native apt dependencies, downloads' 'pinned toolchain/SDK inputs, builds patched host tools and writes host-env.sh.' 'HOST_TOOL_ROOT must be inside the checkout; HOME is preserved.' 'Set TARGET_SYSROOT and MACOSX_SYSROOT to use explicitly supplied SDKs.' 'Docker containers must use --init to reap fakeroot helper processes.'; exit 0;;
+ --help) printf '%s\n' 'Usage: bash config-on-linux.sh [--skip-system-deps|--deps-only]' 'Ubuntu 24.04 / Debian-compatible Linux. Installs native apt dependencies, downloads' 'pinned toolchain/SDK inputs, builds patched host tools and writes host-env.sh.' 'HOST_TOOL_ROOT may be a dedicated directory outside the checkout; HOME is preserved.' 'Set TARGET_SYSROOT and MACOSX_SYSROOT to use explicitly supplied SDKs.' 'Docker containers must use --init to reap fakeroot helper processes.'; exit 0;;
  ''|--skip-system-deps|--deps-only) ;;
  *) echo 'Unknown option; use --help' >&2;exit 2;;
 esac
 [[ $(uname -s) == Linux ]] || { echo 'Use build_tools/prepare-host-tools.sh on macOS or iOS.' >&2;exit 1; }
 HOST_TOOL_ROOT=$(realpath -m -- "$HOST_TOOL_ROOT")
-[[ $HOST_TOOL_ROOT != "$PROJDIR" ]] || { echo "HOST_TOOL_ROOT must be below checkout" >&2; exit 1; }
-case "$HOST_TOOL_ROOT/" in "$PROJDIR/"*) ;; *) echo 'HOST_TOOL_ROOT must be inside the checkout' >&2;exit 1;; esac
+case "$PROJDIR/" in "$HOST_TOOL_ROOT/"*) echo 'HOST_TOOL_ROOT must not contain the checkout' >&2;exit 1;; esac
+[[ $HOST_TOOL_ROOT != / && $HOST_TOOL_ROOT != "$(realpath -m -- "$HOME")" ]] || { echo 'HOST_TOOL_ROOT must be a dedicated directory, not / or HOME' >&2;exit 1; }
 mkdir -p "$HOST_TOOL_ROOT"
 if [[ ${1:-} != --skip-system-deps ]]; then
  SUDO=(); [[ $(id -u) == 0 ]] || SUDO=(sudo)
  "${SUDO[@]}" apt-get update
+ # Share native dependencies; keep Linux cross-preparation additions here.
+ mapfile -t linux_packages < "$PROJDIR/build_misc/host-tools/linux-packages.txt"
  "${SUDO[@]}" env DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
-  ca-certificates build-essential clang clang-18 llvm llvm-18-dev lld make coreutils findutils sed gawk tar patch bash \
-  openssl gnupg libtool libtool-bin automake autoconf bison flex groff fakeroot dpkg-dev zstd \
-  xz-utils lzip libncurses-dev wget cmake docbook-xsl docbook-xml libxml2-utils itstool xsltproc python3 python3-dev python3-venv git pkg-config \
-  autopoint po4a zip unzip triehash ninja-build curl libssl-dev libplist-dev libplist++-dev \
-  libbz2-dev liblzma-dev libffi-dev zlib1g-dev libbsd-dev file gettext gperf texinfo help2man rsync tcl ghc protobuf-compiler neovim luajit lua-lpeg lua-mpack bsdextrautils nodejs libmodule-build-perl ruby asciidoctor asciidoc-base xmlto intltool gtk-doc-tools libedit-dev libicu-dev libxml2-dev libsqlite3-dev libcurl4-openssl-dev uuid-dev
+  "${linux_packages[@]}" \
+  clang-18 llvm llvm-18-dev lld make coreutils findutils sed tar bash openssl libtool-bin libncurses-dev wget triehash libplist++-dev libbsd-dev file gperf texinfo help2man rsync
 fi
 [[ ${1:-} != --deps-only ]] || exit 0
 mkdir -p "$HOST_TOOL_ROOT"/{downloads,toolchain,SDK,bin}
@@ -225,10 +224,10 @@ for lto_mode in full thin; do
   -isysroot "$TARGET_SYSROOT" -flto="$lto_mode" "$runtime_src/build/archive-main.c" \
   "$runtime_src/build/archive-$lto_mode.a" -o "$runtime_src/build/archive-$lto_mode"
 done
-export HOST_TOOL_ROOT
+export HOST_TOOL_ROOT TARGET_SYSROOT MACOSX_SYSROOT
 export HOST_CC=${HOST_CC:-clang}
 export HOST_CXX=${HOST_CXX:-clang++}
-bash "$PROJDIR/build_tools/prepare-host-tools.sh"
+HOST_PLATFORM=linux bash "$PROJDIR/build_tools/prepare-host-tools.sh"
 # Apple's Mach interface generator is required by the main setup target.
 mig_commit=f337e600741638896fb6056ce87c6479f74b89a3
 archive="$HOST_TOOL_ROOT/downloads/bootstrap_cmds-$mig_commit.tar.gz"
@@ -242,9 +241,5 @@ mig_src="$HOST_TOOL_ROOT/src/bootstrap_cmds-$mig_commit"
  make -j"${HOST_JOBS:-4}"
  make install
 )
-# Supplement the shared host-tool environment with cross compiler and SDK paths.
-{
- printf '\nexport TARGET_SYSROOT=%q\nexport MACOSX_SYSROOT=%q\n' "$TARGET_SYSROOT" "$MACOSX_SYSROOT"
-} >> "$HOST_TOOL_ROOT/host-env.sh"
 sha256sum "$HOST_TOOL_ROOT"/downloads/* > "$HOST_TOOL_ROOT/downloads.sha256"
 printf 'Ready. Run: source %q\n' "$HOST_TOOL_ROOT/host-env.sh"

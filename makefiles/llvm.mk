@@ -13,7 +13,7 @@ SWIFT_VERSION        := 5.9.2
 SWIFT_SUFFIX         := RELEASE
 SWIFT_SYNTAX_VERSION := 509.0.2
 ifeq ($(UNAME),Linux)
-LLVM_BOOTSTRAP_SWIFTC = $(HOST_TOOL_ROOT)/swift5.9.2/usr/bin/swiftc
+LLVM_BOOTSTRAP_SWIFTC ?= $(if $(HOST_TOOL_ROOT),$(HOST_TOOL_ROOT)/swift5.9.2/usr/bin/swiftc,swiftc)
 LLVM_TARGET_SWIFT_FLAGS = -resource-dir $(BUILD_WORK)/llvm/swift-resources -use-ld=$(shell command -v $(LD))
 LLVM_NATIVE_CMAKE_FLAGS = -G Ninja \
 	-DCMAKE_C_COMPILER=$(shell command -v clang) \
@@ -21,7 +21,7 @@ LLVM_NATIVE_CMAKE_FLAGS = -G Ninja \
 	-DCMAKE_Swift_COMPILER=$(LLVM_BOOTSTRAP_SWIFTC) \
 	-DSWIFT_PATH_TO_LIBDISPATCH_SOURCE=$(BUILD_WORK)/llvm/libdispatch
 LLVM_RT_SOURCE = $(BUILD_WORK)/llvm/compiler-rt
-LLVM_RT_MACOS_SYSROOT = $(HOST_TOOL_ROOT)/SDK/MacOSX.sdk
+LLVM_RT_MACOS_SYSROOT ?= $(if $(and $(HOST_TOOL_ROOT),$(wildcard $(HOST_TOOL_ROOT)/SDK/MacOSX.sdk)),$(HOST_TOOL_ROOT)/SDK/MacOSX.sdk,$(MACOSX_SYSROOT))
 LLVM_RT_CMAKE_FLAGS = -U'COMPILER_RT_INSTALL_*' -DCMAKE_SYSTEM_NAME=Darwin \
 	-DCMAKE_OSX_SYSROOT="$(LLVM_RT_MACOS_SYSROOT)" \
 	-DDARWIN_macosx_CACHED_SYSROOT="$(LLVM_RT_MACOS_SYSROOT)" \
@@ -40,7 +40,7 @@ LLVM_RT_CMAKE_FLAGS = -U'COMPILER_RT_INSTALL_*' -DCMAKE_SYSTEM_NAME=Darwin \
 	-DCOMPILER_RT_INSTALL_PATH:STRING=lib/clang/$(LLVM_VERSION) \
 	-DCOMPILER_RT_INCLUDE_TESTS=OFF
 else
-LLVM_BOOTSTRAP_SWIFTC = $(shell xcrun --find swiftc)
+LLVM_BOOTSTRAP_SWIFTC ?= $(shell xcrun --find swiftc)
 LLVM_RT_SOURCE = $(BUILD_WORK)/llvm/llvm
 LLVM_RT_CMAKE_FLAGS = -DCMAKE_C_COMPILER=cc -DCMAKE_CXX_COMPILER=c++ \
 	-DLLVM_ENABLE_PROJECTS="clang;compiler-rt"
@@ -86,7 +86,9 @@ ifeq ($(UNAME),Linux)
 	for resource in $(TARGET_SYSROOT)/usr/lib/swift/*; do \
 		ln -sfn "$$resource" $(BUILD_WORK)/llvm/swift-resources/; \
 	done
-	ln -sfn $(HOST_TOOL_ROOT)/swift5.9.2/usr/lib/swift/clang $(BUILD_WORK)/llvm/swift-resources/clang
+	resource_dir="$$($(LLVM_BOOTSTRAP_SWIFTC) -print-target-info | python3 -c 'import json,sys; print(json.load(sys.stdin)["paths"]["runtimeResourcePath"])')" && \
+		test -d "$$resource_dir/clang" && \
+		ln -sfn "$$resource_dir/clang" $(BUILD_WORK)/llvm/swift-resources/clang
 	ln -sfn $(BUILD_WORK)/llvm/swift/apinotes $(BUILD_WORK)/llvm/swift-resources/apinotes
 endif
 	$(call DO_PATCH,llvm,llvm,-p1)

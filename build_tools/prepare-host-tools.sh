@@ -52,7 +52,10 @@ if [[ $HOST_PLATFORM == auto ]]; then
     esac
 fi
 case $HOST_PLATFORM in
-    linux) deps=(apt-get install -y build-essential clang perl git curl ca-certificates patch pkg-config libssl-dev zlib1g-dev libbz2-dev liblzma-dev libffi-dev libplist-dev python3 python3-venv python3-dev ninja-build autoconf automake libtool bison flex cmake gettext gawk autopoint fakeroot dpkg-dev zstd gnupg groff docbook-xsl docbook-xml libxml2-utils itstool xsltproc po4a zip unzip xz-utils lzip tcl ghc protobuf-compiler neovim luajit lua-lpeg lua-mpack bsdextrautils nodejs libmodule-build-perl ruby asciidoctor asciidoc-base xmlto intltool gtk-doc-tools libedit-dev libicu-dev libxml2-dev libsqlite3-dev libcurl4-openssl-dev uuid-dev) ;;
+    linux)
+        mapfile -t linux_packages < "$CHECKOUT/build_misc/host-tools/linux-packages.txt"
+        deps=(apt-get install -y "${linux_packages[@]}")
+        ;;
     macos) deps=(brew install bash make gpatch file-formula ncurses gnu-sed gawk grep gnu-tar findutils coreutils bison flex autoconf automake libtool cmake gettext fakeroot dpkg zstd gnupg groff docbook-xsl po4a openssl@3 libplist pkg-config python@3.12 ninja) ;;
     ios) deps=(apt-get install -y clang make perl ncurses-bin git curl ca-certificates patch pkg-config openssl libssl-dev libplist-dev python3 libpython3.9-dev ninja bash coreutils findutils sed gawk grep tar bison flex autoconf automake libtool cmake gettext fakeroot dpkg zstd gnupg groff docbook-xsl po4a zip unzip xz-utils ldid) ;;
     *) fail 'HOST_PLATFORM must be macos, linux or ios' ;;
@@ -71,12 +74,12 @@ for command_name in git patch perl "$HOST_CC" "$HOST_CXX" "$HOST_PYTHON" "$HOST_
     command -v "$command_name" >/dev/null 2>&1 || fail "missing $command_name; see --print-system-deps"
 done
 [[ $HOST_JOBS =~ ^[1-9][0-9]*$ ]] || fail 'HOST_JOBS must be a positive integer'
-# Resolve parent symlinks before writing: all generated material stays in checkout.
+# Resolve parent symlinks before writing; allow a dedicated external tools directory.
 HOST_TOOL_ROOT=$("$HOST_PYTHON" - "$CHECKOUT" "$HOST_TOOL_ROOT" <<'PY'
 import os, sys
 checkout, root = map(os.path.realpath, sys.argv[1:])
-if root == checkout or os.path.commonpath([checkout, root]) != checkout:
-    sys.exit('HOST_TOOL_ROOT must be a directory beneath this checkout')
+if root == os.path.realpath(os.path.expanduser('~')) or os.path.commonpath([checkout, root]) == root:
+    sys.exit('HOST_TOOL_ROOT must be a dedicated directory, not HOME or an ancestor of the checkout')
 print(root)
 PY
 )
@@ -426,9 +429,8 @@ fi
 {
     printf 'umask 022\n'
     printf 'export HOST_TOOL_ROOT=%q\n' "$HOST_TOOL_ROOT"
-    if [[ $HOST_PLATFORM != linux ]]; then
-        printf 'export TARGET_SYSROOT=%q\nexport MACOSX_SYSROOT=%q\n' "$TARGET_SYSROOT" "$MACOSX_SYSROOT"
-    fi
+    if [[ -n ${TARGET_SYSROOT:-} ]]; then printf 'export TARGET_SYSROOT=%q\n' "$TARGET_SYSROOT"; fi
+    if [[ -n ${MACOSX_SYSROOT:-} ]]; then printf 'export MACOSX_SYSROOT=%q\n' "$MACOSX_SYSROOT"; fi
     if [[ -n ${DOCBOOK_XSL:-} ]]; then printf 'export DOCBOOK_XSL=%q\n' "$DOCBOOK_XSL"; fi
     if [[ $HOST_PLATFORM == macos ]]; then printf 'export LIBTOOLIZE=glibtoolize\n'; fi
     if [[ $HOST_PLATFORM == linux ]]; then
@@ -441,5 +443,6 @@ fi
         for host_gnu_path in "${host_gnu_paths[@]}"; do printf '%q:' "$host_gnu_path"; done
     fi
     printf '"$PATH"\n'
-} > "$HOST_TOOL_ROOT/host-env.sh"
+} > "$HOST_TOOL_ROOT/host-env.sh.tmp"
+mv -f "$HOST_TOOL_ROOT/host-env.sh.tmp" "$HOST_TOOL_ROOT/host-env.sh"
 printf 'Prepared native tools; source %q\n' "$HOST_TOOL_ROOT/host-env.sh"

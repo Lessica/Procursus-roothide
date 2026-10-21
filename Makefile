@@ -174,6 +174,8 @@ BARE_PLATFORM         := iPhoneOS
 MEMO_DEPLOYMENT       := IPHONEOS_DEPLOYMENT_TARGET=$(IPHONEOS_DEPLOYMENT_TARGET)
 
 else ifeq ($(MEMO_TARGET),iphoneos-arm64e-roothide)
+$(error iphoneos-arm64e-roothide is not supported by Relaxin; use iphoneos-arm64-roothide)
+
 MEMO_ROOTLESS         := 1
 MEMO_ARCH             := arm64e
 PLATFORM              := iphoneos
@@ -493,8 +495,13 @@ endif
 CC              != xcrun --find cc
 CXX             != xcrun --find c++
 CPP             := $(CC) -E
-# Respect the explicitly prepared host tools (GNU utilities and patched signers).
+# Preserve the upstream tool priority unless a prepared host environment is selected.
+ifeq ($(strip $(HOST_TOOL_ROOT)),)
+PATH            := /opt/procursus/bin:/opt/procursus/libexec/gnubin:/usr/bin:$(PATH)
+else
+# host-env.sh puts its patched signers and GNU tools first.
 PATH            := $(PATH):/opt/procursus/bin:/opt/procursus/libexec/gnubin
+endif
 
 CFLAGS_FOR_BUILD   := -arch $(shell uname -m) -mmacosx-version-min=$(shell sw_vers -productVersion) -isysroot $(MACOSX_SYSROOT)
 CPPFLAGS_FOR_BUILD := $(CFLAGS_FOR_BUILD)
@@ -511,7 +518,11 @@ MACOSX_SYSROOT  ?= /usr/share/SDKs/MacOSX.sdk
 CC              != command -v cc
 CXX             != command -v c++
 CPP             := $(CC) -E
+ifeq ($(strip $(HOST_TOOL_ROOT)),)
+PATH            := /usr/bin:$(PATH)
+else
 PATH            := $(PATH):/usr/bin
+endif
 
 CFLAGS_FOR_BUILD   := -arch $(shell arch) -miphoneos-version-min=$(shell sw_vers -productVersion)
 CPPFLAGS_FOR_BUILD := $(CFLAGS_FOR_BUILD)
@@ -549,7 +560,7 @@ DEB_MAINTAINER    ?= roothide <roothideDev@twitter>
 ifneq (,$(findstring roothide,$(MEMO_TARGET)))
 MEMO_REPO_URI     ?= https://procursus.owngoal.dev
 MEMO_PGP_SIGN_KEY ?=
-BOOTSTRAP_NAME   ?= bootstrap_$(MEMO_CFVER).tar.zst
+BOOTSTRAP_NAME    ?= bootstrap$(if $(filter 1,$(SSH_STRAP)),-ssh)_$(MEMO_CFVER).tar.zst
 else
 MEMO_REPO_URI     ?= https://apt.procurs.us
 MEMO_PGP_SIGN_KEY ?= C59F3798A305ADD7E7E6C7256430292CF9551B0E

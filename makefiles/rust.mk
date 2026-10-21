@@ -52,6 +52,10 @@ rust-setup: setup
 	printf '%s\n' '#!/bin/sh' 'exec "$(CXX)" "$$@" $(RUST_TARGET_CFLAGS)' > "$(RUST_TARGET_CXX_WRAPPER)"
 	chmod 755 "$(RUST_HOST_CC_WRAPPER)" "$(RUST_HOST_CXX_WRAPPER)" "$(RUST_TARGET_CC_WRAPPER)" "$(RUST_TARGET_CXX_WRAPPER)"
 
+ifneq ($(wildcard $(BUILD_WORK)/rust/.build_complete),)
+rust:
+	@echo "Using previously built rust."
+else
 rust: rust-setup openssl curl
 	cd "$(BUILD_WORK)/rust" && \
 		export PATH="$(BUILD_TOOLS)/bin:$(PATH)" \
@@ -83,6 +87,7 @@ rust: rust-setup openssl curl
 	rm -rf $(BUILD_STAGE)/rust/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/rustlib/*/analysis
 	$(if $(findstring apple-ios,$(RUST_TARGET)),install -m 755 "$(BUILD_WORK)/rust/build/$(RUST_TARGET)/llvm/bin/llvm-dwp" "$(BUILD_STAGE)/rust/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/rustlib/$(RUST_TARGET)/bin/rust-llvm-dwp")
 	$(call AFTER_BUILD)
+endif
 
 rust-package: rust
 	# rust.mk Package Structure
