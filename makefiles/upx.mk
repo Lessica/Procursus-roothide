@@ -13,6 +13,7 @@ upx-setup: setup
 	$(call DO_PATCH,upx,upx,-p1)
 	rm -rf $(BUILD_WORK)/upx/src/lzma-sdk
 	$(call EXTRACT_TAR,upx-lzma-sdk-$(UPX_VERSION).tar.gz,upx-lzma-sdk-$(UPX_VERSION),upx/src/lzma-sdk/)
+	$(call DO_PATCH,upx-lzma-sdk,upx/src/lzma-sdk,-p1)
 
 
 ifneq ($(wildcard $(BUILD_WORK)/upx/.build_complete),)
