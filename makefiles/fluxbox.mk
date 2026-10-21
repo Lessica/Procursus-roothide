@@ -19,10 +19,10 @@ else
 fluxbox: fluxbox-setup imlib2 libx11 libxext libxft libxinerama libxpm libxrandr libxrender fontconfig freetype libfribidi
 	cd $(BUILD_WORK)/fluxbox && autoreconf -fi
 	cd $(BUILD_WORK)/fluxbox && ./configure -C \
-		$(DEFAULT_CONFIGURE_FLAGS)
+		$(DEFAULT_CONFIGURE_FLAGS) CXXFLAGS="$(CXXFLAGS) -std=gnu++14"
 	sed -i s/HAVE_MACH_ABSOLUTE_TIME/HAVE_MACH_ABSOLUTELY_NO_TIME/ $(BUILD_WORK)/fluxbox/config.h
-	+$(MAKE) -C $(BUILD_WORK)/fluxbox
-	+$(MAKE) -C $(BUILD_WORK)/fluxbox install \
+	+$(MAKE) -C $(BUILD_WORK)/fluxbox AR="$(AR)"
+	+$(MAKE) -C $(BUILD_WORK)/fluxbox install AR="$(AR)" \
 		DESTDIR=$(BUILD_STAGE)/fluxbox
 	$(call AFTER_BUILD)
 endif

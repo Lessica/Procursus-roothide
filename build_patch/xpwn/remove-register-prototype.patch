@@ -1,0 +1,13 @@
+--- a/includes/hfs/hfsplus.h
++++ b/includes/hfs/hfsplus.h
+@@ -576,8 +576,8 @@
+ 
+ 	int removeFromBTree(BTree* tree, BTKey* searchKey);
+ 
+-	int32_t FastUnicodeCompare ( register uint16_t str1[], register uint16_t length1,
+-		                    register uint16_t str2[], register uint16_t length2);
++	int32_t FastUnicodeCompare ( uint16_t str1[], uint16_t length1,
++		                    uint16_t str2[], uint16_t length2);
+ #ifdef __cplusplus
+ }
+ #endif

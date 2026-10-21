@@ -35,10 +35,10 @@ libdbd-mariadb-perl: libdbd-mariadb-perl-setup libdbi-perl libdbi-perl-native ma
 		PERLRUN="$(PERL_HOST)" FULLPERLRUN="$(PERL_HOST)" ABSPERLRUN="$(PERL_HOST)" \
 		LDDLFLAGS="$(LDFLAGS) -L$(DBI_TARGET_CORE) -lperl -shared"
 	+PERL5LIB="$(DBI_HOST_LIBPATH)" $(MAKE) -C $(BUILD_WORK)/libdbd-mariadb-perl \
-		PERL_INCDEP="$(DBI_HOST_CORE)" DLEXT=so \
+		PERL_INCDEP="$(DBI_HOST_CORE)" DLEXT=so LDLOADLIBS="$(LDFLAGS) -lmariadb -lssl -lcrypto" \
 		DBI_INSTARCH_DIR="$(BUILD_STAGE)/libdbi-perl/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/perl5/$(PERL_MAJOR)/auto/DBI"
 	+PERL5LIB="$(DBI_HOST_LIBPATH)" $(MAKE) -C $(BUILD_WORK)/libdbd-mariadb-perl install \
-		PERL_INCDEP="$(DBI_HOST_CORE)" DLEXT=so \
+		PERL_INCDEP="$(DBI_HOST_CORE)" DLEXT=so LDLOADLIBS="$(LDFLAGS) -lmariadb -lssl -lcrypto" \
 		DBI_INSTARCH_DIR="$(BUILD_STAGE)/libdbi-perl/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/perl5/$(PERL_MAJOR)/auto/DBI" \
 		DESTDIR="$(BUILD_STAGE)/libdbd-mariadb-perl"
 	find $(BUILD_STAGE)/libdbd-mariadb-perl -type f \( -name .packlist -o -name perllocal.pod \) -delete

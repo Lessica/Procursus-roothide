@@ -17,15 +17,11 @@ libvde:
 	@echo "Using previously built libvde."
 else
 libvde: libvde-setup openssl
-	cd $(BUILD_WORK)/libvde && unset MACOSX_DEPLOYMENT_TARGET && ./configure -C \
+	cd $(BUILD_WORK)/libvde && ./configure -C \
 		$(DEFAULT_CONFIGURE_FLAGS) \
 		--disable-python \
 		ac_cv_func_malloc_0_nonnull=yes \
 		ac_cv_func_realloc_0_nonnull=yes
-ifneq (,$(findstring roothide,$(MEMO_TARGET)))
-	# Old libtool selects flat namespace on newer Darwin hosts; RootHide requires two-level imports.
-	sed -i 's|^allow_undefined_flag=.*|allow_undefined_flag="-Wl,-twolevel_namespace -Wl,-undefined,dynamic_lookup"|' $(BUILD_WORK)/libvde/libtool
-endif
 	unset MAKEFLAGS && $(MAKE) -C $(BUILD_WORK)/libvde install \
 		DESTDIR="$(BUILD_STAGE)/libvde"
 ifneq ($(filter -flto%,$(CFLAGS)),)

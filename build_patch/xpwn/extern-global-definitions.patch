@@ -1,0 +1,53 @@
+--- a/ipsw-patch/main.c
++++ b/ipsw-patch/main.c
+@@ -19,7 +19,7 @@
+ #include <windows.h>
+ #endif
+ 
+-char endianness;
++extern char endianness;
+ 
+ static char* tmpFile = NULL;
+ 
+--- a/ipsw-patch/ticket.c
++++ b/ipsw-patch/ticket.c
+@@ -9,7 +9,7 @@
+ #include <windows.h>
+ #endif
+ 
+-char endianness;
++extern char endianness;
+ 
+ extern uint64_t MaxLoadZipSize;
+ void flipAppleImg3Header(AppleImg3Header* header);
+--- a/ipsw-patch/validate.c
++++ b/ipsw-patch/validate.c
+@@ -15,7 +15,7 @@
+ #include <windows.h>
+ #endif
+ 
+-char endianness;
++extern char endianness;
+ 
+ extern uint64_t MaxLoadZipSize;
+ void flipAppleImg3Header(AppleImg3Header* header);
+--- a/xpwn/src/xpwn.cpp
++++ b/xpwn/src/xpwn.cpp
+@@ -11,7 +11,7 @@
+ using namespace ibooter;
+ using namespace std;
+ 
+-char endianness;
++extern char endianness;
+ 
+ void TestByteOrder()
+ {
+--- a/dfu-util/dfu.h
++++ b/dfu-util/dfu.h
+@@ -104,5 +104,5 @@
+ 
+ const char *dfu_status_to_string(int status);
+ 
+-int debug;
++extern int debug;
+ #endif

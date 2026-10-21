@@ -20,9 +20,9 @@ libsixel: libsixel-setup libpng16 libjpeg-turbo curl libgd
 	cd $(BUILD_WORK)/libsixel && ./configure -C \
 		$(DEFAULT_CONFIGURE_FLAGS) \
 		--enable-python=no \
-		--with-libcurl \
-		--with-gd \
-		--with-jpeg \
+		--with-libcurl=$(BUILD_BASE)$(MEMO_PREFIX)$(MEMO_SUB_PREFIX) \
+		--with-gd=$(BUILD_BASE)$(MEMO_PREFIX)$(MEMO_SUB_PREFIX) \
+		--with-jpeg=$(BUILD_BASE)$(MEMO_PREFIX)$(MEMO_SUB_PREFIX) \
 		--with-png \
 		ac_cv_func_malloc_0_nonnull=yes \
 		ac_cv_func_realloc_0_nonnull=yes
