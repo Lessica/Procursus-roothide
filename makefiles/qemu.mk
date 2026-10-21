@@ -17,11 +17,12 @@ qemu:
 	@echo "Using previously built qemu."
 else
 qemu: qemu-setup glib2.0 gnutls libjpeg-turbo libpng16 libssh libusb liblzo2 ncurses nettle libpixman libsnappy lzfse gnutls curl libvde capstone openpam zstd
-	cd $(BUILD_WORK)/qemu && STRIP="strip -x" PKG_CONFIG="$(BUILD_TOOLS)/cross-pkg-config" CFLAGS+=" -DNCURSES_WIDECHAR=1 -I$(BUILD_BASE)$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include/pixman-1" ./configure \
+	cd $(BUILD_WORK)/qemu && STRIP="$(STRIP) -x" PKG_CONFIG="$(BUILD_TOOLS)/cross-pkg-config" CFLAGS+=" -DNCURSES_WIDECHAR=1 -I$(BUILD_BASE)$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include/pixman-1" ./configure \
 		$(filter-out --enable-silent-rules --enable-shared --enable-static PKG_CONFIG=%,$(DEFAULT_CONFIGURE_FLAGS)) \
 		--cpu=aarch64 \
 		--cross-prefix="" \
 		--cc=$(CC) \
+		--objcc=$(CC) \
 		--host-cc="$(CC_FOR_BUILD)" \
 		--prefix=$(MEMO_PREFIX)$(MEMO_SUB_PREFIX) \
 		--disable-bsd-user \
@@ -37,6 +38,7 @@ qemu: qemu-setup glib2.0 gnutls libjpeg-turbo libpng16 libssh libusb liblzo2 ncu
 		--enable-modules \
 		--enable-module-upgrades
 	+$(MAKE) -C $(BUILD_WORK)/qemu install \
+		SHELL=bash \
 		.SHELLFLAGS="-o pipefail -c" \
 		DESTDIR=$(BUILD_STAGE)/qemu
 	$(call AFTER_BUILD)

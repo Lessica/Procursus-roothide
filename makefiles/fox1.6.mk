@@ -18,6 +18,7 @@ else
 fox1.6: fox1.6-setup libxft mesa libglu libx11 libxcursor libxext libxrender libxrandr libxfixes libpng16 libtiff libjpeg-turbo libxi freetype fontconfig
 	cd $(BUILD_WORK)/fox1.6 && ./configure -C \
 		$(DEFAULT_CONFIGURE_FLAGS) \
+		CXXFLAGS="$(CXXFLAGS) -std=gnu++14" \
 		--enable-release \
 		--with-x \
 		--with-xft \
@@ -33,7 +34,7 @@ fox1.6: fox1.6-setup libxft mesa libglu libx11 libxcursor libxext libxrender lib
 	# Keep the platform flags on libtool's Darwin C++ archive intermediate.
 	sed -i 's|\$$CC -r -keep_private_externs -nostdlib|\$$CC \$$CXXFLAGS -r -keep_private_externs -nostdlib|g' $(BUILD_WORK)/fox1.6/libtool
 	+$(MAKE) -C $(BUILD_WORK)/fox1.6 \
-		CXXFLAGS+=\ -I$(BUILD_BASE)/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include/freetype2
+		CXXFLAGS="$(CXXFLAGS) -std=gnu++14 -I$(BUILD_BASE)/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include/freetype2"
 	+$(MAKE) -C $(BUILD_WORK)/fox1.6 install \
  		DESTDIR=$(BUILD_STAGE)/fox1.6
 ifneq ($(filter -flto%,$(CXXFLAGS)),)
@@ -41,10 +42,10 @@ ifneq ($(filter -flto%,$(CXXFLAGS)),)
 	find $(BUILD_WORK)/fox1.6/src $(BUILD_WORK)/fox1.6/chart -name '*.lo' -type f -delete
 	rm -f $(BUILD_WORK)/fox1.6/src/libFOX-1.6.la $(BUILD_WORK)/fox1.6/chart/libCHART-1.6.la
 	+$(MAKE) -C $(BUILD_WORK)/fox1.6/src libFOX-1.6.la \
-		CXXFLAGS="$(CXXFLAGS) -I$(BUILD_BASE)/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include/freetype2 -fno-lto" \
+		CXXFLAGS="$(CXXFLAGS) -std=gnu++14 -I$(BUILD_BASE)/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include/freetype2 -fno-lto" \
 		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/fox1.6/src/Makefile) -fno-lto -static"
 	+$(MAKE) -C $(BUILD_WORK)/fox1.6/chart libCHART-1.6.la \
-		CXXFLAGS="$(CXXFLAGS) -I$(BUILD_BASE)/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include/freetype2 -fno-lto" \
+		CXXFLAGS="$(CXXFLAGS) -std=gnu++14 -I$(BUILD_BASE)/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include/freetype2 -fno-lto" \
 		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/fox1.6/chart/Makefile) -fno-lto -static"
 	cp -a $(BUILD_WORK)/fox1.6/src/.libs/libFOX-1.6.a $(BUILD_WORK)/fox1.6/chart/.libs/libCHART-1.6.a $(BUILD_STAGE)/fox1.6/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
 endif
