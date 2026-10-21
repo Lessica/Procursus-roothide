@@ -20,6 +20,8 @@ else
 glew: glew-setup mesa libx11
 	+$(MAKE) -C $(BUILD_WORK)/glew all install \
 		SYSTEM=darwin \
+		CC="$(CC)" LD="$(CC)" AR="$(AR)" STRIP="$(STRIP)" \
+		LDFLAGS.GL="-L$(BUILD_BASE)$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib -lGL -lX11" \
 		GLEW_PREFIX=$(MEMO_PREFIX)$(MEMO_SUB_PREFIX) \
 		GLEW_DEST=$(BUILD_STAGE)/glew/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX) \
 		CFLAGS.EXTRA="$(CFLAGS) -DGLEW_APPLE_GLX" \
@@ -28,6 +30,8 @@ glew: glew-setup mesa libx11
 		GLEW_APPLE_GLX=yes
 	+$(MAKE) -C $(BUILD_WORK)/glew all install \
 		SYSTEM=darwin \
+		CC="$(CC)" LD="$(CC)" AR="$(AR)" STRIP="$(STRIP)" \
+		LDFLAGS.GL="-L$(BUILD_BASE)$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib -lGL -lX11" \
 		GLEW_PREFIX=$(MEMO_PREFIX)$(MEMO_SUB_PREFIX) \
 		GLEW_DEST=$(BUILD_BASE)/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX) \
 		CFLAGS.EXTRA="$(CFLAGS) -DGLEW_APPLE_GLX" \

@@ -28,9 +28,11 @@ gpgme: gpgme-setup gnupg libassuan libgpg-error
 		--disable-g13-test
 	+printf 'all:\nclean:\ninstall:\n.PHONY: all clean install\n' > $(BUILD_WORK)/gpgme/lang/python/tests/Makefile
 	+$(MAKE) -C $(BUILD_WORK)/gpgme \
+		CC_FOR_BUILD="env -u CPATH $(CC_FOR_BUILD)" \
 		CPATH="$(BUILD_BASE)$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include:$(TARGET_SYSROOT)/usr/include"
 	+$(MAKE) -C $(BUILD_WORK)/gpgme install \
 		DESTDIR=$(BUILD_STAGE)/gpgme \
+		CC_FOR_BUILD="env -u CPATH $(CC_FOR_BUILD)" \
 		CPATH="$(BUILD_BASE)$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include:$(TARGET_SYSROOT)/usr/include"
 	$(call AFTER_BUILD,copy)
 endif

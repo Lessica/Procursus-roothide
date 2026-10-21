@@ -13,6 +13,9 @@ endif
 nginx: CFLAGS += -DNGX_HAVE_MAP_ANON=1
 
 GLOBAL_NGINX_FLAGS := --prefix=$(MEMO_PREFIX)/etc/nginx \
+					   --crossbuild=Darwin::$(MEMO_ARCH) \
+					   --user=nobody --group=nobody \
+					   --with-cc="$(CC) $(CFLAGS)" \
 					   --sbin-path=$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/nginx \
 					   --conf-path=$(MEMO_PREFIX)/etc/nginx/nginx.conf \
 					   --modules-path=$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/nginx/modules \

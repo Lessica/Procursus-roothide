@@ -989,7 +989,7 @@ AFTER_BUILD = \
 	fi; \
 	[ -d $(BUILD_WORK)/$$pkg/ ] || mkdir $(BUILD_WORK)/$$pkg/; \
 	if [ -z "$(5)" ]; then touch $(BUILD_WORK)/$$pkg/.build_complete; fi; \
-	find $(BUILD_BASE) -name '*.la' \( -type f -o -type l \) -delete
+	find $(BUILD_BASE) -ignore_readdir_race -name '*.la' \( -type f -o -type l \) -delete
 
 # Argument 5 finalizes signed content before metadata and payload hashes are written.
 PACK = \

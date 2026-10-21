@@ -18,7 +18,8 @@ libglu:
 else
 libglu: libglu-setup mesa
 	cd $(BUILD_WORK)/libglu && ./configure -C \
-		$(DEFAULT_CONFIGURE_FLAGS)
+		$(DEFAULT_CONFIGURE_FLAGS) \
+		CXXFLAGS="$(CXXFLAGS) -std=gnu++14"
 	# libtool's Darwin CXX archive path creates a master object with bare CC,
 	# dropping the target flags that configure recorded in CXXFLAGS.
 	sed -i 's|\$$CC -r -keep_private_externs -nostdlib|\$$CC \$$CXXFLAGS -r -keep_private_externs -nostdlib|g' $(BUILD_WORK)/libglu/libtool

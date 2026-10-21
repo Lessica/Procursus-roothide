@@ -9,6 +9,7 @@ DEB_LIBTHEORA_V   ?= $(LIBTHEORA_VERSION)-1
 libtheora-setup: setup file-setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://downloads.xiph.org/releases/theora/libtheora-$(LIBTHEORA_VERSION).tar.xz)
 	$(call EXTRACT_TAR,libtheora-$(LIBTHEORA_VERSION).tar.xz,libtheora-$(LIBTHEORA_VERSION),libtheora)
+	$(call DO_PATCH,libtheora,libtheora,-p1)
 	cp -a $(BUILD_WORK)/file/config.sub $(BUILD_WORK)/libtheora
 
 ifneq ($(wildcard $(BUILD_WORK)/libtheora/.build_complete),)
