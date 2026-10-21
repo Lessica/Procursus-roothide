@@ -1,0 +1,31 @@
+--- a/make/autoconf/basic_tools.m4
++++ b/make/autoconf/basic_tools.m4
+@@ -400,7 +400,9 @@
+         fi
+       fi
+     fi
+-    UTIL_REQUIRE_PROGS(SETFILE, SetFile)
++    if test "x$OPENJDK_BUILD_OS" = "xmacosx"; then
++      UTIL_REQUIRE_PROGS(SETFILE, SetFile)
++    fi
+   fi
+   if ! test "x$OPENJDK_TARGET_OS" = "xwindows"; then
+     UTIL_REQUIRE_PROGS(ULIMIT, ulimit)
+--- a/make/MacBundles.gmk
++++ b/make/MacBundles.gmk
+@@ -95,11 +95,15 @@
+   ))
+ 
+   $(SUPPORT_OUTPUTDIR)/images/_jdk_bundle_attribute_set: $(COPY_JDK_IMAGE)
++ifeq ($(call isBuildOs, macosx), true)
+ 	$(SETFILE) -a B $(dir $(JDK_MACOSX_CONTENTS_DIR))
++endif
+ 	$(TOUCH) $@
+ 
+   $(SUPPORT_OUTPUTDIR)/images/_jre_bundle_attribute_set: $(COPY_JRE_IMAGE)
++ifeq ($(call isBuildOs, macosx), true)
+ 	$(SETFILE) -a B $(dir $(JRE_MACOSX_CONTENTS_DIR))
++endif
+ 	$(TOUCH) $@
+ 
+   jdk-bundle: $(COPY_JDK_IMAGE) $(COPY_LIBJLI_JDK) \

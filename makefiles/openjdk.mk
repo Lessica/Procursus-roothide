@@ -9,6 +9,9 @@ OPENJDK_PATCH_V  := 1
 OPENJDK_REVISION := ga
 OPENJDK_VERSION  := $(OPENJDK_MAJOR_V).$(OPENJDK_MINOR_V).$(OPENJDK_PATCH_V)-$(OPENJDK_REVISION)
 DEB_OPENJDK_V    ?= $(OPENJDK_VERSION)
+OPENJDK_BOOT_ARCHIVE := openjdk-17_$(if $(filter Linux,$(UNAME)),linux,macos)-$(if $(filter aarch64 arm64,$(UNAME_M)),aarch64,x64)_bin.tar.gz
+OPENJDK_BOOT_ROOT := $(if $(filter Linux,$(UNAME)),jdk-17,jdk-17.jdk)
+OPENJDK_BOOT_HOME := $(BUILD_WORK)/boot-jdk.jdk$(if $(filter Linux,$(UNAME)),,/Contents/Home)
 
 # Change "ea" to nothing on general availability...
 
@@ -40,11 +43,10 @@ openjdk-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://github.com/openjdk/jdk17u/archive/refs/tags/jdk-$(OPENJDK_VERSION).tar.gz)
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE), \
 		https://github.com/apple/cups/releases/download/v2.3.3/cups-2.3.3-source.tar.gz \
-		https://download.java.net/java/GA/jdk17/0d483333a00540d886896bac774ff48b/35/GPL/openjdk-17_macos-aarch64_bin.tar.gz)
-		#https://download.java.net/java/GA/jdk15/779bf45e88a44cbd9ea6621d33e33db1/36/GPL/openjdk-15_linux-x64_bin.tar.gz
+		https://download.java.net/java/GA/jdk17/0d483333a00540d886896bac774ff48b/35/GPL/$(OPENJDK_BOOT_ARCHIVE))
 	$(call EXTRACT_TAR,jdk-$(OPENJDK_VERSION).tar.gz,jdk17u-jdk-$(OPENJDK_VERSION),openjdk)
 	$(call EXTRACT_TAR,cups-2.3.3-source.tar.gz,cups-2.3.3,apple-cups)
-	$(call EXTRACT_TAR,openjdk-17_macos-aarch64_bin.tar.gz,jdk-17.jdk,boot-jdk.jdk) # Change this to use the Linux one on Linux
+	$(call EXTRACT_TAR,$(OPENJDK_BOOT_ARCHIVE),$(OPENJDK_BOOT_ROOT),boot-jdk.jdk)
 ifeq (,$(findstring darwin,$(MEMO_TARGET)))
 	$(call DO_PATCH,openjdk-ios,openjdk,-p1)
 	sed -i '/^#include <CFNetwork\/CFNetwork.h>$$/d' $(BUILD_WORK)/openjdk/src/java.base/macosx/native/libnet/DefaultProxySelector.c
@@ -82,7 +84,8 @@ openjdk: openjdk-setup libx11 libxext libxi libxrender libxrandr libxtst freetyp
 	mkdir -p $(BUILD_STAGE)/openjdk/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/jvm
 	chmod 0755 $(BUILD_WORK)/openjdk/configure
 	cd $(BUILD_WORK)/openjdk && bash ./configure \
-		BUILD_CC="$(CC_FOR_BUILD)" BUILD_CXX="$(CXX_FOR_BUILD)" \
+		BUILD_CC="$(shell command -v clang) $(CFLAGS_FOR_BUILD)" BUILD_CXX="$(shell command -v clang++) $(CXXFLAGS_FOR_BUILD)" \
+		OTOOL="$(OTOOL)" LIPO="$(LIPO)" INSTALL_NAME_TOOL="$(I_N_T)" \
 		PKG_CONFIG="$(BUILD_TOOLS)/cross-pkg-config" \
 		--disable-warnings-as-errors \
 		--prefix=$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib \
@@ -92,7 +95,8 @@ openjdk: openjdk-setup libx11 libxext libxi libxrender libxrandr libxtst freetyp
 		--with-extra-ldflags="$(LDFLAGS) -headerpad_max_install_names" \
 		--with-sysroot="$(TARGET_SYSROOT)" \
 		$(OPENJDK_VENDOR_ARGS) \
-		--with-boot-jdk="$(BUILD_WORK)/boot-jdk.jdk/Contents/Home" \
+		--with-boot-jdk="$(OPENJDK_BOOT_HOME)" \
+		$(if $(filter Linux,$(UNAME)),--with-build-jdk="$(OPENJDK_BOOT_HOME)") \
 		--with-debug-level=release \
 		--with-native-debug-symbols=none \
 		--with-jvm-variants=server \
