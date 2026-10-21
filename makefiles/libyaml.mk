@@ -34,7 +34,7 @@ endif
 
 libyaml-package: libyaml-stage
 	# libyaml.mk Package Structure
-	rm -rf $(BUILD_DIST)/libyaml*/
+	rm -rf $(BUILD_DIST)/libyaml-{0-2,dev}
 	mkdir -p $(BUILD_DIST)/libyaml-{0-2,dev}/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib
 
 	# libyaml.mk Prep libyaml-0-2
@@ -52,6 +52,6 @@ libyaml-package: libyaml-stage
 	$(call PACK,libyaml-dev,DEB_LIBYAML_V)
 
 	# libyaml.mk Build cleanup
-	rm -rf $(BUILD_DIST)/libyaml*/
+	rm -rf $(BUILD_DIST)/libyaml-{0-2,dev}
 
 .PHONY: libyaml libyaml-package
