@@ -216,22 +216,22 @@ Procursus (Relaxin) 的 Bootstrap 归档和 APT 软件源都必须签名，Boots
 首次本地验收可生成一把独立的测试密钥。以下命令只需执行一次，按提示设置口令：
 
 ```bash
-export GNUPGHOME="$HOME/.gnupg-procursus-test"
+export GNUPGHOME="$HOME/.gnupg-procursus-relaxin"
 mkdir -p "$GNUPGHOME"
 chmod 700 "$GNUPGHOME"
 export GPG_TTY=$(tty)
-gpg --quick-generate-key "Procursus Relaxin Local Test" rsa3072 sign 1y
+gpg --quick-generate-key "Procursus Relaxin" rsa3072 sign 5y
 ```
 
 在构建终端配置签名身份并导出公钥：
 
 ```bash
-export GNUPGHOME="$HOME/.gnupg-procursus-test"
+export GNUPGHOME="$HOME/.gnupg-procursus-relaxin"
 export GPG_TTY=$(tty)
 export MEMO_PGP_SIGN_KEY=$(gpg --with-colons --list-keys \
-  "Procursus Relaxin Local Test" |
+  "Procursus Relaxin" |
   awk -F: '$1 == "fpr" {print $10; exit}')
-export BOOTSTRAP_APT_KEYRING="$PWD/build_work/procursus-local-test.gpg"
+export BOOTSTRAP_APT_KEYRING="$PWD/build_work/procursus-relaxin.gpg"
 
 gpg --yes --output "$BOOTSTRAP_APT_KEYRING" --export "$MEMO_PGP_SIGN_KEY"
 gpg --show-keys --with-fingerprint "$BOOTSTRAP_APT_KEYRING"
