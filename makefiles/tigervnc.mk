@@ -23,9 +23,9 @@ tigervnc:
 	@echo "Using previously built tigervnc."
 else
 ifneq (,$(findstring darwin,$(MEMO_TARGET)))
-tigervnc: tigervnc-setup libmd libx11 libxau libxmu xorgproto font-util libpixman gnutls libjpeg-turbo libxdamage libxfixes libxtst libxrandr libxfont2 mesa libgeneral libxdmcp libxdamage
+tigervnc: tigervnc-setup libmd libx11 libxau libxmu xorgproto font-util libpixman gnutls libjpeg-turbo libxdamage libxfixes libxtst libxrandr libxfont2 libxkbfile mesa libgeneral libxdmcp libxdamage
 else
-tigervnc: tigervnc-setup libmd libx11 libxau libxmu xorgproto font-util libpixman gnutls libjpeg-turbo libxdamage libxfixes libxtst libxrandr libxfont2 mesa libgeneral libxdmcp libxdamage openpam
+tigervnc: tigervnc-setup libmd libx11 libxau libxmu xorgproto font-util libpixman gnutls libjpeg-turbo libxdamage libxfixes libxtst libxrandr libxfont2 libxkbfile mesa libgeneral libxdmcp libxdamage openpam
 endif
 	cd $(BUILD_WORK)/tigervnc && SDKROOT="$(TARGET_SYSROOT)" cmake . \
 		$(DEFAULT_CMAKE_FLAGS) \
