@@ -38,10 +38,9 @@ mtr-package: mtr-stage
 	$(call SIGN,mtr,general.xml)
 
 	# Keep the raw-packet helper usable by unprivileged users.
-	$(FAKEROOT) chmod 4755 $(BUILD_DIST)/mtr/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/sbin/mtr-packet
 
 	# mtr.mk Make .debs
-	$(call PACK,mtr,DEB_MTR_V)
+	$(call PACK,mtr,DEB_MTR_V,chmod 4755 "$$1"/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/sbin/mtr-packet)
 
 	# mtr.mk Build cleanup
 	rm -rf $(BUILD_DIST)/mtr

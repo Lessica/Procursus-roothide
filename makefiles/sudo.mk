@@ -85,11 +85,8 @@ ifeq (,$(findstring darwin,$(MEMO_TARGET)))
 	find $(BUILD_DIST)/sudo -name '.ldid*' -type f -delete
 endif
 
-	# sudo.mk Permissions
-	$(FAKEROOT) chmod u+s $(BUILD_DIST)/sudo/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/sudo
-
 	# sudo.mk Make .debs
-	$(call PACK,sudo,DEB_SUDO_V)
+	$(call PACK,sudo,DEB_SUDO_V,chmod u+s "$$1"/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/sudo)
 
 	# sudo.mk Build cleanup
 	rm -rf $(BUILD_DIST)/sudo

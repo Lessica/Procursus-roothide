@@ -97,6 +97,13 @@ endif
 	$(call AFTER_BUILD)
 endif
 
+DISKDEV_CMDS_METADATA = chmod u+s "$$1"/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/quota
+ifneq ($(shell [ "$(CFVER_WHOLE)" -ge 1600 ] && echo 1),1)
+ifneq (,$(findstring ramdisk,$(MEMO_TARGET)))
+DISKDEV_CMDS_METADATA += ; chmod u+s "$$1"/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/sbin/umount
+endif
+endif
+
 diskdev-cmds-package: diskdev-cmds-stage
 	# diskdev-cmds.mk Package Structure
 	rm -rf $(BUILD_DIST)/diskdev-cmds
@@ -107,16 +114,8 @@ diskdev-cmds-package: diskdev-cmds-stage
 	# diskdev-cmds.mk Sign
 	$(call SIGN,diskdev-cmds,general.xml)
 
-	# system-cmds.mk Permissions
-	$(FAKEROOT) chmod u+s $(BUILD_DIST)/diskdev-cmds/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/quota
-ifneq ($(shell [ "$(CFVER_WHOLE)" -ge 1600 ] && echo 1),1)
-ifneq (,$(findstring ramdisk,$(MEMO_TARGET)))
-		$(FAKEROOT) chmod u+s $(BUILD_DIST)/diskdev-cmds/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/sbin/umount
-endif
-endif
-
 	# diskdev-cmds.mk Make .debs
-	$(call PACK,diskdev-cmds,DEB_DISKDEV-CMDS_V)
+	$(call PACK,diskdev-cmds,DEB_DISKDEV-CMDS_V,$(DISKDEV_CMDS_METADATA))
 
 	# diskdev-cmds.mk Build cleanup
 	rm -rf $(BUILD_DIST)/diskdev-cmds

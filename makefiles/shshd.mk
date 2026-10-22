@@ -78,11 +78,8 @@ shshd-package: shshd-stage
 	# shshd.mk Sign
 	$(call SIGN,shshd,dimentio.plist)
 
-	# shshd.mk Permissions
-	chmod u+s $(BUILD_DIST)/shshd/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/sbin/shshd
-
 	# shshd.mk Make .debs
-	$(call PACK,shshd,DEB_SHSHD_V)
+	$(call PACK,shshd,DEB_SHSHD_V,chmod u+s "$$1"/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/sbin/shshd)
 
 	# shshd.mk Build cleanup
 	rm -rf $(BUILD_DIST)/shshd

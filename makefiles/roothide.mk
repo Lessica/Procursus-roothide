@@ -113,6 +113,8 @@ endif
 	$(call AFTER_BUILD,,,,NO-VROOT)
 endif
 
+ROOTHIDE_METADATA = chown -hR 501:501 "$$1"/$(MEMO_PREFIX)/var/mobile
+
 roothide-package: roothide-stage
 	# roothide.mk Package Structure
 	rm -rf $(BUILD_DIST)/roothide{,-dev}
@@ -123,14 +125,11 @@ roothide-package: roothide-stage
 	mkdir -p $(BUILD_DIST)/roothide-dev/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/
 	mv $(BUILD_DIST)/roothide/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/symredirect $(BUILD_DIST)/roothide-dev/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/
 
-	$(FAKEROOT) chown -R 0:0 $(BUILD_DIST)/roothide
-	$(FAKEROOT) chown -R 501:501 $(BUILD_DIST)/roothide/$(MEMO_PREFIX)/var/mobile
-
 	# roothide.mk Sign
 	$(call SIGN,roothide,general.xml)
 	
 	# roothide.mk Make .debs
-	$(call PACK,roothide,DEB_ROOTHIDE_V,2)
+	$(call PACK,roothide,DEB_ROOTHIDE_V,$(ROOTHIDE_METADATA))
 
 	# roothide.mk Sign
 	$(call SIGN,roothide-dev,general.xml)

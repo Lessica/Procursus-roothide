@@ -86,11 +86,8 @@ dimentio-package: dimentio-stage
 	$(call SIGN,dimentio,dimentio.plist)
 	$(call SIGN,libdimentio$(DIMENTIO_SOVERSION),dimentio.plist)
 
-	# dimentio.mk Permissions
-	chmod u+s $(BUILD_DIST)/dimentio/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/dimentio
-
 	# dimentio.mk Make .debs
-	$(call PACK,dimentio,DEB_DIMENTIO_V)
+	$(call PACK,dimentio,DEB_DIMENTIO_V,chmod u+s "$$1"/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/dimentio)
 	$(call PACK,libdimentio$(DIMENTIO_SOVERSION),DEB_DIMENTIO_V)
 	$(call PACK,libdimentio-dev,DEB_DIMENTIO_V)
 

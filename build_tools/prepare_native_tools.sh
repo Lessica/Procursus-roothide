@@ -126,6 +126,13 @@ if [[ $HOST_PLATFORM == macos ]]; then
         for ((path_index=${#host_gnu_paths[@]}-1; path_index>=0; path_index--)); do
             export PATH="${host_gnu_paths[path_index]}:$PATH"
         done
+        # Homebrew's /bin/bash wrapper drops DYLD injection under SIP.
+        # dpkg-deb itself is native and does not require the Perl wrapper.
+        dpkg_prefix=$(brew --prefix dpkg)
+        dpkg_deb_native=$dpkg_prefix/libexec/bin/dpkg-deb
+        [[ -x $dpkg_deb_native ]] || dpkg_deb_native=$dpkg_prefix/bin/dpkg-deb
+        file -L "$dpkg_deb_native" | grep -q 'Mach-O' || fail 'a native dpkg-deb binary is required for fakeroot'
+        ln -sfn "$dpkg_deb_native" "$HOST_TOOL_ROOT/bin/dpkg-deb"
         # The save-state trap must use the same architecture as libfakeroot;
         # Apple's arm64e /bin/ls cannot load Homebrew's arm64 injection library.
         [[ -x $brew_prefix/opt/coreutils/libexec/gnubin/ls ]] || fail 'Homebrew coreutils is required for fakeroot state saving'

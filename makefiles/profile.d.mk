@@ -34,11 +34,8 @@ profile.d-package: profile.d-stage
 	# profile.d.mk Prep profile.d
 	cp -a $(BUILD_STAGE)/profile.d/$(MEMO_PREFIX)/etc $(BUILD_DIST)/profile.d/$(MEMO_PREFIX)
 
-	# profile.d.mk Permissions
-	$(FAKEROOT) chmod a+x $(BUILD_DIST)/profile.d/$(MEMO_PREFIX)/etc/profile.d/terminal.sh
-
 	# profile.d.mk Make .debs
-	$(call PACK,profile.d,DEB_PROFILED_V)
+	$(call PACK,profile.d,DEB_PROFILED_V,chmod a+x "$$1"/$(MEMO_PREFIX)/etc/profile.d/terminal.sh)
 
 	# profile.d.mk Build cleanup
 	rm -rf $(BUILD_DIST)/profile.d

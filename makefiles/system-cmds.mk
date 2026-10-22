@@ -108,6 +108,10 @@ endif
 	$(call AFTER_BUILD)
 endif
 
+SYSTEM_CMDS_METADATA = \
+	chmod u+s "$$1"/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/{passwd,login,chpass,newgrp}; \
+	chmod a+x "$$1"/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/pagesize
+
 system-cmds-package: system-cmds-stage
 	# system-cmds.mk Package Structure
 	rm -rf $(BUILD_DIST)/system-cmds
@@ -130,12 +134,8 @@ endif
 
 	find $(BUILD_DIST)/system-cmds -name '.ldid*' -type f -delete
 
-	# system-cmds.mk Permissions
-	$(FAKEROOT) chmod u+s $(BUILD_DIST)/system-cmds/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/{passwd,login,chpass,newgrp}
-	$(FAKEROOT) chmod a+x $(BUILD_DIST)/system-cmds/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/pagesize
-
 	# system-cmds.mk Make .debs
-	$(call PACK,system-cmds,DEB_SYSTEM-CMDS_V)
+	$(call PACK,system-cmds,DEB_SYSTEM-CMDS_V,$(SYSTEM_CMDS_METADATA))
 
 	# system-cmds.mk Build cleanup
 	rm -rf $(BUILD_DIST)/system-cmds

@@ -1032,8 +1032,9 @@ AFTER_BUILD = \
 	if [ -z "$(5)" ]; then touch $(BUILD_WORK)/$$pkg/.build_complete; fi; \
 	find $(BUILD_BASE) -ignore_readdir_race -name '*.la' \( -type f -o -type l \) -delete
 
+# Argument 3 applies final metadata in a fresh fakeroot session ($1 is the package root).
 # Argument 5 finalizes signed content before metadata and payload hashes are written.
-PACK = \
+PACK = ( set -e; \
 	if [ ! -z "$(findstring roothide,$(MEMO_TARGET))" ];then \
 		for file in $$(find $(BUILD_DIST)/$(1) -type f -exec sh -c "file -b '{}' | grep 'Mach-O' | grep -q 'executable'" \; -print); do \
 			$(LDID) -M -S$(BUILD_MISC)/entitlements/roothide.xml $$file || exit 1; \
@@ -1056,19 +1057,10 @@ PACK = \
 			fi; \
 		fi; \
 	done; \
-	if [ -z $(3) ]; then \
-		if [ ! "$(MEMO_QUIET)" == "1" ]; then \
-		echo Setting $(1) owner to 0:0.; \
-		fi; \
-		$(FAKEROOT) chown -R 0:0 $(BUILD_DIST)/$(1)/* &>/dev/null; \
-	elif [ $(3) = "2" ]; then \
-		if [ ! "$(MEMO_QUIET)" == "1" ]; then \
-		echo $(1) owner set within individual makefile.; \
-		fi; \
-	fi; \
 	if [ -d "$(BUILD_DIST)/$(1)/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share/locale" ] && [ ! "$(shell grep Package: $(BUILD_INFO)/$(1).control | cut -f2 -d ' ')" = "gettext-localizations" ]; then \
 		rm -rf $(BUILD_DIST)/$(1)/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share/locale/*/LC_{MONETARY,TIME,COLLATE,CTYPE,NUMERIC}; \
 	fi; \
+	find $(BUILD_DIST)/$(1) -name '.DS_Store' -type f -delete; \
 	SIZE=$$(du -sk $(BUILD_DIST)/$(1) | cut -f 1); \
 	mkdir -p $(BUILD_DIST)/$(1)/DEBIAN; \
 	for i in control postinst preinst postrm prerm extrainst_ conffiles triggers; do \
@@ -1123,20 +1115,23 @@ PACK = \
 	fi; \
 	[ -s $(BUILD_DIST)/$(1)/DEBIAN/conffiles ] || rm -f $(BUILD_DIST)/$(1)/DEBIAN/conffiles; \
 	sed -i '$$a\' $(BUILD_DIST)/$(1)/DEBIAN/control; \
-	cd $(BUILD_DIST)/$(1) && find . -type f ! -regex '.*/\.hg/.*' ! -regex '.*?debian-binary.*' ! -regex '.*?DEBIAN.*' -printf '"%P" ' | xargs md5sum > $(BUILD_DIST)/$(1)/DEBIAN/md5sums; \
-	$(FAKEROOT) chmod 0755 $(BUILD_DIST)/$(1)/DEBIAN/*; \
+	cd $(BUILD_DIST)/$(1); ( set -o pipefail; find . -type f ! -regex '.*/\.hg/.*' ! -regex '.*?debian-binary.*' ! -regex '.*?DEBIAN.*' -printf '"%P" ' | xargs md5sum > $(BUILD_DIST)/$(1)/DEBIAN/md5sums ); \
 	if [ ! "$(MEMO_QUIET)" == "1" ]; then \
 	echo "Installed-Size: $$SIZE"; \
 	fi; \
 	echo "Installed-Size: $$SIZE" >> $(BUILD_DIST)/$(1)/DEBIAN/control; \
-	find $(BUILD_DIST)/$(1) -name '.DS_Store' -type f -delete; \
 	mkdir -p $(BUILD_DIST)/../$$(echo $@ | sed 's/-package//'); \
 	mkdir -p $(BUILD_ROOT)/pack-cache/$(MEMO_TARGET)/$(MEMO_CFVER); \
 	rm -rf $(BUILD_ROOT)/pack-cache/$(MEMO_TARGET)/$(MEMO_CFVER)/$(1); \
 	cp -a $(BUILD_DIST)/$(1) $(BUILD_ROOT)/pack-cache/$(MEMO_TARGET)/$(MEMO_CFVER)/; \
 	deb="$(BUILD_DIST)/../$$(echo $@ | sed 's/-package//')/$$(grep Package: $(BUILD_DIST)/$(1)/DEBIAN/control | cut -f2 -d ' ')_$($(2))_$$(grep Architecture: $(BUILD_DIST)/$(1)/DEBIAN/control | cut -f2 -d ' ').deb"; \
-	$(FAKEROOT) $(DPKG_DEB) -b $(BUILD_DIST)/$(1) "$$deb" && \
-	if [ "$(BUILD_STATUS_EVENTS)" = 1 ]; then printf '\n[build-deb] %s\n' "$$deb"; fi
+	fakeroot -- bash -e -c ' \
+		chown -hR 0:0 "$$1"; \
+		$(if $(strip $(3)),$(3);) \
+		chmod 0755 "$$1/DEBIAN/"*; \
+		shift; exec "$$@" \
+	' _ "$(BUILD_DIST)/$(1)" $(DPKG_DEB) -b "$(BUILD_DIST)/$(1)" "$$deb"; \
+	if [ "$(BUILD_STATUS_EVENTS)" = 1 ]; then printf '\n[build-deb] %s\n' "$$deb"; fi )
 
 GITHUB_ARCHIVE = if [ "x$(5)" != "x" ]; then \
 						$(call DOWNLOAD_FILE,$(BUILD_SOURCE)/$(5)-$(3).tar.gz, \
@@ -1354,16 +1349,13 @@ ramdisk:
 	+MEMO_NO_IOSEXEC=1 $(MAKE) $(RAMDISK_PROJECTS:%=%-package)
 	rm -rf $(BUILD_STRAP)/strap
 	rm -f $(BUILD_DIST)/bootstrap_tools.tar*
-	rm -f $(BUILD_DIST)/.fakeroot_bootstrap
-	touch $(BUILD_DIST)/.fakeroot_bootstrap
 	for DEB in $$(find $(BUILD_DIST)/../ -name "*.deb"); do \
 		dpkg-deb -x $$DEB $(BUILD_DIST)/strap; \
 	done
 	ln -s $(MEMO_PREFIX)/bin/bash $(BUILD_DIST)/strap/$(MEMO_PREFIX)/bin/sh
 	echo -e "/bin/sh\n" > $(BUILD_DIST)/strap/$(MEMO_PREFIX)/etc/shells
 	rm -rf $(BUILD_DIST)/strap/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/{include,lib/{*.a,pkgconfig},share/{doc,man}}
-	export FAKEROOT='fakeroot -i $(BUILD_DIST)/.fakeroot_bootstrap -s $(BUILD_DIST)/.fakeroot_bootstrap --'; \
-	cd $(BUILD_DIST)/strap && $$FAKEROOT tar -ckpf $(BUILD_DIST)/bootstrap_tools.tar .
+	cd $(BUILD_DIST)/strap && fakeroot -- tar -ckpf $(BUILD_DIST)/bootstrap_tools.tar .
 	gzip -9 $(BUILD_DIST)/bootstrap_tools.tar
 	rm -rf $(BUILD_DIST)/strap
 
@@ -1389,16 +1381,13 @@ bootstrap:: strapprojects
 	cp -a $(BUILD_STRAP)/* $(BUILD_DIST)
 	mkdir -p $(BUILD_STAGE)
 	rm -rf $(BUILD_STRAP)/strap
-	rm -f $(BUILD_STAGE)/.fakeroot_bootstrap
-	touch $(BUILD_STAGE)/.fakeroot_bootstrap
 	mkdir -p $(BUILD_STRAP)/strap/$(MEMO_PREFIX)/Library/dpkg/info
 	touch $(BUILD_STRAP)/strap/$(MEMO_PREFIX)/Library/dpkg/{status,available}
 	set -e; PKGS="$(BOOTSTRAP_PKGS)"; \
-	export FAKEROOT='fakeroot -i $(BUILD_STAGE)/.fakeroot_bootstrap -s $(BUILD_STAGE)/.fakeroot_bootstrap --'; \
 	cd $(BUILD_STRAP); for DEB in $$PKGS; do \
 		if [ ! -f $$DEB ]; then echo "Missing Bootstrap member: $$DEB" >&2; exit 1; fi; \
 		PKGNAME=$$(basename $$DEB | cut -f1 -d"_"); \
-		$$FAKEROOT dpkg-deb -R $$DEB $(BUILD_STRAP)/strap; \
+		dpkg-deb -R $$DEB $(BUILD_STRAP)/strap; \
 		cp $(BUILD_STRAP)/strap/DEBIAN/md5sums $(BUILD_STRAP)/strap/$(MEMO_PREFIX)/Library/dpkg/info/$$PKGNAME.md5sums; \
 		dpkg-deb -c $$DEB | cut -f2- -d"." | awk -F'\\-\\>' '{print $$1}' | sed '1 s/$$/./' | sed 's/\/$$//' > $(BUILD_STRAP)/strap/$(MEMO_PREFIX)/Library/dpkg/info/$$PKGNAME.list; \
 		for script in preinst postinst extrainst_ prerm postrm conffiles triggers; do \
@@ -1449,11 +1438,12 @@ endif
 		sed -e '/@SSH_STRAP@/d' -e 's|@MEMO_PREFIX@|$(MEMO_PREFIX)|g' -e 's|@MEMO_SUB_PREFIX@|$(MEMO_SUB_PREFIX)|g' $(BUILD_MISC)/prep_bootstrap.sh > $(BUILD_STRAP)/strap/$(MEMO_PREFIX)/prep_bootstrap.sh; \
 	fi; \
 	chmod +x $(BUILD_STRAP)/strap/$(MEMO_PREFIX)/prep_bootstrap.sh; \
-	export FAKEROOT='fakeroot -i $(BUILD_STAGE)/.fakeroot_bootstrap -s $(BUILD_STAGE)/.fakeroot_bootstrap --'; \
-	$$FAKEROOT chown 0:80 $(BUILD_STRAP)/strap/$(MEMO_PREFIX)/Library; \
-	$$FAKEROOT chown 0:3 $(BUILD_STRAP)/strap/private/var/empty; \
-	$$FAKEROOT chown 0:1 $(BUILD_STRAP)/strap/private/var/run; \
-	cd $(BUILD_STRAP)/strap && $$FAKEROOT tar -cf ../bootstrap.tar .
+	fakeroot -- bash -e -c ' \
+		chown 0:80 "$$1/$(MEMO_PREFIX)/Library"; \
+		chown 0:3 "$$1/private/var/empty"; \
+		chown 0:1 "$$1/private/var/run"; \
+		cd "$$1" && tar -cf ../bootstrap.tar . \
+	' _ "$(BUILD_STRAP)/strap"
 	@if [[ "$(SSH_STRAP)" = 1 ]]; then \
 		BOOTSTRAP=bootstrap-ssh.tar.zst; \
 	else \
@@ -1510,11 +1500,6 @@ endif
 		sed -i '/^$$/d' $(BUILD_STRAP)/strap/$(MEMO_PREFIX)/etc/apt/sources.list.d/procursus.sources; \
 		echo 'Signed-By: /usr/share/keyrings/owngoal-procursus.gpg' >> $(BUILD_STRAP)/strap/$(MEMO_PREFIX)/etc/apt/sources.list.d/procursus.sources; \
 	fi
-	export FAKEROOT='fakeroot -i $(BUILD_STAGE)/.fakeroot_bootstrap -s $(BUILD_STAGE)/.fakeroot_bootstrap --'; \
-	$$FAKEROOT chown -hR 0:0 $(BUILD_STRAP)/strap; \
-	$$FAKEROOT chown 0:0 $(BUILD_STRAP)/strap/$(MEMO_PREFIX)/var/root; \
-	$$FAKEROOT chown 501:501 $(BUILD_STRAP)/strap/$(MEMO_PREFIX)/var/mobile; \
-	$$FAKEROOT chmod 1777 $(BUILD_STRAP)/strap/$(MEMO_PREFIX)/tmp; \
 	if [ ! -z "$(findstring roothide,$(MEMO_TARGET))" ]; then \
 		ln -s . $(BUILD_STRAP)/strap/$(MEMO_PREFIX)/.jbroot ; \
 		for file in `ls $(BUILD_STRAP)/strap/$(MEMO_PREFIX)/$(MEMO_SUB_PREFIX)/$(MEMO_ALT_PREFIX)/lib/`; do \
@@ -1541,9 +1526,13 @@ endif
 			fi; \
 		done <<<  $$(find $(BUILD_STRAP)/strap/$(MEMO_PREFIX) -type f -exec sh -c "file -ib '{}' | grep -q 'x-mach-binary; charset=binary'" \; -print); \
 	fi; \
-	$$FAKEROOT chown -hR 0:0 $(BUILD_STRAP)/strap; \
-	$$FAKEROOT chown 501:501 $(BUILD_STRAP)/strap/$(MEMO_PREFIX)/var/mobile; \
-	cd $(BUILD_STRAP)/strap && $$FAKEROOT tar -cf ../bootstrap.tar .
+	fakeroot -- bash -e -c ' \
+		chown -hR 0:0 "$$1"; \
+		$(if $(strip $(BASE_METADATA)),$(BASE_METADATA);) \
+		$(if $(findstring roothide,$(MEMO_TARGET)),$(ROOTHIDE_METADATA);) \
+		chmod 1777 "$$1/$(MEMO_PREFIX)/tmp"; \
+		cd "$$1" && tar -cf ../bootstrap.tar . \
+	' _ "$(BUILD_STRAP)/strap"
 	@if [[ "$(SSH_STRAP)" = 1 ]]; then \
 		BOOTSTRAP=bootstrap-ssh.tar.zst; \
 	else \
@@ -1559,12 +1548,9 @@ endif
 	echo "$(BUILD_STRAP)/$${BOOTSTRAP}"
 endif # ($(MEMO_ROOTLESS),)
 
-%-package: FAKEROOT=fakeroot -i $(BUILD_STAGE)/.fakeroot_$$(echo $@ | sed 's/\(.*\)-package/\1/') -s $(BUILD_STAGE)/.fakeroot_$$(echo $@ | sed 's/\(.*\)-package/\1/') --
 %-package: .SHELLFLAGS=-O extglob -c
 %-stage: %
 	mkdir -p $(BUILD_DIST) $(BUILD_STAGE)
-	rm -f $(BUILD_STAGE)/.fakeroot_$*
-	touch $(BUILD_STAGE)/.fakeroot_$*
 
 REPROJ=$(shell echo $@ | cut -f2- -d"-")
 REPROJ2=$(shell echo $(REPROJ) | sed 's/-package//' | sed 's/-setup//')

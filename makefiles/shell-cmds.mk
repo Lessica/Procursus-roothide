@@ -76,13 +76,8 @@ endif
 	$(LDID) -M -S$(BUILD_MISC)/entitlements/pam.xml $(BUILD_DIST)/shell-cmds/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/su
 	find $(BUILD_DIST)/shell-cmds -name '.ldid*' -type f -delete
 
-	# shell-cmds.mk Permissions
-ifeq (,$(findstring darwin,$(MEMO_TARGET)))
-	$(FAKEROOT) chmod u+s $(BUILD_DIST)/shell-cmds/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/su
-endif
-
 	# shell-cmds.mk Make .debs
-	$(call PACK,shell-cmds,DEB_SHELL-CMDS_V)
+	$(call PACK,shell-cmds,DEB_SHELL-CMDS_V,$(if $(findstring darwin,$(MEMO_TARGET)),,chmod u+s "$$1"/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/su))
 
 	# shell-cmds.mk Build cleanup
 	rm -rf $(BUILD_DIST)/shell-cmds

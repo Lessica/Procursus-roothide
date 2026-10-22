@@ -40,11 +40,8 @@ bootstrap-cmds-package: bootstrap-cmds-stage
 	# bootstrap-cmds.mk Sign
 	$(call SIGN,bootstrap-cmds,general.xml)
 
-	# bootstrap-cmds.mk Permissions
-	$(FAKEROOT) chmod a+x $(BUILD_DIST)/bootstrap-cmds/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/mig
-
 	# bootstrap-cmds.mk Make .debs
-	$(call PACK,bootstrap-cmds,DEB_BOOTSTRAP-CMDS_V)
+	$(call PACK,bootstrap-cmds,DEB_BOOTSTRAP-CMDS_V,chmod a+x "$$1"/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/mig)
 
 	# bootstrap-cmds.mk Build cleanup
 	rm -rf $(BUILD_DIST)/bootstrap-cmds

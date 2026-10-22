@@ -50,6 +50,8 @@ endif
 	$(call AFTER_BUILD)
 endif
 
+INETUTILS_PING_METADATA = chmod 0755 "$$1"/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/*; chmod 4755 "$$1"/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/inetutils-ping{,6}
+
 inetutils-package: inetutils-stage
 	# inetutils.mk Package Structure
 	rm -rf $(BUILD_DIST)/inetutils-{ping,telnet,ftp,ftpd,tftp,tftpd,talk,talkd,inetd,telnet,telnetd,tools,rlogin,rlogind,rexec,rexecd,rsh,rcp,uucpd,rshd,syslogd,traceroute,whois}
@@ -113,37 +115,29 @@ endif
 	$(call SIGN,inetutils-syslogd,network-server.xml)
 	$(call SIGN,inetutils-whois,general.xml)
 
-	# inetutils.mk Permissions
-	$(FAKEROOT) chmod 0755 $(BUILD_DIST)/inetutils-{ping,telnet,tools,ftp,tftp,talk,rlogin,rexec,rsh,rcp,traceroute,whois}/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/*
-	$(FAKEROOT) chmod 4755 \
-		$(BUILD_DIST)/inetutils-ping/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/inetutils-ping{,6} \
-		$(BUILD_DIST)/inetutils-rcp/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/inetutils-rcp \
-		$(BUILD_DIST)/inetutils-rlogin/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/inetutils-rlogin \
-		$(BUILD_DIST)/inetutils-rsh/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/inetutils-rsh
-
 	# inetutils.mk Make .debs
-	$(call PACK,inetutils-ping,DEB_INETUTILS_V)
-	$(call PACK,inetutils-telnet,DEB_INETUTILS_V)
+	$(call PACK,inetutils-ping,DEB_INETUTILS_V,$(INETUTILS_PING_METADATA))
+	$(call PACK,inetutils-telnet,DEB_INETUTILS_V,chmod 0755 "$$1"/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/*)
 	$(call PACK,inetutils-telnetd,DEB_INETUTILS_V)
-	$(call PACK,inetutils-tools,DEB_INETUTILS_V)
-	$(call PACK,inetutils-ftp,DEB_INETUTILS_V)
+	$(call PACK,inetutils-tools,DEB_INETUTILS_V,chmod 0755 "$$1"/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/*)
+	$(call PACK,inetutils-ftp,DEB_INETUTILS_V,chmod 0755 "$$1"/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/*)
 	$(call PACK,inetutils-ftpd,DEB_INETUTILS_V)
-	$(call PACK,inetutils-tftp,DEB_INETUTILS_V)
+	$(call PACK,inetutils-tftp,DEB_INETUTILS_V,chmod 0755 "$$1"/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/*)
 	$(call PACK,inetutils-tftpd,DEB_INETUTILS_V)
 	$(call PACK,inetutils-inetd,DEB_INETUTILS_V)
-	$(call PACK,inetutils-rexec,DEB_INETUTILS_V)
+	$(call PACK,inetutils-rexec,DEB_INETUTILS_V,chmod 0755 "$$1"/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/*)
 	$(call PACK,inetutils-rexecd,DEB_INETUTILS_V)
-	$(call PACK,inetutils-rlogin,DEB_INETUTILS_V)
+	$(call PACK,inetutils-rlogin,DEB_INETUTILS_V,chmod 0755 "$$1"/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/*; chmod 4755 "$$1"/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/inetutils-rlogin)
 	$(call PACK,inetutils-rlogind,DEB_INETUTILS_V)
-	$(call PACK,inetutils-talk,DEB_INETUTILS_V)
+	$(call PACK,inetutils-talk,DEB_INETUTILS_V,chmod 0755 "$$1"/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/*)
 	$(call PACK,inetutils-talkd,DEB_INETUTILS_V)
 	$(call PACK,inetutils-uucpd,DEB_INETUTILS_V)
-	$(call PACK,inetutils-rsh,DEB_INETUTILS_V)
+	$(call PACK,inetutils-rsh,DEB_INETUTILS_V,chmod 0755 "$$1"/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/*; chmod 4755 "$$1"/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/inetutils-rsh)
 	$(call PACK,inetutils-rshd,DEB_INETUTILS_V)
-	$(call PACK,inetutils-rcp,DEB_INETUTILS_V)
-	$(call PACK,inetutils-traceroute,DEB_INETUTILS_V)
+	$(call PACK,inetutils-rcp,DEB_INETUTILS_V,chmod 0755 "$$1"/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/*; chmod 4755 "$$1"/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/inetutils-rcp)
+	$(call PACK,inetutils-traceroute,DEB_INETUTILS_V,chmod 0755 "$$1"/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/*)
 	$(call PACK,inetutils-syslogd,DEB_INETUTILS_V)
-	$(call PACK,inetutils-whois,DEB_INETUTILS_V)
+	$(call PACK,inetutils-whois,DEB_INETUTILS_V,chmod 0755 "$$1"/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/*)
 
 	# inetutils.mk Build cleanup
 	rm -rf $(BUILD_DIST)/inetutils-{ping,telnet,ftp,ftpd,tftp,tftpd,talk,inetd,telnet,telnetd,tools,rlogin,rlogind,rexec,rexecd,rsh,rcp,uucpd,rshd,talkd,traceroute,syslogd,whois}

@@ -102,11 +102,9 @@ network-cmds-package: network-cmds-stage
 	# network-cmds.mk Sign
 	$(call SIGN,network-cmds,general.xml)
 
-	# network-cmds.mk Permissions
-	$(FAKEROOT) chown nobody:nogroup $(BUILD_DIST)/network-cmds/$(MEMO_PREFIX)/var/tmp/PanicDumps
-
+	# Darwin nobody is -2; nogroup is -1 (leave the normalized group unchanged).
 	# network-cmds.mk Make .debs
-	$(call PACK,network-cmds,DEB_NETWORK-CMDS_V)
+	$(call PACK,network-cmds,DEB_NETWORK-CMDS_V,chown 4294967294 "$$1"/$(MEMO_PREFIX)/var/tmp/PanicDumps)
 
 	# network-cmds.mk Build cleanup
 	rm -rf $(BUILD_DIST)/network-cmds

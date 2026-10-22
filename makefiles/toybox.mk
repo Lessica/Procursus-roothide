@@ -48,10 +48,9 @@ toybox-package: toybox-stage
 	$(call SIGN,toybox,dd.xml)
 	
 	# toybox.mk Permissions
-	$(FAKEROOT) chmod u+s $(BUILD_DIST)/toybox/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/toybox
 	
 	# toybox.mk Make .debs
-	$(call PACK,toybox,DEB_TOYBOX_V)
+	$(call PACK,toybox,DEB_TOYBOX_V,chmod u+s "$$1"/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/toybox)
 	
 	# toybox.mk Build cleanup
 	rm -rf $(BUILD_DIST)/toybox

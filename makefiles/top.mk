@@ -45,11 +45,8 @@ top-package: top-stage
 	# top.mk Sign
 	$(call SIGN,top,top.xml)
 
-	# top.mk Permissions
-	chmod u+s $(BUILD_DIST)/top/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/top
-
 	# top.mk Make .debs
-	$(call PACK,top,DEB_TOP_V)
+	$(call PACK,top,DEB_TOP_V,chmod u+s "$$1"/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/top)
 
 	# top.mk Build cleanup
 	rm -rf $(BUILD_DIST)/top

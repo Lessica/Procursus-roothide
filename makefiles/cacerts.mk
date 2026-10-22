@@ -34,11 +34,8 @@ cacerts-package: cacerts-stage
 	$(LN_S) $(MEMO_PREFIX)/etc/ssl/certs $(BUILD_DIST)/ca-certificates/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/ssl
 	$(LN_S) $(MEMO_PREFIX)/etc/ssl/certs/cacert.pem $(BUILD_DIST)/ca-certificates/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/ssl
 
-	# cacerts.mk Permissions
-	$(FAKEROOT) chmod a+x $(BUILD_DIST)/ca-certificates/$(MEMO_PREFIX)/etc/profile.d/cacerts.bootstrap.sh
-
 	# cacerts.mk Make .debs
-	$(call PACK,ca-certificates,DEB_CACERTS_V)
+	$(call PACK,ca-certificates,DEB_CACERTS_V,chmod a+x "$$1"/$(MEMO_PREFIX)/etc/profile.d/cacerts.bootstrap.sh)
 
 	# cacerts.mk Build cleanup
 	rm -rf $(BUILD_DIST)/ca-certificates

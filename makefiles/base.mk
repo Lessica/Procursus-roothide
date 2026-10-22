@@ -55,6 +55,27 @@ endif
 	$(call AFTER_BUILD)
 endif
 
+BASE_METADATA = chmod 0644 "$$1"/$(MEMO_PREFIX)/var/run/utmp;
+ifeq (,$(MEMO_ROOTLESS))
+BASE_METADATA += \
+	chown 0:80 "$$1"/{,Applications,Library/{,Frameworks,Preferences,Ringtones,Wallpaper},etc,tmp,var/{,db}}; \
+	chown 0:20 "$$1"/var/local; \
+	chown -hR 501:501 "$$1"/var/mobile; \
+	chmod 0775 "$$1"/{Applications,Library,var/run}; \
+	chmod 2775 "$$1"/var/local; \
+	chmod 1775 "$$1"/var/{lock,tmp}; \
+	chmod 0775 "$$1"/var/root;
+else
+BASE_METADATA += \
+	chown -hR 501:501 "$$1"/$(MEMO_PREFIX)/var/mobile; \
+	chmod 0644 "$$1"/$(MEMO_PREFIX)/etc/{passwd,group}; \
+	chmod 0600 "$$1"/$(MEMO_PREFIX)/etc/master.passwd; \
+	chmod 1775 "$$1"/$(MEMO_PREFIX)/tmp;
+endif
+BASE_METADATA += \
+	chown 0:1 "$$1"/$(MEMO_PREFIX)/var/run; \
+	chown 0:3 "$$1"/$(MEMO_PREFIX)/var/empty
+
 base-package: base-stage
 	# base.mk Package Structure
 	rm -rf $(BUILD_DIST)/base
@@ -62,28 +83,8 @@ base-package: base-stage
 	# base.mk Prep base
 	cp -a $(BUILD_STAGE)/base $(BUILD_DIST)
 
-	$(FAKEROOT) chmod 0644 $(BUILD_DIST)/base/$(MEMO_PREFIX)/var/run/utmp
-ifeq (,$(MEMO_ROOTLESS))
-	$(FAKEROOT) chown 0:80 $(BUILD_DIST)/base/{,Applications,Library/{,Frameworks,Preferences,Ringtones,Wallpaper},etc,tmp,var/{,db}}
-	$(FAKEROOT) chown 0:20 $(BUILD_DIST)/base/var/local
-	$(FAKEROOT) chown -R 501:501 $(BUILD_DIST)/base/var/mobile
-	$(FAKEROOT) chmod 0775 $(BUILD_DIST)/base/{Applications,Library,var/run}
-	$(FAKEROOT) chmod 2775 $(BUILD_DIST)/base/var/local
-	$(FAKEROOT) chmod 1775 $(BUILD_DIST)/base/var/{lock,tmp}
-	$(FAKEROOT) chmod 0775 $(BUILD_DIST)/base/var/root
-else
-	$(FAKEROOT) chown -R 0:0 $(BUILD_DIST)/base
-	$(FAKEROOT) chown -R 501:501 $(BUILD_DIST)/base/$(MEMO_PREFIX)/var/mobile
-	$(FAKEROOT) chmod 0644 $(BUILD_DIST)/base/$(MEMO_PREFIX)/etc/{passwd,group}
-	$(FAKEROOT) chmod 0600 $(BUILD_DIST)/base/$(MEMO_PREFIX)/etc/master.passwd
-	$(FAKEROOT) chmod 1775 $(BUILD_DIST)/base/$(MEMO_PREFIX)/tmp
-endif
-
-	$(FAKEROOT) chown 0:1 $(BUILD_DIST)/base/$(MEMO_PREFIX)/var/run
-	$(FAKEROOT) chown 0:3 $(BUILD_DIST)/base/$(MEMO_PREFIX)/var/empty
-
 	# base.mk Make .debs
-	$(call PACK,base,DEB_BASE_V,2)
+	$(call PACK,base,DEB_BASE_V,$(BASE_METADATA))
 
 	# base.mk Build cleanup
 	rm -rf $(BUILD_DIST)/base
