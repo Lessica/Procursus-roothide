@@ -5,7 +5,7 @@ endif
 SUBPROJECTS += tcc
 TCC_COMMIT  := 605538f46d277fe0931f72f032a24a675417ee2a
 TCC_VERSION := 0.9.27+git20230222.$(shell echo $(TCC_COMMIT) | cut -c -7)
-DEB_TCC_V   ?= $(TCC_VERSION)-2
+DEB_TCC_V   ?= $(TCC_VERSION)-3
 
 ### Host-runnable compilers from this exact source commit build all runtime
 ### archives.  The installed compiler programs themselves target the device.
@@ -38,6 +38,7 @@ tcc: tcc-setup
 		tcc $(addsuffix -tcc,$(TCC_CROSS_TARGETS))
 	cd $(BUILD_WORK)/tcc && ./configure -C \
 		$(DEFAULT_CONFIGURE_FLAGS) \
+		--targetos=Darwin \
 		--cpu=$(MEMO_ARCH) \
 		--cc=$(CC) \
 		--ar=$(AR) \

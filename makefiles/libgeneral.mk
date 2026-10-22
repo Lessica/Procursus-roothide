@@ -19,8 +19,7 @@ libgeneral:
 	@echo "Using previously built libgeneral."
 else
 libgeneral: libgeneral-setup
-	sed -i '/configure/d' $(BUILD_WORK)/libgeneral/autogen.sh
-	cd $(BUILD_WORK)/libgeneral && ./autogen.sh && \
+	cd $(BUILD_WORK)/libgeneral && autoreconf -fi && \
 	sed -i 's/-keep_private_externs -nostdlib/-keep_private_externs $(PLATFORM_VERSION_MIN) -arch $(MEMO_ARCH) -nostdlib/g' $(BUILD_WORK)/libgeneral/configure && \
 		./configure $(DEFAULT_CONFIGURE_FLAGS)
 	+$(MAKE) -C $(BUILD_WORK)/libgeneral

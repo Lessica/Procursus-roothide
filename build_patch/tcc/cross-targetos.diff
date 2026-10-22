@@ -1,0 +1,35 @@
+--- a/configure
++++ b/configure
+@@ -133,6 +133,8 @@
+   ;;
+   --source-path=*) source_path=`echo $opt | cut -d '=' -f 2-`
+   ;;
++  --targetos=*) targetos=`echo $opt | cut -d '=' -f 2-`
++  ;;
+   --cross-prefix=*) cross_prefix=`echo $opt | cut -d '=' -f 2-`
+   ;;
+   --cc=*) cc=`echo $opt | cut -d '=' -f 2-`
+@@ -188,6 +190,14 @@
+ 
+ cc="${cross_prefix}${cc}"
+ ar="${cross_prefix}${ar}"
++
++# Select the target format independently of the build machine.
++if test "$targetos" = "Darwin" -a "$darwin" != "yes"; then
++  darwin=yes
++  dwarf=4
++  confvars="$confvars OSX"
++  DLLSUF=".dylib"
++fi
+ 
+ # Checking for CFLAGS
+ test -z "$CFLAGS" && CFLAGS="-Wall -O2"
+@@ -358,7 +368,7 @@
+ exit 1
+ fi
+ 
+-if test -z "$cross_prefix" ; then
++if test -z "$cross_prefix" -a "$targetos" = "`uname`" ; then
+   CONFTEST=./conftest$EXESUF
+   if ! $cc -o $CONFTEST $source_path/conftest.c ; then
+     echo "configure: error: '$cc' failed to compile conftest.c."
