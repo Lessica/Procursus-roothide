@@ -36,7 +36,7 @@ ifneq ($(RUBY_NATIVE_READY),yes)
 		SDKROOT="$(MACOSX_SYSROOT)" MACOSX_DEPLOYMENT_TARGET="$(MACOSX_DEPLOYMENT_TARGET)" \
 		PKG_CONFIG_PATH="$(RUBY_NATIVE_PKG_CONFIG_PATH)" \
 		../configure $(BUILD_CONFIGURE_FLAGS) $(RUBY_NATIVE_CONFIGURE_ARGS) --prefix=$(BUILD_WORK)/ruby/nativebuild/install --disable-install-rdoc --disable-install-doc
-	+SDKROOT="$(MACOSX_SYSROOT)" PKG_CONFIG_PATH="$(RUBY_NATIVE_PKG_CONFIG_PATH)" $(MAKE) -C $(BUILD_WORK)/ruby/nativebuild install
+	+SDKROOT="" PKG_CONFIG_PATH="$(RUBY_NATIVE_PKG_CONFIG_PATH)" $(MAKE) -C $(BUILD_WORK)/ruby/nativebuild install
 
 endif
 

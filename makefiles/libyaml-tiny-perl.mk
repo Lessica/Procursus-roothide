@@ -16,7 +16,7 @@ ifneq ($(wildcard $(BUILD_WORK)/libyaml-tiny-perl/.build_complete),)
 libyaml-tiny-perl:
 	@echo "Using previously built libyaml-tiny-perl."
 else
-libyaml-tiny-perl: libyaml-tiny-perl-setup
+libyaml-tiny-perl: libyaml-tiny-perl-setup perl
 	cd $(BUILD_WORK)/libyaml-tiny-perl && $(PERL_HOST) Makefile.PL \
 		$(DEFAULT_PERL_MAKE_FLAGS)
 	+$(MAKE) -C $(BUILD_WORK)/libyaml-tiny-perl

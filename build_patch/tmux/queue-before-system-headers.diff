@@ -1,0 +1,28 @@
+--- a/compat.h
++++ b/compat.h
+@@ -17,6 +17,12 @@
+ #ifndef COMPAT_H
+ #define COMPAT_H
+ 
++#ifdef HAVE_QUEUE_H
++#include <sys/queue.h>
++#else
++#include "compat/queue.h"
++#endif
++
+ #include <sys/types.h>
+ #include <sys/ioctl.h>
+ #include <sys/uio.h>
+@@ -134,12 +140,6 @@
+ #include <stdint.h>
+ #else
+ #include <inttypes.h>
+-#endif
+-
+-#ifdef HAVE_QUEUE_H
+-#include <sys/queue.h>
+-#else
+-#include "compat/queue.h"
+ #endif
+ 
+ #ifdef HAVE_TREE_H

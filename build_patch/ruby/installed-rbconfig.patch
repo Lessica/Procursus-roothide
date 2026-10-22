@@ -11,7 +11,7 @@
 +Find.find(stage) do |path|
 +  next unless File.file?(path) && File.basename(path) == 'rbconfig.rb'
 +  text = File.read(path)
-+  text = text.gsub("-isysroot #{sysroot}", '').gsub(base, '')
++  text = text.gsub("-isysroot #{sysroot}", '').gsub(sysroot, '').gsub(base, '')
 +  text = text.gsub("#{source}/nativebuild/install/bin/ruby", target_ruby)
 +  text = text.gsub(cxx, 'clang++').gsub(cc, 'clang').gsub(pkgconfig, 'pkg-config')
 +  text = text.gsub(source, '.')

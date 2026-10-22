@@ -28,6 +28,8 @@ redis:
 else
 redis: redis-setup libjemalloc openssl
 	+$(MAKE) -C $(BUILD_WORK)/redis V=1 AR="$(AR)" RANLIB="$(RANLIB)" \
+		PKG_CONFIG="$(BUILD_TOOLS)/cross-pkg-config" \
+		OPENSSL_PREFIX="$(BUILD_BASE)$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)" \
 		MALLOC=jemalloc \
 		USE_SYSTEMD=no \
 		uname_S=Darwin \

@@ -10,6 +10,7 @@ PERL_HOST    ?= /usr/bin/perl
 po4a-setup: setup
 	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://github.com/mquinson/po4a/releases/download/v$(PO4A_VERSION)/po4a-$(PO4A_VERSION).tar.gz)
 	$(call EXTRACT_TAR,po4a-$(PO4A_VERSION).tar.gz,po4a-$(PO4A_VERSION),po4a)
+	$(call DO_PATCH,po4a,po4a,-p1)
 
 ifneq ($(wildcard $(BUILD_WORK)/po4a/.build_complete),)
 po4a:

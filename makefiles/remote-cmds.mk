@@ -29,7 +29,7 @@ remote-cmds:
 else
 remote-cmds: remote-cmds-setup ncurses libedit
 	mkdir -p $(BUILD_WORK)/remote-cmds/include/{libtelnet,protocols}
-	cp -a $(MACOSX_SYSROOT)/usr/include/protocols/talkd.h $(BUILD_WORK)/remote-cmds/include/protocols/
+	cp -af $(MACOSX_SYSROOT)/usr/include/protocols/talkd.h $(BUILD_WORK)/remote-cmds/include/protocols/
 	set -e; cd $(BUILD_WORK)/remote-cmds/libtelnet; \
 		$(CC) $(CFLAGS) -c *.c -D'__FBSDID=__RCSID' -I. -DHAS_CGETENT -DAUTHENTICATION -DRSA -DFORWARD -DHAVE_STDLIB_H; \
 		cp -a *.h $(BUILD_WORK)/remote-cmds/include/libtelnet; \

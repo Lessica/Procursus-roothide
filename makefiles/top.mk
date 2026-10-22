@@ -13,10 +13,10 @@ top-setup: setup
 	$(call EXTRACT_TAR,top-$(TOP_VERSION).tar.gz,top-top-$(TOP_VERSION),top)
 	$(call DO_PATCH,top,top,-p1)
 	mkdir -p $(BUILD_WORK)/top/include/{IOKit/storage,mach}
-	cp -a $(MACOSX_SYSROOT)/usr/include/libkern $(BUILD_WORK)/top/include
-	cp -a $(MACOSX_SYSROOT)/usr/include/mach/mach_vm.h $(BUILD_WORK)/top/include/mach
-	cp -a $(MACOSX_SYSROOT)/usr/include/nlist.h $(BUILD_WORK)/top/include
-	cp -a $(MACOSX_SYSROOT)/System/Library/Frameworks/IOKit.framework/Headers/* $(BUILD_WORK)/top/include/IOKit
+	cp -af $(MACOSX_SYSROOT)/usr/include/libkern $(BUILD_WORK)/top/include
+	cp -af $(MACOSX_SYSROOT)/usr/include/mach/mach_vm.h $(BUILD_WORK)/top/include/mach
+	cp -af $(MACOSX_SYSROOT)/usr/include/nlist.h $(BUILD_WORK)/top/include
+	cp -af $(MACOSX_SYSROOT)/System/Library/Frameworks/IOKit.framework/Headers/* $(BUILD_WORK)/top/include/IOKit
 	$(call DOWNLOAD_FILES,$(BUILD_WORK)/top/include, \
 		https://github.com/apple-oss-distributions/libutil/raw/libutil-57/libutil.h)
 	$(call DOWNLOAD_FILES,$(BUILD_WORK)/top/include/mach, \

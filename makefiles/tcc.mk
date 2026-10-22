@@ -47,9 +47,11 @@ tcc: tcc-setup
 		--enable-cross
 	+$(MAKE) -C $(BUILD_WORK)/tcc \
 		PATH="$(BUILD_WORK)/tcc-host:$(PATH)" CC_FOR_BUILD="$(CC_FOR_BUILD)" \
+		MEMO_TARGET="$(MEMO_TARGET)" \
 		MACOSX_DEPLOYMENT_TARGET=$(MACOSX_DEPLOYMENT_TARGET)
 	+$(MAKE) -C $(BUILD_WORK)/tcc install \
 		PATH="$(BUILD_WORK)/tcc-host:$(PATH)" CC_FOR_BUILD="$(CC_FOR_BUILD)" \
+		MEMO_TARGET="$(MEMO_TARGET)" \
 		DESTDIR=$(BUILD_STAGE)/tcc
 ifneq ($(filter -flto%,$(CFLAGS)),)
 	# Keep installed compiler programs and all host-TCC-generated runtimes.

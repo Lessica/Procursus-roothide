@@ -15,7 +15,7 @@ teckit:
 	@echo "Using previously built teckit."
 else
 teckit: teckit-setup zlib-ng
-	cd $(BUILD_WORK)/teckit && ./autogen.sh
+	cd $(BUILD_WORK)/teckit && autoreconf -fi
 	mkdir -p $(BUILD_WORK)/teckit/build
 	cd $(BUILD_WORK)/teckit/build && ../configure -C \
 		$(DEFAULT_CONFIGURE_FLAGS) --with-system-zlib

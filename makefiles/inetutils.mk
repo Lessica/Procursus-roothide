@@ -27,7 +27,7 @@ else
 inetutils: inetutils-setup ncurses readline openpam libidn2 libxcrypt
 endif
 	mkdir -p $(BUILD_WORK)/inetutils/include/protocols
-	cp -a $(MACOSX_SYSROOT)/usr/include/protocols/talkd.h $(BUILD_WORK)/inetutils/include/protocols/talkd.h
+	cp -af $(MACOSX_SYSROOT)/usr/include/protocols/talkd.h $(BUILD_WORK)/inetutils/include/protocols/talkd.h
 	cd $(BUILD_WORK)/inetutils && autoreconf -fi && CPPFLAGS="-I$(BUILD_WORK)/inetutils/include $(CPPFLAGS)" ./configure \
 		$(DEFAULT_CONFIGURE_FLAGS) \
 		--with-pam \

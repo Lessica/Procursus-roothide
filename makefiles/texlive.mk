@@ -50,11 +50,12 @@ texlive: texlive-setup cairo fontconfig freetype graphite2 harfbuzz icu4c libgd 
 		LIPO= OTOOL= LIBTOOL= PKG_CONFIG_PATH="$(TEXLIVE_BUILD_PKG_CONFIG_PATH)" ../configure \
 		-C $(BUILD_CONFIGURE_FLAGS) --disable-native-texlive-build \
 		--disable-xindy --disable-all-pkgs --without-x \
-		--enable-web2c --with-system-icu
+		--enable-web2c --with-system-icu \
+		$(if $(filter Darwin,$(UNAME)),CXXFLAGS="$(CXXFLAGS_FOR_BUILD) -std=c++17")
 	# 2 - build the native generators used by the cross build.
-	$(MAKE) -C $(BUILD_WORK)/texlive/host
-	$(MAKE) -C $(BUILD_WORK)/texlive/host/texk/web2c/web2c
-	$(MAKE) -C $(BUILD_WORK)/texlive/host/texk/web2c himktables tangle ctangle tie otangle
+	PKG_CONFIG_PATH="$(TEXLIVE_BUILD_PKG_CONFIG_PATH)" $(MAKE) -C $(BUILD_WORK)/texlive/host
+	PKG_CONFIG_PATH="$(TEXLIVE_BUILD_PKG_CONFIG_PATH)" $(MAKE) -C $(BUILD_WORK)/texlive/host/texk/web2c/web2c
+	PKG_CONFIG_PATH="$(TEXLIVE_BUILD_PKG_CONFIG_PATH)" $(MAKE) -C $(BUILD_WORK)/texlive/host/texk/web2c himktables tangle ctangle tie otangle
 
 	# 3 - copy the result where we need it
 	mkdir -p $(BUILD_WORK)/texlive/host/bin
@@ -92,7 +93,7 @@ texlive: texlive-setup cairo fontconfig freetype graphite2 harfbuzz icu4c libgd 
 
 	# 3 - make install strip for host
 	rm -rf $(BUILD_STAGE)/texlive
-	$(MAKE) -C $(BUILD_WORK)/texlive/target world \
+	$(MAKE) -C $(BUILD_WORK)/texlive/target install-strip \
 		AR="$(AR)" RANLIB="$(RANLIB)" \
 		PATH="$(abspath $(BUILD_WORK)/texlive/host/texk/web2c):$(abspath $(BUILD_WORK)/texlive/host/bin):$(PATH)" \
 		DESTDIR=$(BUILD_STAGE)/texlive

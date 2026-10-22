@@ -10,7 +10,7 @@ HOST_TOOL_ROOT=${HOST_TOOL_ROOT:-"$CHECKOUT/build_work/host-tools"}
 HOST_PLATFORM=${HOST_PLATFORM:-auto}
 HOST_CC=${HOST_CC:-cc}
 HOST_CXX=${HOST_CXX:-c++}
-HOST_PYTHON=${HOST_PYTHON:-python3}
+HOST_PYTHON=${HOST_PYTHON:-}
 HOST_MAKE=${HOST_MAKE:-make}
 HOST_PKG_CONFIG=${HOST_PKG_CONFIG:-pkg-config}
 HOST_JOBS=${HOST_JOBS:-4}
@@ -63,7 +63,7 @@ case $HOST_PLATFORM in
     linux)
         [[ -z ${1:-} ]] || fail 'Linux system dependencies are managed by build_tools/prepare_linux_host.sh; use bash build_tools/prepare_linux_host.sh --deps-only to install them'
         ;;
-    macos) deps=(brew install bash make gpatch file-formula ncurses gnu-sed gawk grep gnu-tar findutils coreutils bison flex autoconf automake libtool cmake gettext fakeroot dpkg zstd gnupg groff docbook-xsl po4a openssl@3 libplist pkg-config python@3.12 ninja) ;;
+    macos) deps=(brew install bash make gpatch file-formula ncurses gnu-sed gnu-getopt gawk grep gnu-tar findutils coreutils bison flex autoconf automake libtool cmake gettext fakeroot dpkg zstd gnupg groff docbook-xsl po4a openssl@3 libplist libyaml icu4c pkg-config python@3.12 ninja rustup node luajit luarocks intltool help2man texinfo wget lzip xmlto neovim itstool gperf asciidoctor) ;;
     ios) deps=(apt-get install -y clang make perl ncurses-bin git curl ca-certificates patch pkg-config openssl libssl-dev libplist-dev python3 libpython3.9-dev ninja bash coreutils findutils sed gawk grep tar bison flex autoconf automake libtool cmake gettext fakeroot dpkg zstd gnupg groff docbook-xsl po4a zip unzip xz-utils ldid) ;;
     *) fail 'HOST_PLATFORM must be macos, linux or ios' ;;
 esac
@@ -77,6 +77,13 @@ if [[ ${1:-} == --install-system-deps ]]; then
     if [[ $HOST_PLATFORM == macos || $(id -u) == 0 ]]; then "${deps[@]}"; else sudo "${deps[@]}"; fi
 fi
 
+if [[ -z $HOST_PYTHON ]]; then
+    if [[ $HOST_PLATFORM == macos ]] && command -v brew >/dev/null; then
+        HOST_PYTHON="$(brew --prefix python@3.12)/bin/python3.12"
+    else
+        HOST_PYTHON=python3
+    fi
+fi
 for command_name in git patch perl "$HOST_CC" "$HOST_CXX" "$HOST_PYTHON" "$HOST_MAKE" "$HOST_PKG_CONFIG"; do
     command -v "$command_name" >/dev/null 2>&1 || fail "missing $command_name; see --help for system dependency preparation"
 done
@@ -101,6 +108,7 @@ export PYTHONNOUSERSITE=1
 unset PKG_CONFIG_SYSROOT_DIR PKG_CONFIG_LIBDIR PYTHONPATH PYTHONHOME CPATH C_INCLUDE_PATH CPLUS_INCLUDE_PATH LIBRARY_PATH SDKROOT
 if [[ $HOST_PLATFORM == macos ]]; then
     command -v xcrun >/dev/null || fail 'install and select full Xcode with iPhoneOS/macOS SDKs'
+    export DEVELOPER_DIR=${DEVELOPER_DIR:-$(xcode-select -p)}
     HOST_SDKROOT=${HOST_SDKROOT:-$(xcrun --sdk macosx --show-sdk-path)}
     if [[ -z ${TARGET_SYSROOT:-} ]]; then
         TARGET_SYSROOT=$(xcrun --sdk iphoneos --show-sdk-path) || fail 'full Xcode iPhoneOS SDK missing; select Xcode with DEVELOPER_DIR or xcode-select'
@@ -110,7 +118,7 @@ if [[ $HOST_PLATFORM == macos ]]; then
         brew_prefix=$(brew --prefix)
         # Keg-only GNU tools must precede Apple's tools for the main Makefile.
         host_gnu_paths=()
-        for formula_path in bash/bin make/libexec/gnubin gnu-sed/libexec/gnubin grep/libexec/gnubin gnu-tar/libexec/gnubin findutils/libexec/gnubin coreutils/libexec/gnubin bison/bin flex/bin gettext/bin gpatch/libexec/gnubin file-formula/bin ncurses/bin; do
+        for formula_path in bash/bin make/libexec/gnubin gnu-sed/libexec/gnubin gnu-getopt/bin grep/libexec/gnubin gnu-tar/libexec/gnubin findutils/libexec/gnubin coreutils/libexec/gnubin bison/bin flex/bin gettext/bin gpatch/libexec/gnubin file-formula/bin ncurses/bin texinfo/bin; do
             if [[ -d $brew_prefix/opt/$formula_path ]]; then
                 host_gnu_paths+=("$brew_prefix/opt/$formula_path")
             fi
@@ -118,14 +126,50 @@ if [[ $HOST_PLATFORM == macos ]]; then
         for ((path_index=${#host_gnu_paths[@]}-1; path_index>=0; path_index--)); do
             export PATH="${host_gnu_paths[path_index]}:$PATH"
         done
+        # The save-state trap must use the same architecture as libfakeroot;
+        # Apple's arm64e /bin/ls cannot load Homebrew's arm64 injection library.
+        [[ -x $brew_prefix/opt/coreutils/libexec/gnubin/ls ]] || fail 'Homebrew coreutils is required for fakeroot state saving'
+        "$HOST_PYTHON" - "$(brew --prefix fakeroot)/bin/fakeroot" \
+            "$brew_prefix/opt/coreutils/libexec/gnubin/ls" "$HOST_TOOL_ROOT/bin/fakeroot" <<'PY'
+from pathlib import Path
+import shlex, sys
+source, ls, output = sys.argv[1:]
+text = Path(source).read_text().replace('/bin/ls -l /', shlex.quote(ls) + ' -l /')
+temporary = Path(output + '.tmp')
+temporary.write_text(text)
+temporary.chmod(0o755)
+temporary.replace(output)
+PY
         DOCBOOK_XSL=${DOCBOOK_XSL:-$(brew --prefix docbook-xsl)/docbook-xsl}
         [[ -f $DOCBOOK_XSL/html/docbook.xsl ]] || fail 'DOCBOOK_XSL must point to the DocBook XSL stylesheet directory'
+        XML_CATALOG_FILES=${XML_CATALOG_FILES:-$brew_prefix/etc/xml/catalog}
+        [[ -f $XML_CATALOG_FILES ]] || fail 'Homebrew DocBook XML catalog is missing'
+        export XML_CATALOG_FILES
+        # Homebrew's po4a wrapper supplies these modules to the system Perl.
+        host_perl_lib="$(brew --prefix po4a)/libexec/lib"
+        export PERL5LIB="$host_perl_lib:$host_perl_lib/perl5${PERL5LIB:+:$PERL5LIB}"
+        /usr/bin/perl -MModule::Build -MPod::Parser -e 1
+        # Preserve callers' PERL5LIB (for example man-db's local manext module).
+        printf '#!/usr/bin/env bash\nexport PERL5LIB=%q:%q${PERL5LIB:+:$PERL5LIB}\nexec %q "$@"\n' \
+            "$host_perl_lib" "$host_perl_lib/perl5" "$(brew --prefix po4a)/libexec/bin/po4a" > "$HOST_TOOL_ROOT/bin/po4a"
+        chmod 755 "$HOST_TOOL_ROOT/bin/po4a"
+        ln -sfn /usr/bin/perl "$HOST_TOOL_ROOT/bin/perl"
+        PERL_HOST_CORE=$(/usr/bin/perl -MConfig -e 'print "$Config{archlib}/CORE"')
+        if [[ -f $HOST_SDKROOT$PERL_HOST_CORE/config.h ]]; then
+            PERL_HOST_CORE="$HOST_SDKROOT$PERL_HOST_CORE"
+        fi
+        [[ -f $PERL_HOST_CORE/config.h ]] || fail 'selected Xcode SDK lacks headers for the system Perl'
+        export PERL_HOST_CORE
         file -bi /bin/sh | grep -q 'x-mach-binary; charset=binary' || fail 'file must identify Mach-O MIME types; install Homebrew file-formula and prepend its bin directory'
         patch --version | grep -q 'GNU patch' || fail 'GNU patch missing; install Homebrew gpatch and prepend its libexec/gnubin directory'
         tic -V 2>&1 | grep -q 'ncurses 6' || fail 'ncurses 6 tic missing; install Homebrew ncurses and prepend its bin directory'
         openssl_prefix=$(brew --prefix openssl@3)
         plist_prefix=$(brew --prefix libplist)
         export PKG_CONFIG_PATH="$openssl_prefix/lib/pkgconfig:$plist_prefix/lib/pkgconfig${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}"
+        host_yaml_prefix=$(brew --prefix libyaml)
+        RUBY_NATIVE_PKG_CONFIG_PATH="$openssl_prefix/lib/pkgconfig:$host_yaml_prefix/lib/pkgconfig"
+        RUBY_NATIVE_CONFIGURE_ARGS="--with-openssl-dir=$openssl_prefix --with-libyaml-dir=$host_yaml_prefix"
+        TEXLIVE_BUILD_PKG_CONFIG_PATH="$(brew --prefix icu4c)/lib/pkgconfig"
     fi
 fi
 fetch_sdk() {
@@ -256,26 +300,31 @@ fi
     'pip==24.3.1' 'setuptools==75.3.2' 'wheel==0.45.1'
 "$HOST_TOOL_ROOT/venv/bin/python" -m pip install --disable-pip-version-check \
     'Cython==0.29.37' 'meson==0.64.0' 'commonmark==0.9.1' 'Mako==1.3.8' 'asciidoc==10.2.0'
+if [[ $HOST_PLATFORM == macos ]]; then
+    "$HOST_TOOL_ROOT/venv/bin/python" -m pip install --disable-pip-version-check 'Sphinx==7.4.7' 'rich==13.9.4'
+fi
 "$HOST_TOOL_ROOT/venv/bin/python" -c 'import Cython; assert Cython.__version__ == "0.29.37"'
 "$HOST_TOOL_ROOT/venv/bin/meson" --version
 fi
-if [[ $HOST_PLATFORM == linux ]]; then
+if [[ $HOST_PLATFORM == linux || $HOST_PLATFORM == macos ]]; then
     # Retire the helper's former Sphinx link when reusing an existing tools root.
     if [[ -L $HOST_TOOL_ROOT/bin/sphinx-build && $(readlink "$HOST_TOOL_ROOT/bin/sphinx-build") == "$HOST_TOOL_ROOT/venv/bin/sphinx-build" ]]; then
         rm "$HOST_TOOL_ROOT/bin/sphinx-build"
     fi
     # GHC 9.2.2 hsc2hs requires base < 4.17; Ubuntu GHC 9.4.7 has base 4.17.2.0.
     host_ghc_prefix="$HOST_TOOL_ROOT/ghc9.2.8"
-    case $(uname -m) in
-        aarch64|arm64) host_ghc_arch=aarch64; host_ghc_sha=645433359d8ad9e7b286f85ef5111db1b787ee3712c24c5dfde7c62769aa59a4 ;;
-        x86_64) host_ghc_arch=x86_64; host_ghc_sha=10d1be25487bcf99ac8eb77beaa220c85e69f8c1106f4219ce019206ecc0ac51 ;;
-        *) fail 'unsupported Linux GHC host architecture' ;;
+    case $HOST_PLATFORM:$(uname -m) in
+        linux:aarch64|linux:arm64) host_ghc_arch=aarch64-deb10-linux; host_ghc_sha=645433359d8ad9e7b286f85ef5111db1b787ee3712c24c5dfde7c62769aa59a4 ;;
+        linux:x86_64) host_ghc_arch=x86_64-deb10-linux; host_ghc_sha=10d1be25487bcf99ac8eb77beaa220c85e69f8c1106f4219ce019206ecc0ac51 ;;
+        macos:arm64) host_ghc_arch=aarch64-apple-darwin; host_ghc_sha=34db9b19571905b08ca1e444b46490e7c19cb73a0fe778696fa6ec02ff8d3c4b ;;
+        macos:x86_64) host_ghc_arch=x86_64-apple-darwin; host_ghc_sha=eb78361feaf4277f627cbdc4b849849d09d175d0d878d28433719b7482db27f5 ;;
+        *) fail 'unsupported GHC host architecture' ;;
     esac
     mkdir -p "$HOST_TOOL_ROOT/downloads"
     if [[ ! -x $host_ghc_prefix/bin/ghc ]]; then
-        host_ghc_archive="$HOST_TOOL_ROOT/downloads/ghc-9.2.8-$host_ghc_arch-deb10-linux.tar.xz"
+        host_ghc_archive="$HOST_TOOL_ROOT/downloads/ghc-9.2.8-$host_ghc_arch.tar.xz"
         if [[ ! -f $host_ghc_archive ]]; then
-            curl --fail --location --retry 3 -o "$host_ghc_archive.part" "https://downloads.haskell.org/~ghc/9.2.8/ghc-9.2.8-$host_ghc_arch-deb10-linux.tar.xz"
+            curl --fail --location --retry 3 -o "$host_ghc_archive.part" "https://downloads.haskell.org/~ghc/9.2.8/ghc-9.2.8-$host_ghc_arch.tar.xz"
             mv "$host_ghc_archive.part" "$host_ghc_archive"
         fi
         printf '%s  %s\n' "$host_ghc_sha" "$host_ghc_archive" | sha256sum -c -
@@ -297,9 +346,11 @@ if [[ $HOST_PLATFORM == linux ]]; then
     "$HOST_TOOL_ROOT/bin/ghc-pkg" check
     # Duktape's upstream source generator still requires Python 2 and PyYAML.
     host_python2_prefix="$HOST_TOOL_ROOT/pypy2.7"
-    case $(uname -m) in
-        aarch64|arm64) pypy_arch=aarch64; pypy_sha=f22a1be607deeaa4f9be6bc63aae09fe4fb5b990d6a23aa4e7c5960dc5d93c96 ;;
-        x86_64) pypy_arch=linux64; pypy_sha=aa3bb92dbb529fa2d4920895b16d67a810b0c709207857d56cfe4a6e3b41e02a ;;
+    case $HOST_PLATFORM:$(uname -m) in
+        linux:aarch64|linux:arm64) pypy_arch=aarch64; pypy_sha=f22a1be607deeaa4f9be6bc63aae09fe4fb5b990d6a23aa4e7c5960dc5d93c96 ;;
+        linux:x86_64) pypy_arch=linux64; pypy_sha=aa3bb92dbb529fa2d4920895b16d67a810b0c709207857d56cfe4a6e3b41e02a ;;
+        macos:arm64) pypy_arch=macos_arm64; pypy_sha=be3ffbb243316b1ffbf63ac60d72e099d5b64702e4429eeeb18a0608fb3b8dcc ;;
+        macos:x86_64) pypy_arch=macos_x86_64; pypy_sha=9e7cf34e9d4c8d890439fcd10b09a2c0825d8709c63dd4cbf85645711bfb15b7 ;;
     esac
     host_python2_archive="$HOST_TOOL_ROOT/cache/pypy2.7-v7.3.20-$pypy_arch.tar.bz2"
     if [[ ! -x $host_python2_prefix/bin/pypy ]]; then
@@ -331,11 +382,13 @@ if [[ $HOST_PLATFORM == linux ]]; then
     # Ubuntu 24.04 has no Python 3.9 package. Use Astral's relocatable CPython
     # distribution; the host patch version need not equal target Python 3.9.9.
     host_python_prefix="$HOST_TOOL_ROOT/python3.9-standalone"
-    case $(uname -m) in
-        aarch64|arm64) python_arch=aarch64; python_sha=d840efd9d81ad557019ebd0d435828fc32101cd01be82046087b4aee463dca0c ;;
-        x86_64) python_arch=x86_64; python_sha=866745efbee219a3f9b9d54ee1477ebf92542bb9ff9f6591a7e5a3643a0d4214 ;;
+    case $HOST_PLATFORM:$(uname -m) in
+        linux:aarch64|linux:arm64) python_arch=aarch64-unknown-linux-gnu; python_sha=d840efd9d81ad557019ebd0d435828fc32101cd01be82046087b4aee463dca0c ;;
+        linux:x86_64) python_arch=x86_64-unknown-linux-gnu; python_sha=866745efbee219a3f9b9d54ee1477ebf92542bb9ff9f6591a7e5a3643a0d4214 ;;
+        macos:arm64) python_arch=aarch64-apple-darwin; python_sha=6b65213e639e91eb8072db80ed9c140d769af1d5e0386efd8f153449c3694714 ;;
+        macos:x86_64) python_arch=x86_64-apple-darwin; python_sha=14beda9465feb6991f73d6f6cb9e69afc576c5cac8c185bd729f491aa4305bfb ;;
     esac
-    host_python_archive="$HOST_TOOL_ROOT/cache/cpython-3.9.24+20251014-$python_arch-unknown-linux-gnu-install_only.tar.gz"
+    host_python_archive="$HOST_TOOL_ROOT/cache/cpython-3.9.24+20251014-$python_arch-install_only.tar.gz"
     if [[ ! -x $host_python_prefix/bin/python3.9 ]]; then
         if [[ ! -f $host_python_archive ]]; then
             curl --fail --location --retry 3 -o "$host_python_archive.part" \
@@ -349,21 +402,77 @@ if [[ $HOST_PLATFORM == linux ]]; then
     "$host_python_prefix/bin/python3.9" -c 'import sys, ssl, zlib, bz2, lzma, ctypes, setuptools; assert sys.version_info[:3] == (3, 9, 24)'
     ln -sfn "$host_python_prefix/bin/python3.9" "$HOST_TOOL_ROOT/bin/python3.9"
 fi
-if [[ $HOST_PLATFORM == linux ]]; then
-    export CARGO_HOME="$HOST_TOOL_ROOT/cargo" RUSTUP_HOME="$HOST_TOOL_ROOT/rustup"
-    # Ubuntu supplies rustup, but not the aarch64-apple-ios standard library.
-    mkdir -p "$CARGO_HOME/bin"
-    ln -sfn /usr/bin/rustup "$CARGO_HOME/bin/rustup"
-    for rust_tool in cargo rustc rustdoc; do
-        ln -sfn "/usr/bin/$rust_tool" "$CARGO_HOME/bin/$rust_tool"
+if [[ $HOST_PLATFORM == macos ]]; then
+    # Neovim's generators run LuaJIT with native mpack and LPeg modules.
+    host_lua_root="$HOST_TOOL_ROOT/lua5.1"
+    host_luajit_prefix=$(brew --prefix luajit)
+    for host_lua_rock in mpack:1.0.10-0 lpeg:1.1.0-2; do
+        host_lua_module=${host_lua_rock%%:*}
+        host_lua_version=${host_lua_rock#*:}
+        if ! luarocks --lua-version=5.1 --lua-dir="$host_luajit_prefix" --tree="$host_lua_root" show "$host_lua_module" "$host_lua_version" >/dev/null 2>&1; then
+            env -u CFLAGS -u CPPFLAGS -u CXXFLAGS -u LDFLAGS \
+                luarocks --lua-version=5.1 --lua-dir="$host_luajit_prefix" --tree="$host_lua_root" install "$host_lua_module" "$host_lua_version"
+        fi
     done
-    /usr/bin/rustup toolchain install 1.88.0 --profile minimal --target aarch64-apple-ios --no-self-update
-    /usr/bin/rustup default 1.88.0
+    export LUA_PATH="$host_lua_root/share/lua/5.1/?.lua;$host_lua_root/share/lua/5.1/?/init.lua;;${LUA_PATH:+;$LUA_PATH}"
+    export LUA_CPATH="$host_lua_root/lib/lua/5.1/?.so;;${LUA_CPATH:+;$LUA_CPATH}"
+    "$host_luajit_prefix/bin/luajit" -e 'require("mpack"); require("lpeg")'
+    # Generated protobuf C++ headers require the target runtime's exact version.
+    host_protoc_root="$HOST_TOOL_ROOT/protoc21.2"
+    host_protoc_archive="$HOST_TOOL_ROOT/cache/protoc-21.2-osx-universal_binary.zip"
+    if [[ ! -x $host_protoc_root/bin/protoc ]]; then
+        if [[ ! -f $host_protoc_archive ]]; then
+            curl --fail --location --retry 3 "https://github.com/protocolbuffers/protobuf/releases/download/v21.2/$(basename "$host_protoc_archive")" -o "$host_protoc_archive.part"
+            mv "$host_protoc_archive.part" "$host_protoc_archive"
+        fi
+        printf '%s  %s\n' 9779f95ea99e7ee56ba407e68072fe1824aa0d3b9c11adff42fe03aaff6b7369 "$host_protoc_archive" | sha256sum -c -
+        mkdir -p "$host_protoc_root"
+        unzip -q -o "$host_protoc_archive" -d "$host_protoc_root"
+        chmod 755 "$host_protoc_root/bin/protoc"
+    fi
+    ln -sfn "$host_protoc_root/bin/protoc" "$HOST_TOOL_ROOT/bin/protoc"
+    "$HOST_TOOL_ROOT/bin/protoc" --version
+    host_go_root="$HOST_TOOL_ROOT/go1.22.4"
+    case $(uname -m) in
+        arm64) host_go_arch=arm64; host_go_sha=242b78dc4c8f3d5435d28a0d2cec9b4c1aa999b601fb8aa59fb4e5a1364bf827 ;;
+        x86_64) host_go_arch=amd64; host_go_sha=c95967f50aa4ace34af0c236cbdb49a9a3e80ee2ad09d85775cb4462a5c19ed3 ;;
+    esac
+    host_go_archive="$HOST_TOOL_ROOT/cache/go1.22.4.darwin-$host_go_arch.tar.gz"
+    if [[ ! -x $host_go_root/bin/go ]]; then
+        if [[ ! -f $host_go_archive ]]; then
+            curl --fail --location --retry 3 "https://go.dev/dl/$(basename "$host_go_archive")" -o "$host_go_archive.part"
+            mv "$host_go_archive.part" "$host_go_archive"
+        fi
+        printf '%s  %s\n' "$host_go_sha" "$host_go_archive" | sha256sum -c -
+        mkdir -p "$host_go_root"
+        tar -xf "$host_go_archive" --strip-components=1 -C "$host_go_root"
+    fi
+    ln -sfn "$host_go_root/bin/go" "$HOST_TOOL_ROOT/bin/go"
+    ln -sfn "$host_go_root/bin/gofmt" "$HOST_TOOL_ROOT/bin/gofmt"
+fi
+if [[ $HOST_PLATFORM == linux || $HOST_PLATFORM == macos ]]; then
+    export CARGO_HOME="$HOST_TOOL_ROOT/cargo" RUSTUP_HOME="$HOST_TOOL_ROOT/rustup"
+    mkdir -p "$CARGO_HOME/bin"
+    if [[ $HOST_PLATFORM == linux ]]; then
+        host_rust_bin=/usr/bin
+    else
+        host_rust_bin="$(brew --prefix rustup)/bin"
+    fi
+    for rust_tool in rustup cargo rustc rustdoc; do
+        ln -sfn "$host_rust_bin/$rust_tool" "$CARGO_HOME/bin/$rust_tool"
+    done
+    export PATH="$CARGO_HOME/bin:$PATH"
+    "$CARGO_HOME/bin/rustup" toolchain install 1.88.0 --profile minimal --target aarch64-apple-ios --no-self-update
+    "$CARGO_HOME/bin/rustup" default 1.88.0
     # Ubuntu cargo-c 0.9.19 (Cargo 0.70) cannot resolve the locked rav1e
     # quickcheck/rand features. cargo-c 0.10.13 also requires Rust >= 1.85.
     "$CARGO_HOME/bin/cargo" install cargo-c --version 0.10.13 --locked
-    host_go_root=$(/usr/bin/go env GOROOT)
-    /usr/bin/go version
+    if [[ $HOST_PLATFORM == linux ]]; then
+        host_go_root=$(/usr/bin/go env GOROOT)
+    fi
+    "$host_go_root/bin/go" version
+fi
+if [[ $HOST_PLATFORM == linux ]]; then
     # Swift's parser uses SwiftSyntax and needs a native bootstrap compiler.
     case $(uname -m) in
         aarch64|arm64) swift_platform=ubuntu2204-aarch64; swift_suffix=ubuntu22.04-aarch64 ;;
@@ -409,8 +518,19 @@ fi
     if [[ -n ${TARGET_SYSROOT:-} ]]; then printf 'export TARGET_SYSROOT=%q\n' "$TARGET_SYSROOT"; fi
     if [[ -n ${MACOSX_SYSROOT:-} ]]; then printf 'export MACOSX_SYSROOT=%q\n' "$MACOSX_SYSROOT"; fi
     if [[ -n ${DOCBOOK_XSL:-} ]]; then printf 'export DOCBOOK_XSL=%q\n' "$DOCBOOK_XSL"; fi
-    if [[ $HOST_PLATFORM == macos ]]; then printf 'export LIBTOOLIZE=glibtoolize\n'; fi
-    if [[ $HOST_PLATFORM == linux ]]; then
+    if [[ $HOST_PLATFORM == macos ]]; then
+        printf 'export LIBTOOLIZE=glibtoolize\n'
+        printf 'export DEVELOPER_DIR=%q\n' "$DEVELOPER_DIR"
+        printf 'export PERL5LIB=%q\n' "$PERL5LIB"
+        printf 'export PERL_HOST_CORE=%q\n' "$PERL_HOST_CORE"
+        printf 'export XML_CATALOG_FILES=%q\n' "$XML_CATALOG_FILES"
+        printf 'export PKG_CONFIG_FDO_SYSROOT_RULES=1\n'
+        printf 'export RUBY_NATIVE_PKG_CONFIG_PATH=%q\n' "$RUBY_NATIVE_PKG_CONFIG_PATH"
+        printf 'export RUBY_NATIVE_CONFIGURE_ARGS=%q\n' "$RUBY_NATIVE_CONFIGURE_ARGS"
+        printf 'export TEXLIVE_BUILD_PKG_CONFIG_PATH=%q\n' "$TEXLIVE_BUILD_PKG_CONFIG_PATH"
+        printf 'export LUA_PATH=%q\nexport LUA_CPATH=%q\n' "$LUA_PATH" "$LUA_CPATH"
+    fi
+    if [[ $HOST_PLATFORM == linux || $HOST_PLATFORM == macos ]]; then
         printf 'export CARGO_HOME=%q\nexport RUSTUP_HOME=%q\n' "$CARGO_HOME" "$RUSTUP_HOME"
         printf 'export GOPATH=%q\nexport GOCACHE=%q\nexport GOROOT_BOOTSTRAP=%q\n' "$HOST_TOOL_ROOT/go-work" "$HOST_TOOL_ROOT/cache/go-build" "$host_go_root"
     fi
@@ -419,6 +539,7 @@ fi
         # Prefer distribution tools over an older private Python environment.
         printf '%q:/usr/bin:' "$CARGO_HOME/bin"
     else
+        if [[ $HOST_PLATFORM == macos ]]; then printf '%q:' "$CARGO_HOME/bin"; fi
         printf '%q:' "$HOST_TOOL_ROOT/venv/bin"
     fi
     if [[ $HOST_PLATFORM == macos && -n ${host_gnu_paths[*]:-} ]]; then

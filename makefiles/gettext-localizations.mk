@@ -17,7 +17,7 @@ gettext-localizations: setup
 	test -n "$(GETTEXT_LOCALIZATIONS_INPUT)" && test -f "$(GETTEXT_LOCALIZATIONS_INPUT)/en_US.UTF-8/LC_CTYPE" && test -f "$(GETTEXT_LOCALIZATIONS_INPUT)/en_US.UTF-8/LC_COLLATE" || { echo "Set GETTEXT_LOCALIZATIONS_INPUT to a copy of Mac /usr/share/locale." >&2; exit 1; }
 	mkdir -p $(BUILD_STAGE)/gettext-localizations/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share
 	mkdir -p $(BUILD_STAGE)/gettext-localizations/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share/locale
-	cp -a "$(GETTEXT_LOCALIZATIONS_INPUT)/." $(BUILD_STAGE)/gettext-localizations/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share/locale/
+	cp -af "$(GETTEXT_LOCALIZATIONS_INPUT)/." $(BUILD_STAGE)/gettext-localizations/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share/locale/
 	rm -f $(BUILD_STAGE)/gettext-localizations/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share/locale/locale.alias
 endif
 

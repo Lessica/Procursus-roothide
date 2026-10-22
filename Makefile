@@ -624,9 +624,17 @@ CFLAGS              := $(OPTIMIZATION_FLAGS) -arch $(MEMO_ARCH) -isysroot $(TARG
 CXXFLAGS            := $(CFLAGS)
 ASFLAGS             := $(CFLAGS)
 CPPFLAGS            := -arch $(MEMO_ARCH) $(PLATFORM_VERSION_MIN) -isysroot $(TARGET_SYSROOT) -isystem $(BUILD_BASE)$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include -isystem $(BUILD_BASE)$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)$(MEMO_ALT_PREFIX)/include -Wno-error-implicit-function-declaration
+ifeq ($(UNAME),Darwin)
+# Configure probes may put CPPFLAGS before CXXFLAGS.
+CPPFLAGS            := -isystem $(TARGET_SYSROOT)/usr/include/c++/v1 $(CPPFLAGS)
+endif
 LDFLAGS             := $(OPTIMIZATION_FLAGS) -arch $(MEMO_ARCH) -isysroot $(TARGET_SYSROOT) $(PLATFORM_VERSION_MIN) -L$(BUILD_BASE)$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib -L$(BUILD_BASE)$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)$(MEMO_ALT_PREFIX)/lib -F$(BUILD_BASE)$(MEMO_PREFIX)/System/Library/Frameworks -F$(BUILD_BASE)$(MEMO_PREFIX)/Library/Frameworks -Wl,-not_for_dyld_shared_cache
 PKG_CONFIG_PATH     :=
 ACLOCAL_PATH        := $(BUILD_BASE)$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share/aclocal
+ifeq ($(UNAME),Darwin)
+# Match regenerated libtool macros to the native libtoolize/ltmain.sh.
+ACLOCAL_PATH        := $(shell aclocal --print-ac-dir):$(ACLOCAL_PATH)
+endif
 
 ifeq ($(MEMO_TARGET),bridgeos-arm64)
 CFLAGS              += -Wno-incompatible-sysroot
@@ -739,6 +747,10 @@ DEFAULT_CONFIGURE_FLAGS := \
 DEFAULT_PERL_MAKE_FLAGS := \
 	CC="$(CC)" \
 	LD="$(CC)" \
+	INSTALLSCRIPT=$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin \
+	INSTALLSITESCRIPT=$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin \
+	INSTALLVENDORSCRIPT=$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin \
+	$(if $(filter Darwin,$(UNAME)),INC="-I$(BUILD_STAGE)/perl/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/perl5/$${PERL_MAJOR}/CORE") \
 	INSTALLSITEARCH=$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/perl5/$${PERL_MAJOR} \
 	INSTALLARCHLIB=$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/perl5/$${PERL_MAJOR} \
 	INSTALLVENDORARCH=$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/perl5/$${PERL_MAJOR} \
@@ -827,7 +839,12 @@ endif # ($(MEMO_QUIET),1)
 else
 PGP_VERIFY  = KEY=$$(gpg --verify --status-fd 1 $(BUILD_SOURCE)/$(1).$(if $(2),$(2),sig) | grep NO_PUBKEY | cut -f3 -d' '); \
 	if [ ! -z "$$KEY" ]; then \
-		gpg --keyserver hkps://keyserver.ubuntu.com/ --recv-keys $$KEY; \
+		if ! gpg --keyserver hkps://keyserver.ubuntu.com/ --recv-keys $$KEY; then \
+			printf '%s\n' 'GPG key retrieval failed; retrying through HTTPS lookup.' >&2; \
+			for missing_key in $$KEY; do \
+				$(CURL) "https://keyserver.ubuntu.com/pks/lookup?op=get&search=0x$$missing_key" | gpg --batch --import || exit 1; \
+			done; \
+		fi; \
 	fi; \
 	gpg --verify $(BUILD_SOURCE)/$(1).$(if $(2),$(2),sig) $(BUILD_SOURCE)/$(1) 2>&1 | grep -q 'Good signature'
 endif
@@ -901,7 +918,7 @@ DO_PATCH    = cd $(BUILD_PATCH)/$(1); \
 	for PATCHFILE in *; do \
 		if [ ! -f $(BUILD_WORK)/$(2)/$(notdir $$PATCHFILE).done ]; then \
 			sed -e 's|@MEMO_PREFIX@|$(MEMO_PREFIX)|g' -e 's|@MEMO_SUB_PREFIX@|$(MEMO_SUB_PREFIX)|g' -e 's|@MEMO_ALT_PREFIX@|$(MEMO_ALT_PREFIX)|g' $$PATCHFILE | patch -sN -d $(BUILD_WORK)/$(2) $(3) && \
-			touch $(BUILD_WORK)/$(2)/$(notdir $$PATCHFILE).done; \
+			touch $(BUILD_WORK)/$(2)/$(notdir $$PATCHFILE).done || exit $$?; \
 		fi; \
 	done
 
@@ -1741,7 +1758,9 @@ endif
 	@# Patch headers from $(BARE_PLATFORM).sdk
 	@if [ -f $(TARGET_SYSROOT)/System/Library/Frameworks/CoreFoundation.framework/Headers/CFUserNotification.h ]; then sed -E 's/API_UNAVAILABLE(ios, watchos, tvos)//g' < $(TARGET_SYSROOT)/System/Library/Frameworks/CoreFoundation.framework/Headers/CFUserNotification.h > $(BUILD_BASE)$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include/CoreFoundation/CFUserNotification.h.tmp; fi
 	@sed -E s/'__IOS_PROHIBITED|__TVOS_PROHIBITED|__WATCHOS_PROHIBITED'//g < $(TARGET_SYSROOT)/usr/include/stdlib.h > $(BUILD_BASE)$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include/stdlib.h.tmp
+	@if [ -f $(TARGET_SYSROOT)/usr/include/_stdlib.h ]; then sed -E s/'__IOS_PROHIBITED|__TVOS_PROHIBITED|__WATCHOS_PROHIBITED'//g < $(TARGET_SYSROOT)/usr/include/_stdlib.h > $(BUILD_BASE)$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include/_stdlib.h.tmp; fi
 	@sed -E s/'__IOS_PROHIBITED|__TVOS_PROHIBITED|__WATCHOS_PROHIBITED'//g < $(TARGET_SYSROOT)/usr/include/time.h > $(BUILD_BASE)$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include/time.h.tmp
+	@if [ -f $(TARGET_SYSROOT)/usr/include/_time.h ]; then sed -E s/'__IOS_PROHIBITED|__TVOS_PROHIBITED|__WATCHOS_PROHIBITED'//g < $(TARGET_SYSROOT)/usr/include/_time.h > $(BUILD_BASE)$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include/_time.h.tmp; fi
 	@sed -E s/'__IOS_PROHIBITED|__TVOS_PROHIBITED|__WATCHOS_PROHIBITED'//g < $(TARGET_SYSROOT)/usr/include/unistd.h > $(BUILD_BASE)$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include/unistd.h.tmp
 	@sed -E s/'__IOS_PROHIBITED|__TVOS_PROHIBITED|__WATCHOS_PROHIBITED'//g < $(TARGET_SYSROOT)/usr/include/mach/task.h > $(BUILD_BASE)$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include/mach/task.h.tmp
 	@sed -E s/'__IOS_PROHIBITED|__TVOS_PROHIBITED|__WATCHOS_PROHIBITED'//g < $(TARGET_SYSROOT)/usr/include/mach/mach_host.h > $(BUILD_BASE)$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include/mach/mach_host.h.tmp
@@ -1781,7 +1800,7 @@ ifneq ($(MEMO_NO_IOSEXEC),1)
 endif
 
 	@# Preserve dependency timestamps when generated SDK headers are unchanged.
-	@set -e; for name in CoreFoundation/CFUserNotification stdlib time unistd mach/task mach/mach_host ucontext signal pthread pwd grp paths; do \
+	@set -e; for name in CoreFoundation/CFUserNotification stdlib _stdlib time _time unistd mach/task mach/mach_host ucontext signal pthread pwd grp paths; do \
 		header="$(BUILD_BASE)$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include/$$name.h"; \
 		if [ -f "$$header.tmp" ]; then \
 			if cmp -s "$$header.tmp" "$$header"; then rm -f "$$header.tmp"; else mv -f "$$header.tmp" "$$header"; fi; \

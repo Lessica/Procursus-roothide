@@ -11,7 +11,7 @@ else
 build-essential: setup
 	mkdir -p $(BUILD_WORK)/build-essential
 	mkdir -p $(BUILD_STAGE)/build-essential/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share/SDKs/$(BARE_PLATFORM).sdk
-	cp -a $(TARGET_SYSROOT)/* $(BUILD_STAGE)/build-essential/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share/SDKs/$(BARE_PLATFORM).sdk
+	cp -af $(TARGET_SYSROOT)/* $(BUILD_STAGE)/build-essential/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share/SDKs/$(BARE_PLATFORM).sdk
 	$(call AFTER_BUILD)
 endif
 

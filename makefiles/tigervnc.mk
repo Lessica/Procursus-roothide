@@ -51,7 +51,6 @@ endif
 	cat $(BUILD_WORK)/tigervnc/LICENCE.TXT $(BUILD_WORK)/xorg-server-vnc/COPYING > $(BUILD_WORK)/tigervnc/COPYING
 	sed -i 's/__APPLE__/__PEAR__/' $(BUILD_WORK)/tigervnc/unix/xserver/miext/rootless/rootlessWindow.c
 	cd $(BUILD_WORK)/tigervnc/unix/xserver && patch -p1 < $(BUILD_WORK)/tigervnc/unix/xserver$(XORG_VERSION).patch && \
-	export ACLOCAL='aclocal -I $(BUILD_BASE)/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share/aclocal' && \
 	export gcc=cc && autoreconf -fiv && ./configure -C \
 		$(DEFAULT_CONFIGURE_FLAGS) \
 		--with-pic \
