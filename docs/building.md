@@ -40,7 +40,11 @@ source build_work/host-tools/host-env.sh
 
 准备脚本也会配置 Python、GHC、Rust、Go 和 Swift 等宿主引导工具，无需从 Mac 复制这些工具。OpenJDK 配方会自行下载宿主 JDK。
 
-每次新开终端，需要重新加载 `host-env.sh`，无需重复准备环境。
+```bash
+source build_work/host-tools/host-env.sh
+```
+
+新开终端或重新进入容器后，执行上述 `source` 命令即可恢复构建环境。
 
 ## 为 Linux 准备 Mac 输入
 
@@ -119,8 +123,6 @@ docker cp build_dist/iphoneos-arm64-roothide/1900/ellekit procursus-build:/work/
 ```bash
 tar -xf build_work/mac-locale.tar -C build_work
 tar -xf build_work/apple-sdks.tar -C "$HOST_TOOL_ROOT/SDK"
-export ROOTHIDE_XCODE_INPUT="$PWD/build_work/iphoneos-arm64-roothide/1900/libroothide-xcode.tar"
-export GETTEXT_LOCALIZATIONS_INPUT="$PWD/build_work/locale"
 (
 set -e
 make roothide-xcode-check
@@ -145,7 +147,7 @@ done
 
 ## 构建软件包
 
-默认全量构建当前宿主和目标支持的所有配方：
+在 Linux 仓库根目录加载环境后，即可全量构建当前宿主和目标支持的所有配方：
 
 ```bash
 make package
@@ -184,7 +186,7 @@ python3 build_tools/build_status.py package
 
 ## 断点续建
 
-在同一终端重复原构建命令即可续建。新终端应先加载工具环境，并在 Linux 上重新设置两个 Mac 输入变量。如指定了构建范围，续建时使用相同的 `SUBPROJECTS` 参数。
+重复原构建命令即可续建。新终端先执行 `source build_work/host-tools/host-env.sh`。指定范围构建时，保留原来的 `SUBPROJECTS` 参数。
 
 续建会复用已有源码和编译结果，打包阶段可能再次执行。请保留 `build_source`、`build_work`、`build_stage`、`build_base` 和 `build_dist`，以及已传入的 Mac 材料。
 

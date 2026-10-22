@@ -517,6 +517,11 @@ fi
     printf 'export HOST_TOOL_ROOT=%q\n' "$HOST_TOOL_ROOT"
     if [[ -n ${TARGET_SYSROOT:-} ]]; then printf 'export TARGET_SYSROOT=%q\n' "$TARGET_SYSROOT"; fi
     if [[ -n ${MACOSX_SYSROOT:-} ]]; then printf 'export MACOSX_SYSROOT=%q\n' "$MACOSX_SYSROOT"; fi
+    if [[ $HOST_PLATFORM == linux ]]; then
+        # Inputs may be transferred after preparation; retain their locations.
+        printf 'export ROOTHIDE_XCODE_INPUT=%q\n' "${ROOTHIDE_XCODE_INPUT:-$CHECKOUT/build_work/iphoneos-arm64-roothide/1900/libroothide-xcode.tar}"
+        printf 'export GETTEXT_LOCALIZATIONS_INPUT=%q\n' "${GETTEXT_LOCALIZATIONS_INPUT:-$CHECKOUT/build_work/locale}"
+    fi
     if [[ -n ${DOCBOOK_XSL:-} ]]; then printf 'export DOCBOOK_XSL=%q\n' "$DOCBOOK_XSL"; fi
     if [[ $HOST_PLATFORM == macos ]]; then
         printf 'export LIBTOOLIZE=glibtoolize\n'
