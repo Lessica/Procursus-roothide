@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <defs>
+    <mask id="cut" maskUnits="userSpaceOnUse" x="0" y="0" width="1024" height="1024">
+      <circle cx="512" cy="512" r="270" fill="#fff"/>
+      <path d="M512.0 428.3 L591.6 486.1 L561.2 579.7 L462.8 579.7 L432.4 486.1 Z M512.0 360.8 L435.0 304.8 L464.4 214.3 L559.6 214.3 L589.0 304.8 Z M655.8 465.3 L685.2 374.7 L780.4 374.7 L809.9 465.3 L732.8 521.2 Z M600.9 634.3 L696.1 634.3 L725.5 724.9 L648.5 780.9 L571.4 724.9 Z M423.1 634.3 L452.6 724.9 L375.5 780.9 L298.5 724.9 L327.9 634.3 Z M368.2 465.3 L291.2 521.2 L214.1 465.3 L243.6 374.7 L338.8 374.7 Z" fill="#000" stroke="#000" stroke-width="27.0" stroke-linejoin="round"/>
+      <path d="M512.0 428.3 L512.0 360.8 M589.0 304.8 L685.2 374.7 M591.6 486.1 L655.8 465.3 M732.8 521.2 L696.1 634.3 M561.2 579.7 L600.9 634.3 M571.4 724.9 L452.6 724.9 M462.8 579.7 L423.1 634.3 M327.9 634.3 L291.2 521.2 M432.4 486.1 L368.2 465.3 M338.8 374.7 L435.0 304.8" fill="none" stroke="#000" stroke-width="9.5" stroke-linecap="round"/>
+    </mask>
+  </defs>
+  <circle cx="512" cy="512" r="270" fill="#fff" mask="url(#cut)"/>
+  <circle cx="512" cy="512" r="259.88" fill="none" stroke="#fff" stroke-width="20.25"/>
+</svg>

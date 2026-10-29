@@ -95,8 +95,15 @@ rsync -avc --partial build_repo/pool/ <source-host>:/srv/apt/pool/
 rsync -avc --partial /delivery/ios/bootstrap/ <source-host>:/srv/apt/bootstraps/1900/
 rsync -avc --partial /delivery/tvos/bootstrap/ <source-host>:/srv/apt/bootstraps/appletvos-arm64e/1900/
 rsync -avc --delay-updates build_repo/dists/ <source-host>:/srv/apt/dists/
+rsync -avc build_repo/CydiaIcon.png <source-host>:/srv/apt/
 ```
 
 不用 `--delete`，避免删除其他平台或保留版本。上传失败后可重跑；前三条成功后才执行索引上传。容器无法联网时，可将这些产物取到配置好网络的宿主机，用相同的 rsync 顺序上传。
 
 测试站点使用 `procursus.82flex.com`，正式发布使用 `stripe.owngoal.dev`，Bootstrap 内置地址须与用途一致。发布后在客户端执行 `apt-get update`，并下载两个架构的样本包验证。
+
+## 软件源图标
+
+`update` 每次都会把 `build_misc/repository/CydiaIcon.png` 写到 `build_repo/CydiaIcon.png` 和 `build_repo/dists/<suite>/CydiaIcon.png`，Cydia、Sileo、Zebra 会在这两处查找。图标不在 Release 的哈希列表里，更换图标不需要重建索引或重新签名。
+
+图标源文件在 `artwork/`：`OwnGoal.icon` 是 Icon Composer 文档，背景由 `ribbon.html?export=background&ss=4` 导出后缩到 1024。修改后在 macOS 上运行 `artwork/build-icon.sh`，重新生成 `stripe-icon.png`、`stripe-icon-square.png` 和 `CydiaIcon.png`，再按上文上传。
