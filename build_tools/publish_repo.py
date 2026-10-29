@@ -40,6 +40,7 @@ ARCH_DEFAULT = "iphoneos-arm64e"
 POOL_TARGET_DEFAULT = "iphoneos-arm64-roothide"
 URI_DEFAULT = "https://stripe.owngoal.dev"
 DESCRIPTION = "Distribution of essential tools for iPhoneOS"
+REPO_ICON = Path(__file__).resolve().parent.parent / "build_misc" / "repository" / "CydiaIcon.png"
 
 
 class Fail(Exception):
@@ -998,6 +999,22 @@ def export_delivery(args):
     print(f"exported {len(packages)} DEBs; delivery hashes verified")
 
 
+def install_repo_icon(repo, suite):
+    """Place CydiaIcon.png at the repository root and in dists/<suite>.
+
+    Clients look in both places. The icon is not listed in Release, so it can
+    be refreshed without regenerating or re-signing the index.
+    """
+    targets = [Path(repo) / "CydiaIcon.png"]
+    dist = Path(repo) / "dists" / suite
+    if dist.is_dir():
+        targets.append(dist / "CydiaIcon.png")
+    for target in targets:
+        if not target.exists() or hash_file(target) != hash_file(REPO_ICON):
+            atomic_copy(REPO_ICON, target)
+    return [str(target) for target in targets]
+
+
 def update_repository(args):
     require_tools(["gpg"])
     packages_dir = Path(args.packages).resolve()
@@ -1096,6 +1113,8 @@ def update_repository(args):
                 },
             )
             report["index"]["rebuilt"] = True
+        if not args.dry_run:
+            report["icon"] = install_repo_icon(repo, suite)
     return report
 
 

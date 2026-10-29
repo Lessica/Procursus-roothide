@@ -1,0 +1,328 @@
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>OwnGoal Silk</title>
+<style>
+  :root { --page: #eef1f5; --ink: #1d2433; }
+  html, body { margin: 0; background: var(--page); color: var(--ink); font: 14px/1.4 -apple-system, sans-serif; }
+  main { display: flex; gap: 40px; padding: 40px; flex-wrap: wrap; align-items: flex-start; }
+  figure { margin: 0; display: grid; gap: 10px; justify-items: center; }
+  .stack { position: relative; width: 512px; height: 512px; }
+  .stack > * { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .rounded { border-radius: 22.5%; overflow: hidden; box-shadow: 0 18px 48px rgba(10, 30, 60, .22); }
+  .small { width: 240px; height: 240px; }
+  .checker { background: repeating-conic-gradient(#d9dde4 0 25%, #fff 0 50%) 0 0 / 24px 24px; }
+  /* 导出模式：只留一张 1024 方图，无圆角 */
+  body.export main { padding: 0; gap: 0; }
+  body.export figure:not(.primary), body.export figcaption { display: none; }
+  body.export .stack { width: 1024px; height: 1024px; }
+  body.export .rounded { border-radius: 0; box-shadow: none; }
+</style>
+</head>
+<body>
+<main>
+  <figure class="primary">
+    <div class="stack rounded">
+      <canvas id="silk"></canvas>
+    </div>
+    <figcaption>完整图标</figcaption>
+  </figure>
+  <figure>
+    <div class="stack small rounded"><canvas id="silkOnly"></canvas></div>
+    <figcaption>背景层</figcaption>
+  </figure>
+  <figure>
+    <div class="stack small checker"><img src="football.svg" alt=""></div>
+    <figcaption>前景层 football.svg（扁平，给 Icon Composer）</figcaption>
+  </figure>
+</main>
+<script>
+// ?ss=4 时按 4 倍尺寸绘制，导出后再缩回 1024，相当于超采样抗锯齿
+const SS = Number(new URLSearchParams(location.search).get('ss')) || 1;
+const SIZE = 1024 * SS;
+
+// mulberry32：固定种子，每次出图一致
+function prng(a) {
+  return () => {
+    a |= 0; a = (a + 0x6D2B79F5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+const rgb = h => [0, 2, 4].map(i => parseInt(h.substr(1 + i, 2), 16));
+const lerp = (a, b, k) => a + (b - a) * k;
+const clamp01 = v => v < 0 ? 0 : v > 1 ? 1 : v;
+
+// 二维色板：横向 u 是丝带的宽度方向，纵向 v 是丝带的走向
+// 起点一端偏草绿和青，末端偏蓝紫，对应“从球场踢向夜空”
+const PALETTE = {
+  start: ['#12C98A', '#1FD6B4', '#22B8F0', '#2F7BFF'].map(rgb),
+  end:   ['#2FA8FF', '#3D6BFF', '#6A4BFF', '#9B3DF2'].map(rgb),
+};
+function paint(u, v) {
+  const pick = row => {
+    const x = clamp01(u) * (row.length - 1);
+    const i = Math.min(Math.floor(x), row.length - 2);
+    return row[i].map((c, n) => lerp(c, row[i + 1][n], x - i));
+  };
+  const a = pick(PALETTE.start), b = pick(PALETTE.end);
+  return a.map((c, n) => lerp(c, b[n], clamp01(v)));
+}
+
+// 丝带由左右两条三次贝塞尔边定义。每根细丝的四个控制点
+// 都由两条边的控制点插值得到，所以每根丝本身就是一条完整的三次贝塞尔曲线，
+// 整条丝带处处光滑，不会因为沿法线外推而折出硬角。
+function weave(ctx, ribbon) {
+  const rnd = prng(ribbon.seed);
+  const A = ribbon.edgeA.map(([x, y]) => [x * SIZE, y * SIZE]);
+  const B = ribbon.edgeB.map(([x, y]) => [x * SIZE, y * SIZE]);
+  const at = (k, w) => [lerp(A[k][0], B[k][0], w), lerp(A[k][1], B[k][1], w)];
+  ctx.lineCap = 'round';
+
+  for (let n = 0; n < ribbon.threads; n++) {
+    // 允许少量细丝落到边界外一点，再按距离淡出，边缘就是羽化的
+    const [lo, hi] = ribbon.lanes || [0, 1];
+    const f = ribbon.feather || 0;
+    const u = lo - f + rnd() * (hi - lo + 2 * f);
+    const outside = Math.max(lo - u, u - hi, 0) / (f || 1);
+    // 中间两个控制点的插值位置略有偏移，丝带横向会有一点起伏的光泽；
+    // 偏移幅度小于 1/π，各根丝之间保持单调，不会交叉打结
+    const bend = ribbon.sheen * Math.sin(Math.PI * clamp01(u));
+    const w = [u, u + bend, u - bend, u];
+    const drift = () => (rnd() - 0.5) * ribbon.drift * SIZE;
+    const p = w.map((wk, k) => {
+      const q = at(k, wk);
+      return k === 1 || k === 2 ? [q[0] + drift(), q[1] + drift()] : q;
+    });
+
+    const rim = Math.min(Math.abs(clamp01(u) * 2 - 1), 1);
+    const alpha = ribbon.alpha * (0.5 + 0.5 * (1 - rim * rim)) * (1 - outside) ** 2;
+    const tint = (rnd() - 0.5) * 0.05;
+    const grad = ctx.createLinearGradient(p[0][0], p[0][1], p[3][0], p[3][1]);
+    for (const v of [0, 0.5, 1]) {
+      grad.addColorStop(v, `rgba(${ribbon.paint(u + tint, v).map(Math.round)},${alpha})`);
+    }
+    ctx.strokeStyle = grad;
+    ctx.lineWidth = (0.6 + rnd() * 1.4) * SS;
+    ctx.beginPath();
+    ctx.moveTo(...p[0]);
+    ctx.bezierCurveTo(...p[1], ...p[2], ...p[3]);
+    ctx.stroke();
+  }
+}
+
+// 衬底丝带：深青到深蓝，横向取色，铺满整张图
+const DEEP = ['#0E6A7E', '#12507A', '#173F86', '#22388F'].map(rgb);
+function deep(u) {
+  const x = clamp01(u) * (DEEP.length - 1);
+  const i = Math.min(Math.floor(x), DEEP.length - 2);
+  return DEEP[i].map((c, n) => lerp(c, DEEP[i + 1][n], x - i));
+}
+
+function render(canvas) {
+  canvas.width = canvas.height = SIZE;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#123A6B';
+  ctx.fillRect(0, 0, SIZE, SIZE);
+  // 丝带的两端都伸到画布外，画面里只看到平滑的中段
+  weave(ctx, {
+    seed: 11, threads: 9000, alpha: 0.16, sheen: 0.12, drift: 0.02, paint: deep,
+    edgeA: [[-0.70, 0.30], [-0.05, -0.05], [0.25, -0.45], [0.75, -0.85]],
+    edgeB: [[0.25, 1.75], [0.85, 1.35], [1.15, 0.95], [1.75, 0.65]],
+  });
+  // 主丝带走一个平缓的 S 形
+  const main = {
+    edgeA: [[-0.40, 0.95], [0.32, 0.78], [0.18, 0.06], [0.88, -0.24]],
+    edgeB: [[0.12, 1.45], [0.86, 1.16], [0.74, 0.44], [1.46, 0.20]],
+  };
+  weave(ctx, { ...main, seed: 29, threads: 16000, alpha: 0.13, sheen: 0.16, drift: 0.012, feather: 0.05, paint });
+  // 一道偏白的细丝高光，叠在主丝带靠上的位置
+  weave(ctx, {
+    ...main, seed: 43, threads: 2200, alpha: 0.035, sheen: 0.16, drift: 0.012, feather: 0.12,
+    lanes: [0.20, 0.44], paint: () => [235, 250, 255],
+  });
+}
+
+// ---------- 液态玻璃足球 ----------
+// 思路参考网页上常见的 Liquid Glass 做法：
+//   1. 由玻璃形状算出到边缘的距离场
+//   2. 距离场 + 凸面倒角曲线 → 表面高度和法线
+//   3. 按法线方向偏移采样背景，模拟边缘折射；三个通道偏移量略有不同，形成轻微色散
+//   4. 背景轻微磨砂 + 提亮 + 增加饱和度，再叠加沿法线计算的边缘高光
+
+// 足球的“壳”：白色面板 + 外圈，五边形和接缝镂空，几何与 football.svg 一致
+function shell(R) {
+  const c = document.createElement('canvas');
+  c.width = c.height = SIZE;
+  const g = c.getContext('2d');
+  const C = SIZE / 2;
+  const poly = (x, y, r, rot) => Array.from({ length: 5 }, (_, k) => {
+    const a = (rot + 72 * k) * Math.PI / 180;
+    return [x + r * Math.cos(a), y + r * Math.sin(a)];
+  });
+  const center = poly(C, C, 0.31 * R, -90);
+  const outer = [0, 1, 2, 3, 4].map(k => {
+    const a = -90 + 72 * k, rad = a * Math.PI / 180;
+    return poly(C + 0.86 * R * Math.cos(rad), C + 0.86 * R * Math.sin(rad), 0.30 * R, a + 180);
+  });
+  g.fillStyle = g.strokeStyle = '#fff';
+  g.beginPath(); g.arc(C, C, R, 0, Math.PI * 2); g.fill();
+  g.globalCompositeOperation = 'destination-out';
+  g.lineJoin = g.lineCap = 'round';
+  g.lineWidth = 0.10 * R;
+  for (const p of [center, ...outer]) {
+    g.beginPath(); p.forEach(([x, y], i) => i ? g.lineTo(x, y) : g.moveTo(x, y)); g.closePath();
+    g.fill(); g.stroke();
+  }
+  g.lineWidth = 0.035 * R;
+  g.beginPath();
+  for (let k = 0; k < 5; k++) {
+    g.moveTo(...center[k]); g.lineTo(...outer[k][0]);
+    g.moveTo(...outer[k][4]); g.lineTo(...outer[(k + 1) % 5][1]);
+  }
+  g.stroke();
+  g.globalCompositeOperation = 'source-over';
+  g.lineWidth = 0.075 * R;
+  g.beginPath(); g.arc(C, C, R - 0.0375 * R, 0, Math.PI * 2); g.stroke();
+  return g.getImageData(0, 0, SIZE, SIZE).data;
+}
+
+// Felzenszwalb 一维平方距离变换，按行、按列各做一遍得到二维欧氏距离
+function edt1d(f, n, d, v, z) {
+  let k = 0; v[0] = 0; z[0] = -Infinity; z[1] = Infinity;
+  for (let q = 1; q < n; q++) {
+    let s;
+    while ((s = ((f[q] + q * q) - (f[v[k]] + v[k] * v[k])) / (2 * q - 2 * v[k])) <= z[k]) k--;
+    k++; v[k] = q; z[k] = s; z[k + 1] = Infinity;
+  }
+  k = 0;
+  for (let q = 0; q < n; q++) {
+    while (z[k + 1] < q) k++;
+    d[q] = (q - v[k]) ** 2 + f[v[k]];
+  }
+}
+function insideDistance(alpha) {
+  const N = SIZE, BIG = 1e12;
+  const grid = new Float64Array(N * N);
+  for (let i = 0; i < N * N; i++) grid[i] = alpha[i] > 127 ? BIG : 0;
+  const f = new Float64Array(N), d = new Float64Array(N), v = new Int32Array(N), z = new Float64Array(N + 1);
+  for (let x = 0; x < N; x++) {
+    for (let y = 0; y < N; y++) f[y] = grid[y * N + x];
+    edt1d(f, N, d, v, z);
+    for (let y = 0; y < N; y++) grid[y * N + x] = d[y];
+  }
+  for (let y = 0; y < N; y++) {
+    for (let x = 0; x < N; x++) f[x] = grid[y * N + x];
+    edt1d(f, N, d, v, z);
+    for (let x = 0; x < N; x++) grid[y * N + x] = Math.sqrt(d[x]);
+  }
+  return grid;
+}
+
+function boxBlur(src, w, h, r, channels) {
+  const out = new Float32Array(src.length), tmp = new Float32Array(src.length);
+  const pass = (a, b, horizontal) => {
+    for (let o = 0; o < (horizontal ? h : w); o++) {
+      for (let c = 0; c < channels; c++) {
+        let acc = 0;
+        const len = horizontal ? w : h;
+        const idx = i => (horizontal ? o * w + i : i * w + o) * channels + c;
+        for (let i = -r; i <= r; i++) acc += a[idx(Math.min(Math.max(i, 0), len - 1))];
+        for (let i = 0; i < len; i++) {
+          b[idx(i)] = acc / (2 * r + 1);
+          acc += a[idx(Math.min(i + r + 1, len - 1))] - a[idx(Math.max(i - r, 0))];
+        }
+      }
+    }
+  };
+  pass(src, tmp, true); pass(tmp, out, false);
+  return out;
+}
+
+function glassBall(canvas, R) {
+  const ctx = canvas.getContext('2d');
+  const N = SIZE;
+  const mask = shell(R);
+  const alpha = new Uint8ClampedArray(N * N);
+  for (let i = 0; i < N * N; i++) alpha[i] = mask[i * 4 + 3];
+
+  // 距离场稍作平滑，法线才不会带锯齿
+  const dist = boxBlur(insideDistance(alpha), N, N, 1, 1);
+  const bg = ctx.getImageData(0, 0, N, N);
+  const frost = boxBlur(Float32Array.from(bg.data), N, N, 3, 4);
+
+  // 玻璃下方的柔和投影，只落在玻璃外面
+  const shadow = document.createElement('canvas');
+  shadow.width = shadow.height = N;
+  const sg = shadow.getContext('2d');
+  sg.filter = 'blur(18px)';
+  sg.fillStyle = 'rgba(8, 18, 60, 0.35)';
+  sg.beginPath(); sg.arc(N / 2, N / 2 + 14, R, 0, Math.PI * 2); sg.fill();
+  ctx.drawImage(shadow, 0, 0);
+  const base = ctx.getImageData(0, 0, N, N);
+  const out = base.data;
+
+  const BEZEL = 22;         // 倒角宽度
+  const REFRACT = 40;       // 边缘最大折射偏移
+  const CHROMA = 0.10;      // 色散：三个通道偏移量的差
+  const TINT = 0.28;        // 白色提亮
+  const SAT = 1.25;         // 饱和度
+  const L = [-0.6, -0.8];   // 光从左上来
+  const sample = (x, y, ch) => {
+    x = Math.min(Math.max(x, 0), N - 1.001); y = Math.min(Math.max(y, 0), N - 1.001);
+    const x0 = x | 0, y0 = y | 0, fx = x - x0, fy = y - y0;
+    const at = (xx, yy) => frost[(yy * N + xx) * 4 + ch];
+    return lerp(lerp(at(x0, y0), at(x0 + 1, y0), fx), lerp(at(x0, y0 + 1), at(x0 + 1, y0 + 1), fx), fy);
+  };
+
+  for (let y = 1; y < N - 1; y++) {
+    for (let x = 1; x < N - 1; x++) {
+      const i = y * N + x;
+      const cover = alpha[i] / 255;
+      if (cover === 0) continue;
+      const d = dist[i];
+      const t = Math.min(d / BEZEL, 1);
+      // 向内的法线方向
+      let gx = dist[i + 1] - dist[i - 1], gy = dist[i + N] - dist[i - N];
+      const gl = Math.hypot(gx, gy) || 1;
+      gx /= gl; gy /= gl;
+      // 凸面倒角：越靠边越陡，折射越强
+      const slope = (1 - t) ** 2;
+      const rgb = [0, 1, 2].map(ch => {
+        const m = REFRACT * slope * (1 + (ch - 1) * CHROMA);
+        return sample(x + gx * m, y + gy * m, ch);
+      });
+      // 提亮 + 增饱和
+      const lum = 0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2];
+      let col = rgb.map(c => lum + (c - lum) * SAT).map(c => c + (255 - c) * TINT);
+      // 边缘高光：迎光一侧强，背光一侧弱
+      const facing = -(gx * L[0] + gy * L[1]);
+      const rim = (1 - t) ** 2.4;
+      const spec = rim * (Math.max(facing, 0) ** 2 * 1.2 + Math.max(-facing, 0) ** 2 * 0.5);
+      // 倒角内侧一圈很细的亮线，勾出玻璃的厚度
+      const edgeLine = Math.exp(-((d - 1.2) ** 2) / 0.8) * 0.35;
+      // 上半部略亮，模拟顶部受光的体积感
+      const sky = clamp01((SIZE / 2 + R - y) / (2 * R)) * 0.12;
+      col = col.map(c => c + (255 - c) * Math.min(spec + edgeLine + sky, 1));
+      for (let ch = 0; ch < 3; ch++) out[i * 4 + ch] = lerp(out[i * 4 + ch], col[ch], cover);
+    }
+  }
+  ctx.putImageData(base, 0, 0);
+}
+
+const params = new URLSearchParams(location.search);
+if (params.has('export')) {
+  document.body.classList.add('export');
+  document.querySelector('.primary .stack').style.width = document.querySelector('.primary .stack').style.height = SIZE + 'px';
+}
+const silk = document.getElementById('silk');
+render(silk);
+if (params.get('export') !== 'background') glassBall(silk, 270);
+if (!params.has('export')) render(document.getElementById('silkOnly'));
+</script>
+</body>
+</html>
