@@ -1,0 +1,28 @@
+--- a/src/event_imp.rs
++++ b/src/event_imp.rs
+@@ -512,7 +512,6 @@
+     }
+ }
+ 
+-#[deprecated(since = "0.6.10", note = "removed")]
+ #[cfg(feature = "with-deprecated")]
+ #[doc(hidden)]
+ impl ops::Not for PollOpt {
+@@ -999,7 +998,6 @@
+     }
+ }
+ 
+-#[deprecated(since = "0.6.10", note = "removed")]
+ #[cfg(feature = "with-deprecated")]
+ #[doc(hidden)]
+ impl ops::Not for Ready {
+--- a/src/sys/unix/ready.rs
++++ b/src/sys/unix/ready.rs
+@@ -477,7 +477,6 @@
+     }
+ }
+ 
+-#[deprecated(since = "0.6.10", note = "removed")]
+ #[cfg(feature = "with-deprecated")]
+ #[doc(hidden)]
+ impl ops::Not for UnixReady {

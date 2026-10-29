@@ -1,0 +1,27 @@
+.\"*******************************************************************
+.\"
+.\" This file was generated with po4a. Translate the source file.
+.\"
+.\"*******************************************************************
+.TH INSTALLKERNEL 8 "7 Jan 2001" "Debian Linux" 
+.SH 名前
+installkernel \- 新しいカーネルイメージのインストール
+.SH 書式
+\fBinstallkernel \fP\fIversion zImage System.map [directory]\fP
+.SH 説明
+\fBinstallkernel\fP は、新しいカーネルイメージを、Linux ソースツリーからシステムにインストールします。\fBmake install\fP
+が実行されると、Linux カーネルの makefile から呼ばれます。
+.P
+新しいカーネルを \fI{directory}/vmlinuz\-{version}\fP にインストールします。シンボリックリンク
+\fI{directory}/vmlinuz\fP がすでにある場合、\fI{directory}/vmlinuz\fP
+から新しいカーネルへ、リンクを作成して更新します。また、以前のカーネルを \fI{directory}/vmlinuz.old\fP
+として利用できるようにします。
+.SH バグ
+\fBinstallkernel\fP resides in /sbin only because the Linux kernel makefiles
+call it from there.  It should really be in /usr/sbin.  It isn't needed to
+boot a system.
+.SH 翻訳
+倉澤 望 <nabetaro@debian.or.jp>, 2012
+.br
+Debian JP Documentation ML <debian-doc@debian.or.jp>
+

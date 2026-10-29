@@ -1,0 +1,30 @@
+# CONTRIBUTING
+
+Contributions to debianutils should conform with the
+mission, vision, and values, documentation of which
+is a work in progress.
+
+# SCOPE
+
+debianutils is meant to provide small utilities that
+are used primarily by the installation scripts of Debian
+packages in order to address needs that cannot be
+fulfilled by other packages.
+
+For historical reasons, there are utilities in
+debianutils that should not be there.  For example,
+`savelog` is superfluous given the existence of
+the far superior `logrotate`.  Therefore, in the
+long term, `savelog` should be deprecated and removed.
+
+# TIERS
+
+Accordingly, some included utilities are considered
+second-class and will receive minimal-to-no support.
+If your objective is to add features to any of the
+following, the preferred course of action is to fork
+them and coordinate their removals from debianutils:
+
+* ischroot
+* savelog
+* which

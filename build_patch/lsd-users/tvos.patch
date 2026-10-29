@@ -1,0 +1,26 @@
+--- a/src/base.rs
++++ b/src/base.rs
+@@ -791 +791 @@
+-    #[cfg(all(unix, any(target_os = "macos", target_os = "ios")))]
++    #[cfg(all(unix, any(target_os = "macos", any(target_os = "ios", target_os = "tvos"))))]
+@@ -793 +793 @@
+-    #[cfg(all(unix, not(any(target_os = "macos", target_os = "ios"))))]
++    #[cfg(all(unix, not(any(target_os = "macos", any(target_os = "ios", target_os = "tvos")))))]
+@@ -807 +807 @@
+-    #[cfg(all(unix, any(target_os = "macos", target_os = "ios")))]
++    #[cfg(all(unix, any(target_os = "macos", any(target_os = "ios", target_os = "tvos"))))]
+@@ -811 +811 @@
+-    #[cfg(all(unix, not(any(target_os = "macos", target_os = "ios"))))]
++    #[cfg(all(unix, not(any(target_os = "macos", any(target_os = "ios", target_os = "tvos")))))]
+@@ -939 +939 @@
+-        target_os = "ios",
++        any(target_os = "ios", target_os = "tvos"),
+@@ -1103 +1103 @@
+-        target_os = "ios",
++        any(target_os = "ios", target_os = "tvos"),
+@@ -1203 +1203 @@
+-        target_os = "ios",
++        any(target_os = "ios", target_os = "tvos"),
+@@ -1220 +1220 @@
+-        target_os = "ios",
++        any(target_os = "ios", target_os = "tvos"),

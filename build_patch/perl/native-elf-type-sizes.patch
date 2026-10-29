@@ -1,0 +1,26 @@
+--- a/cnf/configure_type.sh
++++ b/cnf/configure_type.sh
+@@ -22,6 +22,14 @@
+ # TODO: add test for readelf usability, and switch
+ # to objdump if possible
+ 
++try_size_symbols() {
++	if [ "$mode" = buildmini ] && [ "$(uname -s)" = Linux ]; then
++		run readelf --syms try$_o
++	else
++		try_nm -g
++	fi
++}
++
+ # checksize symbol type includes
+ checksize() {
+ 	mstart "Checking size of $2"
+@@ -38,7 +46,7 @@
+ 		return
+ 	fi
+ 
+-	if not try_nm -g > try.out 2>>$cfglog; then
++	if not try_size_symbols > try.out 2>>$cfglog; then
+ 		result 'unknown'
+ 		die "Cannot determine sizeof($2), use -D${1}size="
+ 		return

@@ -1,0 +1,9 @@
+Package: python3-setuptools
+Version: @DEB_PYTHON3_SETUPTOOLS_V@
+Architecture: all
+Maintainer: @DEB_MAINTAINER@
+Depends: python3, python3-pkg-resources (= @DEB_PYTHON3_SETUPTOOLS_V@)
+Section: Python
+Priority: optional
+Homepage: https://pypi.org/project/setuptools/
+Description: Python package build and installation tools

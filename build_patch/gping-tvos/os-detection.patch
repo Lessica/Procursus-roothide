@@ -1,0 +1,5 @@
+--- a/pinger/src/lib.rs
++++ b/pinger/src/lib.rs
+@@ -182 +182 @@
+-        #[cfg(target_os = "ios")]
++        #[cfg(any(target_os = "ios", target_os = "tvos"))]

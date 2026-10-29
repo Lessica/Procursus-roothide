@@ -1,0 +1,28 @@
+--- a/fff
++++ b/fff
+@@ -9,7 +9,6 @@
+         # Mac OS X / macOS.
+         darwin*)
+             opener=open
+-            file_flags=bIL
+         ;;
+ 
+         haiku)
+@@ -84,8 +83,6 @@
+         mark_post=${FFF_MARK_FORMAT/*'%f'}
+     }
+ 
+-    # Find supported 'file' arguments.
+-    file -I &>/dev/null || : "${file_flags:=biL}"
+ }
+ 
+ get_term_size() {
+@@ -147,7 +144,7 @@
+ 
+ get_mime_type() {
+     # Get a file's mime_type.
+-    mime_type=$(file "-${file_flags:-biL}" "$1" 2>/dev/null)
++    mime_type=$(file -b --mime-type -L "$1" 2>/dev/null)
+ }
+ 
+ status_line() {

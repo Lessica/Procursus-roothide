@@ -1,0 +1,21 @@
+--- a/Cargo.toml
++++ b/Cargo.toml
+@@ -69,6 +69,7 @@
+ ]
+ 
+ [patch.crates-io]
++socket2 = { path = "../spotifyd-socket2" }
+ keyring = { path = "../spotifyd-keyring" }
+ security-framework = { path = "../spotifyd-security-framework" }
+ security-framework-sys = { path = "../spotifyd-security-framework-sys" }
+--- a/Cargo.lock
++++ b/Cargo.lock
+@@ -2732,8 +2732,6 @@
+ [[package]]
+ name = "socket2"
+ version = "0.4.10"
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "9f7916fc008ca5542385b89a3d3ce689953c143e9304a9bf8beec1de48994c0d"
+ dependencies = [
+  "libc",
+  "winapi 0.3.9",

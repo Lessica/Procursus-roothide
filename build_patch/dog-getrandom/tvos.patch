@@ -1,0 +1,5 @@
+--- a/src/lib.rs
++++ b/src/lib.rs
+@@ -213 +213 @@
+-    } else if #[cfg(target_os = "ios")] {
++    } else if #[cfg(any(target_os = "ios", target_os = "tvos"))] {

@@ -1,0 +1,15 @@
+--- a/Cargo.toml
++++ b/Cargo.toml
+@@ -107,0 +108 @@
++open = { path = "../starship-open" }
+--- a/Cargo.lock
++++ b/Cargo.lock
+@@ -1043,2 +1042,0 @@
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "1711eb4b31ce4ad35b0f316d8dfba4fe5c7ad601c448446d84aae7a896627b20"
+@@ -1591 +1589 @@
+-version = "0.4.0"
++version = "0.4.10"
+@@ -1593 +1591 @@
+-checksum = "9e3dfc207c526015c632472a77be09cf1b6e46866581aecae5cc38fb4235dea2"
++checksum = "9f7916fc008ca5542385b89a3d3ce689953c143e9304a9bf8beec1de48994c0d"

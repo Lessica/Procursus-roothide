@@ -1,0 +1,34 @@
+Preserve explicitly supplied Darwin cross tools; the Xcode version check applies only on macOS.
+
+--- a/build/make/configure.sh
++++ b/build/make/configure.sh
+@@ -1098,13 +1098,13 @@
+         darwin)
+           if ! enabled external_build; then
+             XCRUN_FIND="xcrun --sdk iphoneos --find"
+-            CXX="$(${XCRUN_FIND} clang++)"
+-            CC="$(${XCRUN_FIND} clang)"
+-            AR="$(${XCRUN_FIND} ar)"
+-            AS="$(${XCRUN_FIND} as)"
+-            STRIP="$(${XCRUN_FIND} strip)"
+-            NM="$(${XCRUN_FIND} nm)"
+-            RANLIB="$(${XCRUN_FIND} ranlib)"
++            CXX="${CXX:-$(${XCRUN_FIND} clang++)}"
++            CC="${CC:-$(${XCRUN_FIND} clang)}"
++            AR="${AR:-$(${XCRUN_FIND} ar)}"
++            AS="${AS:-$(${XCRUN_FIND} as)}"
++            STRIP="${STRIP:-$(${XCRUN_FIND} strip)}"
++            NM="${NM:-$(${XCRUN_FIND} nm)}"
++            RANLIB="${RANLIB:-$(${XCRUN_FIND} ranlib)}"
+             AS_SFX=.S
+             LD="${CXX:-$(${XCRUN_FIND} ld)}"
+ 
+@@ -1134,7 +1134,7 @@
+ 
+             case ${tgt_isa} in
+               armv7|armv7s|armv8|arm64)
+-                if enabled neon && ! check_xcode_minimum_version; then
++                if [ "$(uname -s)" = Darwin ] && enabled neon && ! check_xcode_minimum_version; then
+                   soft_disable neon
+                   log_echo "  neon disabled: upgrade Xcode (need v6.3+)."
+                   if enabled neon_asm; then

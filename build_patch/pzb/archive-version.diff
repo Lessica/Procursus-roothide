@@ -1,0 +1,22 @@
+--- a/configure.ac
++++ b/configure.ac
+@@ -1,6 +1,6 @@
+ AC_PREREQ([2.69])
+-AC_INIT([partialZipBrowser], m4_esyscmd([git rev-list --count HEAD | tr -d '\n']), [tihmstar@gmail.com])
+-AM_INIT_AUTOMAKE(partialZipBrowser, m4_esyscmd([git rev-list --count HEAD | tr -d '\n']))
++AC_INIT([partialZipBrowser], [36], [tihmstar@gmail.com])
++AM_INIT_AUTOMAKE(partialZipBrowser, [36])
+ 
+ 
+ AC_CONFIG_SRCDIR([pzb/pzb.hpp])
+@@ -9,8 +9,8 @@
+ # Checks for programs.
+ AC_PROG_CXX
+ CXXFLAGS+=" -std=c++11"
+-CXXFLAGS+=" -D PZB_VERSION_COMMIT_COUNT=\\\"$(git rev-list --count HEAD | tr -d '\n')\\\""
+-CXXFLAGS+=" -D PZB_VERSION_COMMIT_SHA=\\\"$(git rev-parse HEAD | tr -d '\n')\\\""
++CXXFLAGS+=" -D PZB_VERSION_COMMIT_COUNT=\\\"36\\\""
++CXXFLAGS+=" -D PZB_VERSION_COMMIT_SHA=\\\"3fc8c093f4660f6c6e07c0c9214618733da01ffc\\\""
+ 
+ 
+ AC_CANONICAL_HOST

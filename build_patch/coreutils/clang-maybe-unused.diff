@@ -1,0 +1,11 @@
+--- a/m4/gnulib-common.m4
++++ b/m4/gnulib-common.m4
+@@ -390,7 +390,7 @@
+ #   if !defined __apple_build_version__ && __clang_major__ >= 10
+ #    define _GL_ATTRIBUTE_MAYBE_UNUSED [[__maybe_unused__]]
+ #   endif
+-#  elif _GL_HAVE___HAS_C_ATTRIBUTE
++#  elif _GL_HAVE___HAS_C_ATTRIBUTE && !defined __clang__
+ #   if __has_c_attribute (__maybe_unused__)
+ #    define _GL_ATTRIBUTE_MAYBE_UNUSED [[__maybe_unused__]]
+ #   endif

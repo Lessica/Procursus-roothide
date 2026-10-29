@@ -1,0 +1,389 @@
+--- a/src/lib/torsocks.h
++++ b/src/lib/torsocks.h
+@@ -25,6 +25,19 @@
+ #include <common/compat.h>
+ #include <common/config-file.h>
+ 
++/* Darwin binds normal applications with a two-level namespace.  Give each
++ * replacement its own symbol so __interpose can still refer to libc's symbol.
++ * Keep the LIBC_*_NAME_STR strings unchanged for original-function lookup.
++ */
++#if defined(__APPLE__) && defined(__MACH__)
++#define TSOCKS_DARWIN_WRAPPER_(name) tsocks_darwin_##name
++#define TSOCKS_DARWIN_WRAPPER(name) TSOCKS_DARWIN_WRAPPER_(name)
++#define TSOCKS_WRAPPER(name) TSOCKS_DARWIN_WRAPPER(name)
++extern unsigned int tsocks_darwin_ready;
++#else
++#define TSOCKS_WRAPPER(name) name
++#endif
++
+ /*
+  * This defines a function pointer to the original libc call of "name" so the
+  * libc call outside of torsocks can be used. These are declared for each
+@@ -304,36 +317,36 @@
+ extern TSOCKS_LIBC_DECL(connect, LIBC_CONNECT_RET_TYPE, LIBC_CONNECT_SIG)
+ TSOCKS_DECL(connect, LIBC_CONNECT_RET_TYPE, LIBC_CONNECT_SIG)
+ #define LIBC_CONNECT_DECL \
+-	LIBC_CONNECT_RET_TYPE LIBC_CONNECT_NAME(LIBC_CONNECT_SIG)
++	LIBC_CONNECT_RET_TYPE TSOCKS_WRAPPER(LIBC_CONNECT_NAME)(LIBC_CONNECT_SIG)
+ 
+ /* recvmsg(2) */
+ extern TSOCKS_LIBC_DECL(recvmsg, LIBC_RECVMSG_RET_TYPE, LIBC_RECVMSG_SIG)
+ TSOCKS_DECL(recvmsg, LIBC_RECVMSG_RET_TYPE, LIBC_RECVMSG_SIG)
+ #define LIBC_RECVMSG_DECL \
+-		LIBC_RECVMSG_RET_TYPE LIBC_RECVMSG_NAME(LIBC_RECVMSG_SIG)
++		LIBC_RECVMSG_RET_TYPE TSOCKS_WRAPPER(LIBC_RECVMSG_NAME)(LIBC_RECVMSG_SIG)
+ 
+ /* sendto(2) */
+ extern TSOCKS_LIBC_DECL(sendto, LIBC_SENDTO_RET_TYPE, LIBC_SENDTO_SIG)
+ TSOCKS_DECL(sendto, LIBC_SENDTO_RET_TYPE, LIBC_SENDTO_SIG)
+ #define LIBC_SENDTO_DECL \
+-		LIBC_SENDTO_RET_TYPE LIBC_SENDTO_NAME(LIBC_SENDTO_SIG)
++		LIBC_SENDTO_RET_TYPE TSOCKS_WRAPPER(LIBC_SENDTO_NAME)(LIBC_SENDTO_SIG)
+ 
+ /* socket(2) */
+ extern TSOCKS_LIBC_DECL(socket, LIBC_SOCKET_RET_TYPE, LIBC_SOCKET_SIG)
+ TSOCKS_DECL(socket, LIBC_SOCKET_RET_TYPE, LIBC_SOCKET_SIG)
+ #define LIBC_SOCKET_DECL \
+-		LIBC_SOCKET_RET_TYPE LIBC_SOCKET_NAME(LIBC_SOCKET_SIG)
++		LIBC_SOCKET_RET_TYPE TSOCKS_WRAPPER(LIBC_SOCKET_NAME)(LIBC_SOCKET_SIG)
+ 
+ /* socketpair(2) */
+ extern TSOCKS_LIBC_DECL(socketpair, LIBC_SOCKETPAIR_RET_TYPE, LIBC_SOCKETPAIR_SIG)
+ TSOCKS_DECL(socketpair, LIBC_SOCKETPAIR_RET_TYPE, LIBC_SOCKETPAIR_SIG)
+ #define LIBC_SOCKETPAIR_DECL \
+-		LIBC_SOCKETPAIR_RET_TYPE LIBC_SOCKETPAIR_NAME(LIBC_SOCKETPAIR_SIG)
++		LIBC_SOCKETPAIR_RET_TYPE TSOCKS_WRAPPER(LIBC_SOCKETPAIR_NAME)(LIBC_SOCKETPAIR_SIG)
+ 
+ /* syscall(2) */
+ extern TSOCKS_LIBC_DECL(syscall, LIBC_SYSCALL_RET_TYPE, LIBC_SYSCALL_SIG)
+ #define LIBC_SYSCALL_DECL \
+-		LIBC_SYSCALL_RET_TYPE LIBC_SYSCALL_NAME(LIBC_SYSCALL_SIG)
++		LIBC_SYSCALL_RET_TYPE TSOCKS_WRAPPER(LIBC_SYSCALL_NAME)(LIBC_SYSCALL_SIG)
+ 
+ /* __syscall(2) */
+ #if (defined(__FreeBSD__) || defined(__NetBSD__))
+@@ -346,25 +359,25 @@
+ extern TSOCKS_LIBC_DECL(close, LIBC_CLOSE_RET_TYPE, LIBC_CLOSE_SIG)
+ TSOCKS_DECL(close, LIBC_CLOSE_RET_TYPE, LIBC_CLOSE_SIG)
+ #define LIBC_CLOSE_DECL \
+-		LIBC_CLOSE_RET_TYPE LIBC_CLOSE_NAME(LIBC_CLOSE_SIG)
++		LIBC_CLOSE_RET_TYPE TSOCKS_WRAPPER(LIBC_CLOSE_NAME)(LIBC_CLOSE_SIG)
+ 
+ /* execve(2) */
+ extern TSOCKS_LIBC_DECL(execve, LIBC_EXECVE_RET_TYPE, LIBC_EXECVE_SIG)
+ TSOCKS_DECL(execve, LIBC_EXECVE_RET_TYPE, LIBC_EXECVE_SIG)
+ #define LIBC_EXECVE_DECL \
+-		LIBC_EXECVE_RET_TYPE LIBC_EXECVE_NAME(LIBC_EXECVE_SIG)
++		LIBC_EXECVE_RET_TYPE TSOCKS_WRAPPER(LIBC_EXECVE_NAME)(LIBC_EXECVE_SIG)
+ 
+ /* fclose(3) */
+ extern TSOCKS_LIBC_DECL(fclose, LIBC_FCLOSE_RET_TYPE, LIBC_FCLOSE_SIG)
+ TSOCKS_DECL(fclose, LIBC_FCLOSE_RET_TYPE, LIBC_FCLOSE_SIG)
+ #define LIBC_FCLOSE_DECL \
+-		LIBC_FCLOSE_RET_TYPE LIBC_FCLOSE_NAME(LIBC_FCLOSE_SIG)
++		LIBC_FCLOSE_RET_TYPE TSOCKS_WRAPPER(LIBC_FCLOSE_NAME)(LIBC_FCLOSE_SIG)
+ 
+ /* gethostbyname(3) */
+ extern TSOCKS_LIBC_DECL(gethostbyname, LIBC_GETHOSTBYNAME_RET_TYPE,
+ 		LIBC_GETHOSTBYNAME_SIG)
+ #define LIBC_GETHOSTBYNAME_DECL LIBC_GETHOSTBYNAME_RET_TYPE \
+-		LIBC_GETHOSTBYNAME_NAME(LIBC_GETHOSTBYNAME_SIG)
++		TSOCKS_WRAPPER(LIBC_GETHOSTBYNAME_NAME)(LIBC_GETHOSTBYNAME_SIG)
+ 
+ /* gethostbyname_r(3) */
+ extern TSOCKS_LIBC_DECL(gethostbyname_r, LIBC_GETHOSTBYNAME_R_RET_TYPE,
+@@ -376,7 +389,7 @@
+ extern TSOCKS_LIBC_DECL(gethostbyname2, LIBC_GETHOSTBYNAME2_RET_TYPE,
+ 		LIBC_GETHOSTBYNAME2_SIG)
+ #define LIBC_GETHOSTBYNAME2_DECL LIBC_GETHOSTBYNAME2_RET_TYPE \
+-		LIBC_GETHOSTBYNAME2_NAME(LIBC_GETHOSTBYNAME2_SIG)
++		TSOCKS_WRAPPER(LIBC_GETHOSTBYNAME2_NAME)(LIBC_GETHOSTBYNAME2_SIG)
+ 
+ /* gethostbyname2_r(3) */
+ extern TSOCKS_LIBC_DECL(gethostbyname2_r, LIBC_GETHOSTBYNAME2_R_RET_TYPE,
+@@ -388,7 +401,7 @@
+ extern TSOCKS_LIBC_DECL(gethostbyaddr, LIBC_GETHOSTBYADDR_RET_TYPE,
+ 		LIBC_GETHOSTBYADDR_SIG)
+ #define LIBC_GETHOSTBYADDR_DECL LIBC_GETHOSTBYADDR_RET_TYPE \
+-		LIBC_GETHOSTBYADDR_NAME(LIBC_GETHOSTBYADDR_SIG)
++		TSOCKS_WRAPPER(LIBC_GETHOSTBYADDR_NAME)(LIBC_GETHOSTBYADDR_SIG)
+ 
+ /* gethostbyaddr_r(3) */
+ extern TSOCKS_LIBC_DECL(gethostbyaddr_r, LIBC_GETHOSTBYADDR_R_RET_TYPE,
+@@ -400,20 +413,20 @@
+ extern TSOCKS_LIBC_DECL(getaddrinfo, LIBC_GETADDRINFO_RET_TYPE,
+ 		LIBC_GETADDRINFO_SIG)
+ #define LIBC_GETADDRINFO_DECL LIBC_GETADDRINFO_RET_TYPE \
+-		LIBC_GETADDRINFO_NAME(LIBC_GETADDRINFO_SIG)
++		TSOCKS_WRAPPER(LIBC_GETADDRINFO_NAME)(LIBC_GETADDRINFO_SIG)
+ 
+ /* getpeername(2) */
+ extern TSOCKS_LIBC_DECL(getpeername, LIBC_GETPEERNAME_RET_TYPE,
+ 		LIBC_GETPEERNAME_SIG)
+ TSOCKS_DECL(getpeername, LIBC_GETPEERNAME_RET_TYPE, LIBC_GETPEERNAME_SIG)
+ #define LIBC_GETPEERNAME_DECL LIBC_GETPEERNAME_RET_TYPE \
+-		LIBC_GETPEERNAME_NAME(LIBC_GETPEERNAME_SIG)
++		TSOCKS_WRAPPER(LIBC_GETPEERNAME_NAME)(LIBC_GETPEERNAME_SIG)
+ 
+ /* accept(2) */
+ extern TSOCKS_LIBC_DECL(accept, LIBC_ACCEPT_RET_TYPE, LIBC_ACCEPT_SIG)
+ TSOCKS_DECL(accept, LIBC_ACCEPT_RET_TYPE, LIBC_ACCEPT_SIG)
+ #define LIBC_ACCEPT_DECL LIBC_ACCEPT_RET_TYPE \
+-		LIBC_ACCEPT_NAME(LIBC_ACCEPT_SIG)
++		TSOCKS_WRAPPER(LIBC_ACCEPT_NAME)(LIBC_ACCEPT_SIG)
+ 
+ /* accept4(2) */
+ #if (defined(__linux__))
+@@ -427,7 +440,7 @@
+ extern TSOCKS_LIBC_DECL(listen, LIBC_LISTEN_RET_TYPE, LIBC_LISTEN_SIG)
+ TSOCKS_DECL(listen, LIBC_LISTEN_RET_TYPE, LIBC_LISTEN_SIG)
+ #define LIBC_LISTEN_DECL LIBC_LISTEN_RET_TYPE \
+-		LIBC_LISTEN_NAME(LIBC_LISTEN_SIG)
++		TSOCKS_WRAPPER(LIBC_LISTEN_NAME)(LIBC_LISTEN_SIG)
+ 
+ /*
+  * Those are actions to do during the lookup process of libc symbols. For
+--- a/src/lib/torsocks.c
++++ b/src/lib/torsocks.c
+@@ -31,6 +31,96 @@
+ #include <common/utils.h>
+ 
+ #include "torsocks.h"
++
++#if defined(__APPLE__) && defined(__MACH__)
++/* Zero until constructor state is complete; reads must not allocate or lock. */
++unsigned int tsocks_darwin_ready;
++
++/* dyld's documented interposition tuples cover two-level clients as well as
++ * flat clients.  The replacement calls the existing wrapper, preserving lazy
++ * initialization and lookup of the original libc function.
++ */
++#define TSOCKS_DARWIN_INTERPOSE(replacement, original) \
++    __attribute__((used)) static struct { \
++        const void *replacement; \
++        const void *replacee; \
++    } tsocks_interpose_##original \
++    __attribute__((section("__DATA,__interpose,interposing"))) = { \
++        (const void *)(unsigned long)&replacement, \
++        (const void *)(unsigned long)&original \
++    }
++#define TSOCKS_DARWIN_HOOK(name, upper) \
++    extern LIBC_##upper##_RET_TYPE TSOCKS_WRAPPER(name)(LIBC_##upper##_SIG); \
++    TSOCKS_DARWIN_INTERPOSE(TSOCKS_WRAPPER(name), name)
++
++TSOCKS_DARWIN_HOOK(connect, CONNECT);
++TSOCKS_DARWIN_HOOK(socket, SOCKET);
++TSOCKS_DARWIN_HOOK(socketpair, SOCKETPAIR);
++TSOCKS_DARWIN_HOOK(syscall, SYSCALL);
++TSOCKS_DARWIN_HOOK(close, CLOSE);
++TSOCKS_DARWIN_HOOK(execve, EXECVE);
++TSOCKS_DARWIN_HOOK(fclose, FCLOSE);
++TSOCKS_DARWIN_HOOK(gethostbyname, GETHOSTBYNAME);
++TSOCKS_DARWIN_HOOK(gethostbyname2, GETHOSTBYNAME2);
++TSOCKS_DARWIN_HOOK(gethostbyaddr, GETHOSTBYADDR);
++TSOCKS_DARWIN_HOOK(getaddrinfo, GETADDRINFO);
++TSOCKS_DARWIN_HOOK(getpeername, GETPEERNAME);
++TSOCKS_DARWIN_HOOK(accept, ACCEPT);
++TSOCKS_DARWIN_HOOK(listen, LISTEN);
++TSOCKS_DARWIN_HOOK(recvmsg, RECVMSG);
++TSOCKS_DARWIN_HOOK(sendto, SENDTO);
++
++extern void TSOCKS_WRAPPER(_exit)(int status) __attribute__((noreturn));
++extern void TSOCKS_WRAPPER(_Exit)(int status) __attribute__((noreturn));
++TSOCKS_DARWIN_INTERPOSE(TSOCKS_WRAPPER(_exit), _exit);
++TSOCKS_DARWIN_INTERPOSE(TSOCKS_WRAPPER(_Exit), _Exit);
++#undef TSOCKS_DARWIN_HOOK
++#undef TSOCKS_DARWIN_INTERPOSE
++
++/* dlsym applies interposition too.  References originating in this interposing
++ * image bind to libc's original implementations, avoiding wrapper recursion.
++ */
++static void *tsocks_darwin_libc_symbol(const char *symbol)
++{
++    if (strcmp(symbol, "connect") == 0)
++        return (void *)(unsigned long)&connect;
++    if (strcmp(symbol, "socket") == 0)
++        return (void *)(unsigned long)&socket;
++    if (strcmp(symbol, "socketpair") == 0)
++        return (void *)(unsigned long)&socketpair;
++    if (strcmp(symbol, "syscall") == 0)
++        return (void *)(unsigned long)&syscall;
++    if (strcmp(symbol, "close") == 0)
++        return (void *)(unsigned long)&close;
++    if (strcmp(symbol, "execve") == 0)
++        return (void *)(unsigned long)&execve;
++    if (strcmp(symbol, "fclose") == 0)
++        return (void *)(unsigned long)&fclose;
++    if (strcmp(symbol, "gethostbyname") == 0)
++        return (void *)(unsigned long)&gethostbyname;
++    if (strcmp(symbol, "gethostbyname2") == 0)
++        return (void *)(unsigned long)&gethostbyname2;
++    if (strcmp(symbol, "gethostbyaddr") == 0)
++        return (void *)(unsigned long)&gethostbyaddr;
++    if (strcmp(symbol, "getaddrinfo") == 0)
++        return (void *)(unsigned long)&getaddrinfo;
++    if (strcmp(symbol, "getpeername") == 0)
++        return (void *)(unsigned long)&getpeername;
++    if (strcmp(symbol, "accept") == 0)
++        return (void *)(unsigned long)&accept;
++    if (strcmp(symbol, "listen") == 0)
++        return (void *)(unsigned long)&listen;
++    if (strcmp(symbol, "recvmsg") == 0)
++        return (void *)(unsigned long)&recvmsg;
++    if (strcmp(symbol, "sendto") == 0)
++        return (void *)(unsigned long)&sendto;
++    if (strcmp(symbol, "_exit") == 0)
++        return (void *)(unsigned long)&_exit;
++    if (strcmp(symbol, "_Exit") == 0)
++        return (void *)(unsigned long)&_Exit;
++    return NULL;
++}
++#endif
+ 
+ /*
+  * Global configuration of torsocks taken from the configuration file or set
+@@ -229,12 +319,36 @@
+ 	}
+ 
+ 	dlerror();
++	#if defined(__APPLE__) && defined(__MACH__)
++	tsocks_libc_connect = tsocks_darwin_libc_symbol(LIBC_CONNECT_NAME_STR);
++#else
+ 	tsocks_libc_connect = dlsym(libc_ptr, LIBC_CONNECT_NAME_STR);
++#endif
++	#if defined(__APPLE__) && defined(__MACH__)
++	tsocks_libc_close = tsocks_darwin_libc_symbol(LIBC_CLOSE_NAME_STR);
++#else
+ 	tsocks_libc_close = dlsym(libc_ptr, LIBC_CLOSE_NAME_STR);
++#endif
++	#if defined(__APPLE__) && defined(__MACH__)
++	tsocks_libc_socket = tsocks_darwin_libc_symbol(LIBC_SOCKET_NAME_STR);
++#else
+ 	tsocks_libc_socket = dlsym(libc_ptr, LIBC_SOCKET_NAME_STR);
++#endif
++	#if defined(__APPLE__) && defined(__MACH__)
++	tsocks_libc_syscall = tsocks_darwin_libc_symbol(LIBC_SYSCALL_NAME_STR);
++#else
+ 	tsocks_libc_syscall = dlsym(libc_ptr, LIBC_SYSCALL_NAME_STR);
++#endif
++	#if defined(__APPLE__) && defined(__MACH__)
++	tsocks_libc_execve = tsocks_darwin_libc_symbol(LIBC_EXECVE_NAME_STR);
++#else
+ 	tsocks_libc_execve = dlsym(libc_ptr, LIBC_EXECVE_NAME_STR);
++#endif
++	#if defined(__APPLE__) && defined(__MACH__)
++	tsocks_libc_accept = tsocks_darwin_libc_symbol(LIBC_ACCEPT_NAME_STR);
++#else
+ 	tsocks_libc_accept = dlsym(libc_ptr, LIBC_ACCEPT_NAME_STR);
++#endif
+ #if (defined(__linux__))
+ 	tsocks_libc_accept4 = dlsym(libc_ptr, LIBC_ACCEPT4_NAME_STR);
+ #endif
+@@ -345,6 +459,10 @@
+ 	if (ret < 0) {
+ 		clean_exit(EXIT_FAILURE);
+ 	}
++#if defined(__APPLE__) && defined(__MACH__)
++    __atomic_store_n(&tsocks_darwin_ready, 1, __ATOMIC_RELEASE);
++#endif
++
+ }
+ 
+ /*
+@@ -690,7 +808,11 @@
+ 
+ 	assert(symbol);
+ 
+-	fct_ptr = dlsym(RTLD_NEXT, symbol);
++#if defined(__APPLE__) && defined(__MACH__)
++    fct_ptr = tsocks_darwin_libc_symbol(symbol);
++    if (!fct_ptr)
++#endif
++        fct_ptr = dlsym(RTLD_NEXT, symbol);
+ 	if (!fct_ptr) {
+ 		ERR("Unable to find %s", symbol);
+ 		if (action == TSOCKS_SYM_EXIT_NOT_FOUND) {
+@@ -715,5 +837,12 @@
+  */
+ void __attribute__((destructor)) tsocks_cleanup(void)
+ {
++#if defined(__APPLE__) && defined(__MACH__)
++    /* Early process exit has no initialized pool to destroy.  Also make
++     * close/fclose callbacks safe while constructor state is being torn down.
++     */
++    if (!__atomic_exchange_n(&tsocks_darwin_ready, 0, __ATOMIC_ACQ_REL))
++        return;
++#endif
+ 	tsocks_once(&term_once, &tsocks_exit);
+ }
+--- a/src/lib/exit.c
++++ b/src/lib/exit.c
+@@ -26,12 +26,16 @@
+  * safely since the destructor is *not* called for these functions.
+  */
+ 
+-void _exit(int status)
++void TSOCKS_WRAPPER(_exit)(int status)
+ {
+ 	static void (*plibc_func)(int) = NULL;
+ 
+ 	if (plibc_func == NULL) {
++#if defined(__APPLE__) && defined(__MACH__)
++		plibc_func = tsocks_find_libc_symbol("_exit", TSOCKS_SYM_DO_NOTHING);
++#else
+ 		plibc_func = dlsym(RTLD_NEXT, "_exit");
++#endif
+ 		if (plibc_func == NULL) {
+ 			ERR("unable to find \"_exit\" symbol");
+ 			errno = ENOSYS;
+@@ -51,12 +55,16 @@
+ 	abort();
+ }
+ 
+-void _Exit(int status)
++void TSOCKS_WRAPPER(_Exit)(int status)
+ {
+ 	static void (*plibc_func)(int) = NULL;
+ 
+ 	if (plibc_func == NULL) {
++#if defined(__APPLE__) && defined(__MACH__)
++		plibc_func = tsocks_find_libc_symbol("_Exit", TSOCKS_SYM_DO_NOTHING);
++#else
+ 		plibc_func = dlsym(RTLD_NEXT, "_Exit");
++#endif
+ 		if (plibc_func == NULL) {
+ 			ERR("unable to find \"_Exit\" symbol");
+ 			errno = ENOSYS;
+--- a/src/lib/close.c
++++ b/src/lib/close.c
+@@ -67,6 +67,13 @@
+  */
+ LIBC_CLOSE_DECL
+ {
++#if defined(__APPLE__) && defined(__MACH__)
++    /* libSystem can call this cleanup entry before malloc is initialized.
++     * No torsocks connections exist before constructor completion.
++     */
++    if (!__atomic_load_n(&tsocks_darwin_ready, __ATOMIC_ACQUIRE))
++        return LIBC_CLOSE_NAME(LIBC_CLOSE_ARGS);
++#endif
+ 	if (!tsocks_libc_close) {
+ 		tsocks_initialize();
+ 	}
+--- a/src/lib/fclose.c
++++ b/src/lib/fclose.c
+@@ -76,6 +76,13 @@
+  */
+ LIBC_FCLOSE_DECL
+ {
++#if defined(__APPLE__) && defined(__MACH__)
++    /* libSystem can call this cleanup entry before malloc is initialized.
++     * No torsocks connections exist before constructor completion.
++     */
++    if (!__atomic_load_n(&tsocks_darwin_ready, __ATOMIC_ACQUIRE))
++        return LIBC_FCLOSE_NAME(LIBC_FCLOSE_ARGS);
++#endif
+ 	/* fclose(3) is unique in that it does not call torsocks_initialize(), as
+ 	 * it is used from within the initialization routine to close the config
+ 	 * file/log file. This would be a problem, except that all of the global

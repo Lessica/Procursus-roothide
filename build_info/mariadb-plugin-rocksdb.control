@@ -1,0 +1,10 @@
+Package: mariadb-plugin-rocksdb
+Version: @DEB_MARIADB_V@
+Architecture: @DEB_ARCH@
+Maintainer: @DEB_MAINTAINER@
+Depends: mariadb-server-core-10.5 (= @DEB_MARIADB_V@), libzstd1
+Section: Data_Storage
+Priority: optional
+Homepage: https://mariadb.org/
+Description: MariaDB RocksDB storage engine
+ The RocksDB storage engine plugin and its installed support files.

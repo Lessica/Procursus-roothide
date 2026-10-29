@@ -1,0 +1,4254 @@
+--- a/src/backend/libc/fs/dir.rs
++++ b/src/backend/libc/fs/dir.rs
+@@ -189,7 +189,7 @@
+         target_os = "dragonfly",
+         target_os = "freebsd",
+         target_os = "haiku",
+-        target_os = "ios",
++        any(target_os = "ios", target_os = "tvos"),
+         target_os = "macos",
+         target_os = "netbsd",
+         target_os = "wasi",
+@@ -223,12 +223,12 @@
+         target_os = "freebsd",
+         target_os = "netbsd",
+         target_os = "openbsd",
+-        target_os = "ios",
++        any(target_os = "ios", target_os = "tvos"),
+         target_os = "macos",
+     ))]
+     let d_namlen = input.d_namlen;
+ 
+-    #[cfg(any(target_os = "ios", target_os = "macos"))]
++    #[cfg(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos"))]
+     let d_seekoff = input.d_seekoff;
+ 
+     #[cfg(target_os = "haiku")]
+@@ -255,7 +255,7 @@
+             target_os = "aix",
+             target_os = "freebsd",  // Until FreeBSD 12
+             target_os = "haiku",
+-            target_os = "ios",
++            any(target_os = "ios", target_os = "tvos"),
+             target_os = "macos",
+             target_os = "netbsd",
+             target_os = "wasi",
+@@ -272,13 +272,13 @@
+         #[cfg(any(
+             target_os = "aix",
+             target_os = "freebsd",
+-            target_os = "ios",
++            any(target_os = "ios", target_os = "tvos"),
+             target_os = "macos",
+             target_os = "netbsd",
+             target_os = "openbsd",
+         ))]
+         d_namlen,
+-        #[cfg(any(target_os = "ios", target_os = "macos"))]
++        #[cfg(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos"))]
+         d_seekoff,
+         // The `d_name` field is NUL-terminated, and we need to be careful not
+         // to read bytes past the NUL, even though they're within the nominal
+--- a/src/backend/libc/fs/mod.rs
++++ b/src/backend/libc/fs/mod.rs
+@@ -5,7 +5,7 @@
+     target_os = "haiku",
+     target_os = "freebsd",
+     target_os = "illumos",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "netbsd",
+     target_os = "openbsd",
+--- a/src/backend/libc/fs/syscalls.rs
++++ b/src/backend/libc/fs/syscalls.rs
+@@ -12,7 +12,7 @@
+     target_os = "dragonfly",
+     target_os = "haiku",
+     target_os = "illumos",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "netbsd",
+     target_os = "openbsd",
+@@ -26,7 +26,7 @@
+     target_os = "dragonfly",
+     target_os = "fuchsia",
+     target_os = "illumos",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "linux",
+     target_os = "macos",
+     target_os = "netbsd",
+@@ -60,7 +60,7 @@
+ use super::super::time::types::LibcTimespec;
+ use crate::fd::{BorrowedFd, OwnedFd};
+ use crate::ffi::CStr;
+-#[cfg(any(target_os = "ios", target_os = "macos"))]
++#[cfg(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos"))]
+ use crate::ffi::CString;
+ #[cfg(not(any(target_os = "illumos", target_os = "solaris")))]
+ use crate::fs::Access;
+@@ -68,7 +68,7 @@
+     target_os = "dragonfly",
+     target_os = "haiku",
+     target_os = "illumos",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "netbsd",
+     target_os = "openbsd",
+@@ -109,7 +109,7 @@
+ #[cfg(any(target_os = "android", target_os = "linux"))]
+ use crate::fs::{cwd, RenameFlags, ResolveFlags, Statx, StatxFlags};
+ #[cfg(not(any(
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "redox",
+     target_os = "wasi",
+@@ -135,7 +135,7 @@
+ use core::convert::TryInto;
+ #[cfg(any(
+     target_os = "android",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "linux",
+     target_os = "macos",
+ ))]
+@@ -145,12 +145,12 @@
+ use core::ptr::null;
+ #[cfg(any(
+     target_os = "android",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "linux",
+     target_os = "macos",
+ ))]
+ use core::ptr::null_mut;
+-#[cfg(any(target_os = "ios", target_os = "macos"))]
++#[cfg(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos"))]
+ use {
+     super::super::conv::nonnegative_ret,
+     crate::fs::{copyfile_state_t, CloneFlags, CopyfileFlags},
+@@ -515,7 +515,7 @@
+     // Main version: libc is y2038 safe and has `utimensat`. Or, the platform
+     // is not y2038 safe and there's nothing practical we can do.
+     #[cfg(not(any(
+-        target_os = "ios",
++        any(target_os = "ios", target_os = "tvos"),
+         target_os = "macos",
+         all(
+             any(target_arch = "arm", target_arch = "mips", target_arch = "x86"),
+@@ -535,7 +535,7 @@
+     }
+ 
+     // `utimensat` was introduced in macOS 10.13.
+-    #[cfg(any(target_os = "ios", target_os = "macos"))]
++    #[cfg(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos"))]
+     unsafe {
+         // ABI details
+         weak! {
+@@ -711,7 +711,7 @@
+     }
+ }
+ 
+-#[cfg(any(target_os = "ios", target_os = "macos"))]
++#[cfg(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos"))]
+ pub(crate) fn fclonefileat(
+     srcfd: BorrowedFd<'_>,
+     dst_dirfd: BorrowedFd<'_>,
+@@ -751,7 +751,7 @@
+ }
+ 
+ #[cfg(not(any(
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "redox",
+     target_os = "wasi",
+@@ -823,7 +823,7 @@
+     target_os = "dragonfly",
+     target_os = "haiku",
+     target_os = "illumos",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "netbsd",
+     target_os = "openbsd",
+@@ -1071,7 +1071,7 @@
+     // Main version: libc is y2038 safe and has `futimens`. Or, the platform
+     // is not y2038 safe and there's nothing practical we can do.
+     #[cfg(not(any(
+-        target_os = "ios",
++        any(target_os = "ios", target_os = "tvos"),
+         target_os = "macos",
+         all(
+             any(target_arch = "arm", target_arch = "mips", target_arch = "x86"),
+@@ -1086,7 +1086,7 @@
+     }
+ 
+     // `futimens` was introduced in macOS 10.13.
+-    #[cfg(any(target_os = "ios", target_os = "macos"))]
++    #[cfg(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos"))]
+     unsafe {
+         // ABI details.
+         weak! {
+@@ -1154,7 +1154,7 @@
+     target_os = "aix",
+     target_os = "dragonfly",
+     target_os = "illumos",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "netbsd",
+     target_os = "openbsd",
+@@ -1190,7 +1190,7 @@
+     }
+ }
+ 
+-#[cfg(any(target_os = "ios", target_os = "macos"))]
++#[cfg(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos"))]
+ pub(crate) fn fallocate(
+     fd: BorrowedFd<'_>,
+     mode: FallocateFlags,
+@@ -1226,7 +1226,7 @@
+ #[cfg(not(any(
+     target_os = "dragonfly",
+     target_os = "haiku",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "redox",
+ )))]
+@@ -1561,7 +1561,7 @@
+     }
+ }
+ 
+-#[cfg(any(target_os = "ios", target_os = "macos"))]
++#[cfg(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos"))]
+ pub(crate) unsafe fn fcopyfile(
+     from: BorrowedFd<'_>,
+     to: BorrowedFd<'_>,
+@@ -1585,7 +1585,7 @@
+     ))
+ }
+ 
+-#[cfg(any(target_os = "ios", target_os = "macos"))]
++#[cfg(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos"))]
+ pub(crate) fn copyfile_state_alloc() -> io::Result<copyfile_state_t> {
+     extern "C" {
+         fn copyfile_state_alloc() -> copyfile_state_t;
+@@ -1599,7 +1599,7 @@
+     }
+ }
+ 
+-#[cfg(any(target_os = "ios", target_os = "macos"))]
++#[cfg(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos"))]
+ pub(crate) unsafe fn copyfile_state_free(state: copyfile_state_t) -> io::Result<()> {
+     extern "C" {
+         fn copyfile_state_free(state: copyfile_state_t) -> c::c_int;
+@@ -1608,17 +1608,17 @@
+     nonnegative_ret(copyfile_state_free(state))
+ }
+ 
+-#[cfg(any(target_os = "ios", target_os = "macos"))]
++#[cfg(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos"))]
+ const COPYFILE_STATE_COPIED: u32 = 8;
+ 
+-#[cfg(any(target_os = "ios", target_os = "macos"))]
++#[cfg(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos"))]
+ pub(crate) unsafe fn copyfile_state_get_copied(state: copyfile_state_t) -> io::Result<u64> {
+     let mut copied = MaybeUninit::<u64>::uninit();
+     copyfile_state_get(state, COPYFILE_STATE_COPIED, copied.as_mut_ptr().cast())?;
+     Ok(copied.assume_init())
+ }
+ 
+-#[cfg(any(target_os = "ios", target_os = "macos"))]
++#[cfg(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos"))]
+ pub(crate) unsafe fn copyfile_state_get(
+     state: copyfile_state_t,
+     flag: u32,
+@@ -1631,7 +1631,7 @@
+     nonnegative_ret(copyfile_state_get(state, flag, dst))
+ }
+ 
+-#[cfg(any(target_os = "ios", target_os = "macos"))]
++#[cfg(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos"))]
+ pub(crate) fn getpath(fd: BorrowedFd<'_>) -> io::Result<CString> {
+     // The use of PATH_MAX is generally not encouraged, but it
+     // is inevitable in this case because macOS defines `fcntl` with
+@@ -1659,7 +1659,7 @@
+     Ok(CString::new(buf).unwrap())
+ }
+ 
+-#[cfg(any(target_os = "ios", target_os = "macos"))]
++#[cfg(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos"))]
+ pub(crate) fn fcntl_rdadvise(fd: BorrowedFd<'_>, offset: u64, len: u64) -> io::Result<()> {
+     // From the [macOS `fcntl` man page]:
+     // `F_RDADVISE` - Issue an advisory read async with no copy to user.
+@@ -1696,14 +1696,14 @@
+     }
+ }
+ 
+-#[cfg(any(target_os = "ios", target_os = "macos"))]
++#[cfg(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos"))]
+ pub(crate) fn fcntl_fullfsync(fd: BorrowedFd<'_>) -> io::Result<()> {
+     unsafe { ret(c::fcntl(borrowed_fd(fd), c::F_FULLFSYNC)) }
+ }
+ 
+ /// Convert `times` from a `futimens`/`utimensat` argument into `setattrlist`
+ /// arguments.
+-#[cfg(any(target_os = "ios", target_os = "macos"))]
++#[cfg(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos"))]
+ fn times_to_attrlist(times: &Timestamps) -> (c::size_t, [c::timespec; 2], Attrlist) {
+     // ABI details.
+     const ATTR_CMN_MODTIME: u32 = 0x0000_0400;
+@@ -1771,11 +1771,11 @@
+ }
+ 
+ /// Support type for `Attrlist`.
+-#[cfg(any(target_os = "ios", target_os = "macos"))]
++#[cfg(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos"))]
+ type Attrgroup = u32;
+ 
+ /// Attribute list for use with `setattrlist`.
+-#[cfg(any(target_os = "ios", target_os = "macos"))]
++#[cfg(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos"))]
+ #[repr(C)]
+ struct Attrlist {
+     bitmapcount: u16,
+--- a/src/backend/libc/fs/types.rs
++++ b/src/backend/libc/fs/types.rs
+@@ -185,7 +185,7 @@
+         #[cfg(any(
+             target_os = "dragonfly",
+             target_os = "freebsd",
+-            target_os = "ios",
++            any(target_os = "ios", target_os = "tvos"),
+             all(target_os = "linux", not(target_env = "musl")),
+             target_os = "macos",
+             target_os = "netbsd",
+@@ -262,7 +262,7 @@
+     }
+ }
+ 
+-#[cfg(any(target_os = "ios", target_os = "macos"))]
++#[cfg(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos"))]
+ bitflags! {
+     /// `CLONE_*` constants for use with [`fclonefileat`].
+     ///
+@@ -276,7 +276,7 @@
+     }
+ }
+ 
+-#[cfg(any(target_os = "ios", target_os = "macos"))]
++#[cfg(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos"))]
+ mod copyfile {
+     pub(super) const ACL: u32 = 1 << 0;
+     pub(super) const STAT: u32 = 1 << 1;
+@@ -287,7 +287,7 @@
+     pub(super) const ALL: u32 = METADATA | DATA;
+ }
+ 
+-#[cfg(any(target_os = "ios", target_os = "macos"))]
++#[cfg(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos"))]
+ bitflags! {
+     /// `COPYFILE_*` constants.
+     pub struct CopyfileFlags: c::c_uint {
+@@ -457,7 +457,7 @@
+     target_os = "dragonfly",
+     target_os = "haiku",
+     target_os = "illumos",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "netbsd",
+     target_os = "openbsd",
+@@ -695,7 +695,7 @@
+             target_os = "dragonfly",
+             target_os = "freebsd",
+             target_os = "haiku",
+-            target_os = "ios",
++            any(target_os = "ios", target_os = "tvos"),
+             target_os = "macos",
+             target_os = "netbsd",
+             target_os = "openbsd",
+@@ -708,7 +708,7 @@
+             target_os = "dragonfly",
+             target_os = "freebsd",
+             target_os = "haiku",
+-            target_os = "ios",
++            any(target_os = "ios", target_os = "tvos"),
+             target_os = "macos",
+             target_os = "netbsd",
+             target_os = "openbsd",
+@@ -721,7 +721,7 @@
+             target_os = "dragonfly",
+             target_os = "freebsd",
+             target_os = "haiku",
+-            target_os = "ios",
++            any(target_os = "ios", target_os = "tvos"),
+             target_os = "linux",
+             target_os = "macos",
+             target_os = "netbsd",
+@@ -737,7 +737,7 @@
+             target_os = "dragonfly",
+             target_os = "freebsd",
+             target_os = "haiku",
+-            target_os = "ios",
++            any(target_os = "ios", target_os = "tvos"),
+             target_os = "macos",
+             target_os = "netbsd",
+             target_os = "openbsd",
+@@ -751,7 +751,7 @@
+             target_os = "dragonfly",
+             target_os = "freebsd",
+             target_os = "haiku",
+-            target_os = "ios",
++            any(target_os = "ios", target_os = "tvos"),
+             target_os = "macos",
+             target_os = "netbsd",
+             target_os = "openbsd",
+@@ -765,7 +765,7 @@
+             target_os = "dragonfly",
+             target_os = "freebsd",
+             target_os = "haiku",
+-            target_os = "ios",
++            any(target_os = "ios", target_os = "tvos"),
+             target_os = "macos",
+             target_os = "netbsd",
+             target_os = "openbsd",
+@@ -779,7 +779,7 @@
+             target_os = "dragonfly",
+             target_os = "freebsd",
+             target_os = "haiku",
+-            target_os = "ios",
++            any(target_os = "ios", target_os = "tvos"),
+             target_os = "macos",
+             target_os = "netbsd",
+             target_os = "openbsd",
+@@ -1109,7 +1109,7 @@
+ /// `copyfile_state_t`—State for use with [`fcopyfile`].
+ ///
+ /// [`fcopyfile`]: crate::fs::fcopyfile
+-#[cfg(any(target_os = "ios", target_os = "macos"))]
++#[cfg(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos"))]
+ #[allow(non_camel_case_types)]
+ #[repr(transparent)]
+ #[derive(Copy, Clone)]
+--- a/src/backend/libc/io/errno.rs
++++ b/src/backend/libc/io/errno.rs
+@@ -30,7 +30,7 @@
+         target_os = "dragonfly",
+         target_os = "freebsd",
+         target_os = "haiku",
+-        target_os = "ios",
++        any(target_os = "ios", target_os = "tvos"),
+         target_os = "macos",
+         target_os = "netbsd",
+         target_os = "openbsd",
+@@ -47,7 +47,7 @@
+     #[cfg(any(
+         target_os = "dragonfly",
+         target_os = "freebsd",
+-        target_os = "ios",
++        any(target_os = "ios", target_os = "tvos"),
+         target_os = "macos",
+         target_os = "netbsd",
+         target_os = "openbsd",
+@@ -60,7 +60,7 @@
+         target_os = "dragonfly",
+         target_os = "freebsd",
+         target_os = "haiku",
+-        target_os = "ios",
++        any(target_os = "ios", target_os = "tvos"),
+         target_os = "macos",
+         target_os = "netbsd",
+         target_os = "openbsd",
+@@ -76,7 +76,7 @@
+         target_os = "dragonfly",
+         target_os = "freebsd",
+         target_os = "haiku",
+-        target_os = "ios",
++        any(target_os = "ios", target_os = "tvos"),
+         target_os = "macos",
+         target_os = "netbsd",
+         target_os = "openbsd",
+@@ -93,7 +93,7 @@
+         target_os = "dragonfly",
+         target_os = "freebsd",
+         target_os = "haiku",
+-        target_os = "ios",
++        any(target_os = "ios", target_os = "tvos"),
+         target_os = "macos",
+         target_os = "netbsd",
+         target_os = "openbsd",
+@@ -104,7 +104,7 @@
+     #[cfg(any(
+         target_os = "dragonfly",
+         target_os = "freebsd",
+-        target_os = "ios",
++        any(target_os = "ios", target_os = "tvos"),
+         target_os = "macos",
+         target_os = "netbsd",
+         target_os = "openbsd",
+@@ -117,7 +117,7 @@
+         target_os = "dragonfly",
+         target_os = "freebsd",
+         target_os = "haiku",
+-        target_os = "ios",
++        any(target_os = "ios", target_os = "tvos"),
+         target_os = "macos",
+         target_os = "netbsd",
+         target_os = "openbsd",
+@@ -131,7 +131,7 @@
+         target_os = "dragonfly",
+         target_os = "freebsd",
+         target_os = "haiku",
+-        target_os = "ios",
++        any(target_os = "ios", target_os = "tvos"),
+         target_os = "macos",
+         target_os = "netbsd",
+         target_os = "openbsd",
+@@ -145,7 +145,7 @@
+         target_os = "dragonfly",
+         target_os = "freebsd",
+         target_os = "haiku",
+-        target_os = "ios",
++        any(target_os = "ios", target_os = "tvos"),
+         target_os = "macos",
+         target_os = "netbsd",
+         target_os = "openbsd",
+@@ -169,7 +169,7 @@
+         target_os = "dragonfly",
+         target_os = "freebsd",
+         target_os = "haiku",
+-        target_os = "ios",
++        any(target_os = "ios", target_os = "tvos"),
+         target_os = "macos",
+         target_os = "netbsd",
+         target_os = "openbsd",
+@@ -183,7 +183,7 @@
+         target_os = "dragonfly",
+         target_os = "freebsd",
+         target_os = "haiku",
+-        target_os = "ios",
++        any(target_os = "ios", target_os = "tvos"),
+         target_os = "macos",
+         target_os = "netbsd",
+         target_os = "openbsd",
+@@ -207,7 +207,7 @@
+         target_os = "dragonfly",
+         target_os = "freebsd",
+         target_os = "haiku",
+-        target_os = "ios",
++        any(target_os = "ios", target_os = "tvos"),
+         target_os = "macos",
+         target_os = "netbsd",
+         target_os = "openbsd",
+@@ -233,7 +233,7 @@
+         target_os = "freebsd",
+         target_os = "haiku",
+         target_os = "illumos",
+-        target_os = "ios",
++        any(target_os = "ios", target_os = "tvos"),
+         target_os = "macos",
+         target_os = "netbsd",
+         target_os = "openbsd",
+@@ -256,7 +256,7 @@
+         target_env = "newlib",
+         target_os = "dragonfly",
+         target_os = "freebsd",
+-        target_os = "ios",
++        any(target_os = "ios", target_os = "tvos"),
+         target_os = "macos",
+         target_os = "netbsd",
+         target_os = "openbsd",
+@@ -276,7 +276,7 @@
+         target_os = "freebsd",
+         target_os = "haiku",
+         target_os = "illumos",
+-        target_os = "ios",
++        any(target_os = "ios", target_os = "tvos"),
+         target_os = "macos",
+         target_os = "netbsd",
+         target_os = "openbsd",
+@@ -324,7 +324,7 @@
+         target_os = "freebsd",
+         target_os = "haiku",
+         target_os = "illumos",
+-        target_os = "ios",
++        any(target_os = "ios", target_os = "tvos"),
+         target_os = "macos",
+         target_os = "netbsd",
+         target_os = "openbsd",
+@@ -340,7 +340,7 @@
+         target_os = "freebsd",
+         target_os = "haiku",
+         target_os = "illumos",
+-        target_os = "ios",
++        any(target_os = "ios", target_os = "tvos"),
+         target_os = "macos",
+         target_os = "netbsd",
+         target_os = "openbsd",
+@@ -356,7 +356,7 @@
+         target_os = "freebsd",
+         target_os = "haiku",
+         target_os = "illumos",
+-        target_os = "ios",
++        any(target_os = "ios", target_os = "tvos"),
+         target_os = "macos",
+         target_os = "netbsd",
+         target_os = "openbsd",
+@@ -372,7 +372,7 @@
+         target_os = "freebsd",
+         target_os = "haiku",
+         target_os = "illumos",
+-        target_os = "ios",
++        any(target_os = "ios", target_os = "tvos"),
+         target_os = "macos",
+         target_os = "netbsd",
+         target_os = "openbsd",
+@@ -386,7 +386,7 @@
+         target_os = "dragonfly",
+         target_os = "freebsd",
+         target_os = "haiku",
+-        target_os = "ios",
++        any(target_os = "ios", target_os = "tvos"),
+         target_os = "macos",
+         target_os = "netbsd",
+         target_os = "openbsd",
+@@ -399,7 +399,7 @@
+         target_os = "dragonfly",
+         target_os = "freebsd",
+         target_os = "haiku",
+-        target_os = "ios",
++        any(target_os = "ios", target_os = "tvos"),
+         target_os = "macos",
+         target_os = "netbsd",
+         target_os = "openbsd",
+@@ -412,7 +412,7 @@
+         target_os = "dragonfly",
+         target_os = "freebsd",
+         target_os = "haiku",
+-        target_os = "ios",
++        any(target_os = "ios", target_os = "tvos"),
+         target_os = "macos",
+         target_os = "netbsd",
+         target_os = "openbsd",
+@@ -425,7 +425,7 @@
+         target_os = "dragonfly",
+         target_os = "freebsd",
+         target_os = "haiku",
+-        target_os = "ios",
++        any(target_os = "ios", target_os = "tvos"),
+         target_os = "macos",
+         target_os = "netbsd",
+         target_os = "openbsd",
+@@ -439,7 +439,7 @@
+         target_os = "dragonfly",
+         target_os = "freebsd",
+         target_os = "haiku",
+-        target_os = "ios",
++        any(target_os = "ios", target_os = "tvos"),
+         target_os = "macos",
+         target_os = "netbsd",
+         target_os = "openbsd",
+@@ -453,7 +453,7 @@
+         target_os = "dragonfly",
+         target_os = "freebsd",
+         target_os = "haiku",
+-        target_os = "ios",
++        any(target_os = "ios", target_os = "tvos"),
+         target_os = "macos",
+         target_os = "netbsd",
+         target_os = "openbsd",
+@@ -467,7 +467,7 @@
+         target_os = "dragonfly",
+         target_os = "freebsd",
+         target_os = "haiku",
+-        target_os = "ios",
++        any(target_os = "ios", target_os = "tvos"),
+         target_os = "macos",
+         target_os = "netbsd",
+         target_os = "openbsd",
+@@ -481,7 +481,7 @@
+         target_os = "dragonfly",
+         target_os = "freebsd",
+         target_os = "haiku",
+-        target_os = "ios",
++        any(target_os = "ios", target_os = "tvos"),
+         target_os = "macos",
+         target_os = "netbsd",
+         target_os = "openbsd",
+@@ -495,7 +495,7 @@
+         target_os = "dragonfly",
+         target_os = "freebsd",
+         target_os = "haiku",
+-        target_os = "ios",
++        any(target_os = "ios", target_os = "tvos"),
+         target_os = "macos",
+         target_os = "netbsd",
+         target_os = "openbsd",
+@@ -508,7 +508,7 @@
+         target_os = "dragonfly",
+         target_os = "freebsd",
+         target_os = "haiku",
+-        target_os = "ios",
++        any(target_os = "ios", target_os = "tvos"),
+         target_os = "macos",
+         target_os = "netbsd",
+         target_os = "openbsd",
+@@ -525,7 +525,7 @@
+         target_os = "freebsd",
+         target_os = "haiku",
+         target_os = "illumos",
+-        target_os = "ios",
++        any(target_os = "ios", target_os = "tvos"),
+         target_os = "macos",
+         target_os = "netbsd",
+         target_os = "openbsd",
+@@ -553,7 +553,7 @@
+         target_os = "freebsd",
+         target_os = "haiku",
+         target_os = "illumos",
+-        target_os = "ios",
++        any(target_os = "ios", target_os = "tvos"),
+         target_os = "macos",
+         target_os = "netbsd",
+         target_os = "openbsd",
+@@ -565,7 +565,7 @@
+     #[cfg(any(
+         target_os = "dragonfly",
+         target_os = "freebsd",
+-        target_os = "ios",
++        any(target_os = "ios", target_os = "tvos"),
+         target_os = "macos",
+         target_os = "netbsd",
+         target_os = "openbsd",
+@@ -587,7 +587,7 @@
+         target_os = "dragonfly",
+         target_os = "freebsd",
+         target_os = "haiku",
+-        target_os = "ios",
++        any(target_os = "ios", target_os = "tvos"),
+         target_os = "macos",
+         target_os = "netbsd",
+         target_os = "openbsd",
+@@ -599,7 +599,7 @@
+         target_os = "dragonfly",
+         target_os = "freebsd",
+         target_os = "haiku",
+-        target_os = "ios",
++        any(target_os = "ios", target_os = "tvos"),
+         target_os = "macos",
+         target_os = "netbsd",
+         target_os = "openbsd",
+@@ -613,7 +613,7 @@
+         target_os = "dragonfly",
+         target_os = "freebsd",
+         target_os = "haiku",
+-        target_os = "ios",
++        any(target_os = "ios", target_os = "tvos"),
+         target_os = "macos",
+         target_os = "netbsd",
+         target_os = "openbsd",
+@@ -647,7 +647,7 @@
+         target_os = "freebsd",
+         target_os = "haiku",
+         target_os = "illumos",
+-        target_os = "ios",
++        any(target_os = "ios", target_os = "tvos"),
+         target_os = "macos",
+         target_os = "netbsd",
+         target_os = "openbsd",
+@@ -669,7 +669,7 @@
+         target_os = "freebsd",
+         target_os = "haiku",
+         target_os = "illumos",
+-        target_os = "ios",
++        any(target_os = "ios", target_os = "tvos"),
+         target_os = "macos",
+         target_os = "netbsd",
+         target_os = "openbsd",
+@@ -693,7 +693,7 @@
+         target_os = "dragonfly",
+         target_os = "freebsd",
+         target_os = "haiku",
+-        target_os = "ios",
++        any(target_os = "ios", target_os = "tvos"),
+         target_os = "macos",
+         target_os = "netbsd",
+         target_os = "openbsd",
+@@ -707,7 +707,7 @@
+         target_os = "dragonfly",
+         target_os = "freebsd",
+         target_os = "haiku",
+-        target_os = "ios",
++        any(target_os = "ios", target_os = "tvos"),
+         target_os = "macos",
+         target_os = "netbsd",
+         target_os = "openbsd",
+@@ -763,7 +763,7 @@
+         target_os = "freebsd",
+         target_os = "haiku",
+         target_os = "illumos",
+-        target_os = "ios",
++        any(target_os = "ios", target_os = "tvos"),
+         target_os = "macos",
+         target_os = "netbsd",
+         target_os = "openbsd",
+@@ -794,7 +794,7 @@
+         target_os = "dragonfly",
+         target_os = "freebsd",
+         target_os = "haiku",
+-        target_os = "ios",
++        any(target_os = "ios", target_os = "tvos"),
+         target_os = "macos",
+         target_os = "netbsd",
+         target_os = "openbsd",
+@@ -830,7 +830,7 @@
+     #[cfg(any(
+         target_os = "dragonfly",
+         target_os = "freebsd",
+-        target_os = "ios",
++        any(target_os = "ios", target_os = "tvos"),
+         target_os = "macos",
+         target_os = "netbsd",
+         target_os = "openbsd",
+@@ -840,7 +840,7 @@
+     #[cfg(any(
+         target_os = "dragonfly",
+         target_os = "freebsd",
+-        target_os = "ios",
++        any(target_os = "ios", target_os = "tvos"),
+         target_os = "macos",
+         target_os = "netbsd",
+         target_os = "openbsd",
+@@ -850,7 +850,7 @@
+     #[cfg(any(
+         target_os = "dragonfly",
+         target_os = "freebsd",
+-        target_os = "ios",
++        any(target_os = "ios", target_os = "tvos"),
+         target_os = "macos",
+         target_os = "netbsd",
+         target_os = "openbsd",
+@@ -860,7 +860,7 @@
+     #[cfg(any(
+         target_os = "dragonfly",
+         target_os = "freebsd",
+-        target_os = "ios",
++        any(target_os = "ios", target_os = "tvos"),
+         target_os = "macos",
+         target_os = "netbsd",
+         target_os = "openbsd",
+@@ -889,7 +889,7 @@
+         target_os = "dragonfly",
+         target_os = "freebsd",
+         target_os = "haiku",
+-        target_os = "ios",
++        any(target_os = "ios", target_os = "tvos"),
+         target_os = "macos",
+         target_os = "netbsd",
+         target_os = "openbsd",
+@@ -907,7 +907,7 @@
+         target_os = "freebsd",
+         target_os = "haiku",
+         target_os = "illumos",
+-        target_os = "ios",
++        any(target_os = "ios", target_os = "tvos"),
+         target_os = "macos",
+         target_os = "netbsd",
+         target_os = "openbsd",
+@@ -921,7 +921,7 @@
+         target_os = "dragonfly",
+         target_os = "freebsd",
+         target_os = "haiku",
+-        target_os = "ios",
++        any(target_os = "ios", target_os = "tvos"),
+         target_os = "macos",
+         target_os = "netbsd",
+         target_os = "openbsd",
+@@ -937,7 +937,7 @@
+         target_os = "freebsd",
+         target_os = "haiku",
+         target_os = "illumos",
+-        target_os = "ios",
++        any(target_os = "ios", target_os = "tvos"),
+         target_os = "macos",
+         target_os = "netbsd",
+         target_os = "openbsd",
+@@ -953,7 +953,7 @@
+     #[cfg(any(
+         target_os = "dragonfly",
+         target_os = "freebsd",
+-        target_os = "ios",
++        any(target_os = "ios", target_os = "tvos"),
+         target_os = "macos",
+         target_os = "netbsd",
+         target_os = "openbsd",
+@@ -978,7 +978,7 @@
+         target_os = "dragonfly",
+         target_os = "freebsd",
+         target_os = "haiku",
+-        target_os = "ios",
++        any(target_os = "ios", target_os = "tvos"),
+         target_os = "macos",
+         target_os = "netbsd",
+         target_os = "openbsd",
+@@ -994,7 +994,7 @@
+         target_os = "dragonfly",
+         target_os = "freebsd",
+         target_os = "haiku",
+-        target_os = "ios",
++        any(target_os = "ios", target_os = "tvos"),
+         target_os = "macos",
+         target_os = "netbsd",
+         target_os = "openbsd",
+@@ -1030,7 +1030,7 @@
+         target_os = "freebsd",
+         target_os = "haiku",
+         target_os = "illumos",
+-        target_os = "ios",
++        any(target_os = "ios", target_os = "tvos"),
+         target_os = "macos",
+         target_os = "netbsd",
+         target_os = "openbsd",
+@@ -1044,7 +1044,7 @@
+         target_os = "dragonfly",
+         target_os = "freebsd",
+         target_os = "haiku",
+-        target_os = "ios",
++        any(target_os = "ios", target_os = "tvos"),
+         target_os = "macos",
+         target_os = "netbsd",
+         target_os = "openbsd",
+@@ -1066,7 +1066,7 @@
+         target_os = "dragonfly",
+         target_os = "freebsd",
+         target_os = "haiku",
+-        target_os = "ios",
++        any(target_os = "ios", target_os = "tvos"),
+         target_os = "macos",
+         target_os = "netbsd",
+         target_os = "openbsd",
+--- a/src/backend/libc/io/syscalls.rs
++++ b/src/backend/libc/io/syscalls.rs
+@@ -17,7 +17,7 @@
+ #[cfg(not(any(
+     target_os = "aix",
+     target_os = "haiku",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "wasi"
+ )))]
+@@ -262,7 +262,7 @@
+ #[cfg(any(
+     target_os = "dragonfly",
+     target_os = "freebsd",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "netbsd",
+     target_os = "openbsd",
+@@ -281,7 +281,7 @@
+     target_os = "dragonfly",
+     target_os = "emscripten",
+     target_os = "freebsd",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "linux",
+     target_os = "macos",
+     target_os = "netbsd",
+@@ -424,7 +424,7 @@
+     target_os = "android",
+     target_os = "dragonfly",
+     target_os = "haiku",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "redox",
+     target_os = "wasi",
+@@ -443,7 +443,7 @@
+     target_os = "android",
+     target_os = "dragonfly",
+     target_os = "haiku",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "redox",
+ ))]
+@@ -455,7 +455,7 @@
+     dup2(fd, new)
+ }
+ 
+-#[cfg(any(target_os = "ios", target_os = "macos"))]
++#[cfg(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos"))]
+ pub(crate) fn ioctl_fioclex(fd: BorrowedFd<'_>) -> io::Result<()> {
+     unsafe { ret(c::ioctl(borrowed_fd(fd), c::FIOCLEX)) }
+ }
+@@ -483,7 +483,7 @@
+ #[cfg(not(any(
+     target_os = "aix",
+     target_os = "haiku",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "wasi"
+ )))]
+--- a/src/backend/libc/io/types.rs
++++ b/src/backend/libc/io/types.rs
+@@ -58,7 +58,7 @@
+         /// `O_CLOEXEC`
+         #[cfg(not(any(
+             target_os = "android",
+-            target_os = "ios",
++            any(target_os = "ios", target_os = "tvos"),
+             target_os = "macos",
+             target_os = "redox",
+         )))] // Android 5.0 has dup3, but libc doesn't have bindings
+@@ -66,7 +66,7 @@
+     }
+ }
+ 
+-#[cfg(not(any(target_os = "ios", target_os = "macos", target_os = "wasi")))]
++#[cfg(not(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos", target_os = "wasi")))]
+ bitflags! {
+     /// `O_*` constants for use with [`pipe_with`].
+     ///
+--- a/src/backend/libc/mm/types.rs
++++ b/src/backend/libc/mm/types.rs
+@@ -58,7 +58,7 @@
+             target_os = "fuchsia",
+             target_os = "haiku",
+             target_os = "illumos",
+-            target_os = "ios",
++            any(target_os = "ios", target_os = "tvos"),
+             target_os = "macos",
+             target_os = "netbsd",
+             target_os = "openbsd",
+@@ -74,7 +74,7 @@
+             target_os = "freebsd",
+             target_os = "haiku",
+             target_os = "illumos",
+-            target_os = "ios",
++            any(target_os = "ios", target_os = "tvos"),
+             target_os = "macos",
+             target_os = "netbsd",
+             target_os = "openbsd",
+@@ -93,7 +93,7 @@
+             target_os = "fuchsia",
+             target_os = "haiku",
+             target_os = "illumos",
+-            target_os = "ios",
++            any(target_os = "ios", target_os = "tvos"),
+             target_os = "macos",
+             target_os = "netbsd",
+             target_os = "openbsd",
+@@ -107,7 +107,7 @@
+             target_os = "freebsd",
+             target_os = "haiku",
+             target_os = "illumos",
+-            target_os = "ios",
++            any(target_os = "ios", target_os = "tvos"),
+             target_os = "macos",
+             target_os = "netbsd",
+             target_os = "openbsd",
+@@ -121,7 +121,7 @@
+             target_os = "freebsd",
+             target_os = "haiku",
+             target_os = "illumos",
+-            target_os = "ios",
++            any(target_os = "ios", target_os = "tvos"),
+             target_os = "macos",
+             target_os = "netbsd",
+             target_os = "openbsd",
+@@ -138,7 +138,7 @@
+             target_os = "fuchsia",
+             target_os = "haiku",
+             target_os = "illumos",
+-            target_os = "ios",
++            any(target_os = "ios", target_os = "tvos"),
+             target_os = "macos",
+             target_os = "netbsd",
+             target_os = "openbsd",
+@@ -155,7 +155,7 @@
+             target_os = "fuchsia",
+             target_os = "haiku",
+             target_os = "illumos",
+-            target_os = "ios",
++            any(target_os = "ios", target_os = "tvos"),
+             target_os = "macos",
+             target_os = "netbsd",
+             target_os = "openbsd",
+@@ -169,7 +169,7 @@
+             target_os = "freebsd",
+             target_os = "haiku",
+             target_os = "illumos",
+-            target_os = "ios",
++            any(target_os = "ios", target_os = "tvos"),
+             target_os = "macos",
+             target_os = "netbsd",
+             target_os = "openbsd",
+@@ -192,7 +192,7 @@
+             target_os = "freebsd",
+             target_os = "haiku",
+             target_os = "illumos",
+-            target_os = "ios",
++            any(target_os = "ios", target_os = "tvos"),
+             target_os = "macos",
+             target_os = "netbsd",
+             target_os = "openbsd",
+@@ -205,7 +205,7 @@
+             target_os = "dragonfly",
+             target_os = "haiku",
+             target_os = "illumos",
+-            target_os = "ios",
++            any(target_os = "ios", target_os = "tvos"),
+             target_os = "macos",
+             target_os = "netbsd",
+             target_os = "redox",
+@@ -224,7 +224,7 @@
+             target_os = "fuchsia",
+             target_os = "haiku",
+             target_os = "illumos",
+-            target_os = "ios",
++            any(target_os = "ios", target_os = "tvos"),
+             target_os = "macos",
+             target_os = "netbsd",
+             target_os = "openbsd",
+--- a/src/backend/libc/net/addr.rs
++++ b/src/backend/libc/net/addr.rs
+@@ -23,7 +23,7 @@
+     #[cfg(not(any(
+         target_os = "dragonfly",
+         target_os = "freebsd",
+-        target_os = "ios",
++        any(target_os = "ios", target_os = "tvos"),
+         target_os = "macos",
+         target_os = "netbsd",
+         target_os = "openbsd",
+@@ -53,7 +53,7 @@
+         #[cfg(any(
+             target_os = "dragonfly",
+             target_os = "freebsd",
+-            target_os = "ios",
++            any(target_os = "ios", target_os = "tvos"),
+             target_os = "macos",
+             target_os = "netbsd",
+             target_os = "openbsd",
+@@ -67,7 +67,7 @@
+             #[cfg(not(any(
+                 target_os = "dragonfly",
+                 target_os = "freebsd",
+-                target_os = "ios",
++                any(target_os = "ios", target_os = "tvos"),
+                 target_os = "macos",
+                 target_os = "netbsd",
+                 target_os = "openbsd",
+@@ -95,7 +95,7 @@
+             #[cfg(not(any(
+                 target_os = "dragonfly",
+                 target_os = "freebsd",
+-                target_os = "ios",
++                any(target_os = "ios", target_os = "tvos"),
+                 target_os = "macos",
+                 target_os = "netbsd",
+                 target_os = "openbsd",
+@@ -110,7 +110,7 @@
+                 target_os = "dragonfly",
+                 target_os = "freebsd",
+                 target_os = "haiku",
+-                target_os = "ios",
++                any(target_os = "ios", target_os = "tvos"),
+                 target_os = "macos",
+                 target_os = "netbsd",
+                 target_os = "openbsd",
+@@ -120,7 +120,7 @@
+             #[cfg(any(
+                 target_os = "dragonfly",
+                 target_os = "freebsd",
+-                target_os = "ios",
++                any(target_os = "ios", target_os = "tvos"),
+                 target_os = "macos",
+                 target_os = "netbsd",
+                 target_os = "openbsd",
+@@ -130,7 +130,7 @@
+                 target_os = "dragonfly",
+                 target_os = "freebsd",
+                 target_os = "haiku",
+-                target_os = "ios",
++                any(target_os = "ios", target_os = "tvos"),
+                 target_os = "macos",
+                 target_os = "netbsd",
+                 target_os = "openbsd",
+@@ -181,7 +181,7 @@
+         #[cfg(not(any(
+             target_os = "dragonfly",
+             target_os = "freebsd",
+-            target_os = "ios",
++            any(target_os = "ios", target_os = "tvos"),
+             target_os = "macos",
+             target_os = "netbsd",
+             target_os = "openbsd",
+@@ -192,7 +192,7 @@
+         #[cfg(any(
+             target_os = "dragonfly",
+             target_os = "freebsd",
+-            target_os = "ios",
++            any(target_os = "ios", target_os = "tvos"),
+             target_os = "macos",
+             target_os = "netbsd",
+             target_os = "openbsd",
+@@ -278,7 +278,7 @@
+             target_os = "dragonfly",
+             target_os = "freebsd",
+             target_os = "haiku",
+-            target_os = "ios",
++            any(target_os = "ios", target_os = "tvos"),
+             target_os = "macos",
+             target_os = "netbsd",
+             target_os = "openbsd",
+@@ -288,7 +288,7 @@
+             target_os = "dragonfly",
+             target_os = "freebsd",
+             target_os = "haiku",
+-            target_os = "ios",
++            any(target_os = "ios", target_os = "tvos"),
+             target_os = "macos",
+             target_os = "netbsd",
+             target_os = "openbsd",
+@@ -298,7 +298,7 @@
+             target_os = "dragonfly",
+             target_os = "freebsd",
+             target_os = "haiku",
+-            target_os = "ios",
++            any(target_os = "ios", target_os = "tvos"),
+             target_os = "macos",
+             target_os = "netbsd",
+             target_os = "openbsd",
+@@ -307,7 +307,7 @@
+         #[cfg(any(
+             target_os = "dragonfly",
+             target_os = "freebsd",
+-            target_os = "ios",
++            any(target_os = "ios", target_os = "tvos"),
+             target_os = "macos",
+             target_os = "netbsd",
+             target_os = "openbsd",
+@@ -317,7 +317,7 @@
+             target_os = "dragonfly",
+             target_os = "freebsd",
+             target_os = "haiku",
+-            target_os = "ios",
++            any(target_os = "ios", target_os = "tvos"),
+             target_os = "macos",
+             target_os = "netbsd",
+             target_os = "openbsd",
+--- a/src/backend/libc/net/ext.rs
++++ b/src/backend/libc/net/ext.rs
+@@ -134,7 +134,7 @@
+         target_os = "dragonfly",
+         target_os = "freebsd",
+         target_os = "haiku",
+-        target_os = "ios",
++        any(target_os = "ios", target_os = "tvos"),
+         target_os = "macos",
+         target_os = "netbsd",
+         target_os = "openbsd",
+@@ -151,7 +151,7 @@
+             target_os = "dragonfly",
+             target_os = "freebsd",
+             target_os = "haiku",
+-            target_os = "ios",
++            any(target_os = "ios", target_os = "tvos"),
+             target_os = "macos",
+             target_os = "netbsd",
+             target_os = "openbsd",
+--- a/src/backend/libc/net/read_sockaddr.rs
++++ b/src/backend/libc/net/read_sockaddr.rs
+@@ -16,7 +16,7 @@
+     #[cfg(any(
+         target_os = "dragonfly",
+         target_os = "freebsd",
+-        target_os = "ios",
++        any(target_os = "ios", target_os = "tvos"),
+         target_os = "macos",
+         target_os = "netbsd",
+         target_os = "openbsd",
+@@ -25,7 +25,7 @@
+     #[cfg(any(
+         target_os = "dragonfly",
+         target_os = "freebsd",
+-        target_os = "ios",
++        any(target_os = "ios", target_os = "tvos"),
+         target_os = "macos",
+         target_os = "netbsd",
+         target_os = "openbsd",
+@@ -34,7 +34,7 @@
+     #[cfg(not(any(
+         target_os = "dragonfly",
+         target_os = "freebsd",
+-        target_os = "ios",
++        any(target_os = "ios", target_os = "tvos"),
+         target_os = "macos",
+         target_os = "netbsd",
+         target_os = "openbsd",
+@@ -50,7 +50,7 @@
+             target_os = "dragonfly",
+             target_os = "freebsd",
+             target_os = "haiku",
+-            target_os = "ios",
++            any(target_os = "ios", target_os = "tvos"),
+             target_os = "macos",
+             target_os = "netbsd",
+             target_os = "openbsd",
+@@ -60,7 +60,7 @@
+             target_os = "dragonfly",
+             target_os = "freebsd",
+             target_os = "haiku",
+-            target_os = "ios",
++            any(target_os = "ios", target_os = "tvos"),
+             target_os = "macos",
+             target_os = "netbsd",
+             target_os = "openbsd",
+@@ -70,7 +70,7 @@
+             target_os = "dragonfly",
+             target_os = "freebsd",
+             target_os = "haiku",
+-            target_os = "ios",
++            any(target_os = "ios", target_os = "tvos"),
+             target_os = "macos",
+             target_os = "netbsd",
+             target_os = "openbsd",
+--- a/src/backend/libc/net/send_recv.rs
++++ b/src/backend/libc/net/send_recv.rs
+@@ -11,7 +11,7 @@
+             target_os = "freebsd",
+             target_os = "haiku",
+             target_os = "illumos",
+-            target_os = "ios",
++            any(target_os = "ios", target_os = "tvos"),
+             target_os = "macos",
+             target_os = "netbsd",
+             target_os = "openbsd",
+@@ -33,14 +33,14 @@
+             target_os = "freebsd",
+             target_os = "haiku",
+             target_os = "illumos",
+-            target_os = "ios",
++            any(target_os = "ios", target_os = "tvos"),
+             target_os = "macos",
+             target_os = "netbsd",
+             target_os = "openbsd",
+             target_os = "solaris",
+         )))]
+         const MORE = c::MSG_MORE;
+-        #[cfg(not(any(windows, target_os = "ios", target_os = "macos")))]
++        #[cfg(not(any(windows, any(target_os = "ios", target_os = "tvos"), target_os = "macos")))]
+         /// `MSG_NOSIGNAL`
+         const NOSIGNAL = c::MSG_NOSIGNAL;
+         /// `MSG_OOB`
+@@ -51,7 +51,7 @@
+ bitflags! {
+     /// `MSG_*`
+     pub struct RecvFlags: i32 {
+-        #[cfg(not(any(windows, target_os = "haiku", target_os = "illumos", target_os = "ios", target_os = "macos", target_os = "solaris")))]
++        #[cfg(not(any(windows, target_os = "haiku", target_os = "illumos", any(target_os = "ios", target_os = "tvos"), target_os = "macos", target_os = "solaris")))]
+         /// `MSG_CMSG_CLOEXEC`
+         const CMSG_CLOEXEC = c::MSG_CMSG_CLOEXEC;
+         /// `MSG_DONTWAIT`
+@@ -64,7 +64,7 @@
+             target_os = "freebsd",
+             target_os = "haiku",
+             target_os = "illumos",
+-            target_os = "ios",
++            any(target_os = "ios", target_os = "tvos"),
+             target_os = "macos",
+             target_os = "netbsd",
+             target_os = "openbsd",
+--- a/src/backend/libc/net/syscalls.rs
++++ b/src/backend/libc/net/syscalls.rs
+@@ -253,7 +253,7 @@
+ #[cfg(not(any(
+     windows,
+     target_os = "haiku",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "redox",
+     target_os = "wasi",
+@@ -290,7 +290,7 @@
+ #[cfg(not(any(
+     windows,
+     target_os = "haiku",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "redox",
+     target_os = "wasi",
+@@ -317,14 +317,14 @@
+ 
+ /// Darwin lacks `accept4`, but does have `accept`. We define
+ /// `AcceptFlags` to have no flags, so we can discard it here.
+-#[cfg(any(windows, target_os = "haiku", target_os = "ios", target_os = "macos"))]
++#[cfg(any(windows, target_os = "haiku", any(target_os = "ios", target_os = "tvos"), target_os = "macos"))]
+ pub(crate) fn accept_with(sockfd: BorrowedFd<'_>, _flags: AcceptFlags) -> io::Result<OwnedFd> {
+     accept(sockfd)
+ }
+ 
+ /// Darwin lacks `accept4`, but does have `accept`. We define
+ /// `AcceptFlags` to have no flags, so we can discard it here.
+-#[cfg(any(windows, target_os = "haiku", target_os = "ios", target_os = "macos"))]
++#[cfg(any(windows, target_os = "haiku", any(target_os = "ios", target_os = "tvos"), target_os = "macos"))]
+ pub(crate) fn acceptfrom_with(
+     sockfd: BorrowedFd<'_>,
+     _flags: AcceptFlags,
+@@ -741,7 +741,7 @@
+             target_os = "freebsd",
+             target_os = "haiku",
+             target_os = "illumos",
+-            target_os = "ios",
++            any(target_os = "ios", target_os = "tvos"),
+             target_os = "l4re",
+             target_os = "macos",
+             target_os = "netbsd",
+@@ -754,7 +754,7 @@
+             target_os = "freebsd",
+             target_os = "haiku",
+             target_os = "illumos",
+-            target_os = "ios",
++            any(target_os = "ios", target_os = "tvos"),
+             target_os = "l4re",
+             target_os = "macos",
+             target_os = "netbsd",
+@@ -788,7 +788,7 @@
+             target_os = "freebsd",
+             target_os = "haiku",
+             target_os = "illumos",
+-            target_os = "ios",
++            any(target_os = "ios", target_os = "tvos"),
+             target_os = "l4re",
+             target_os = "macos",
+             target_os = "netbsd",
+@@ -801,7 +801,7 @@
+             target_os = "freebsd",
+             target_os = "haiku",
+             target_os = "illumos",
+-            target_os = "ios",
++            any(target_os = "ios", target_os = "tvos"),
+             target_os = "l4re",
+             target_os = "macos",
+             target_os = "netbsd",
+--- a/src/backend/libc/net/types.rs
++++ b/src/backend/libc/net/types.rs
+@@ -67,7 +67,7 @@
+         target_os = "freebsd",
+         target_os = "haiku",
+         target_os = "illumos",
+-        target_os = "ios",
++        any(target_os = "ios", target_os = "tvos"),
+         target_os = "macos",
+         target_os = "netbsd",
+         target_os = "openbsd",
+@@ -84,7 +84,7 @@
+         target_os = "freebsd",
+         target_os = "haiku",
+         target_os = "illumos",
+-        target_os = "ios",
++        any(target_os = "ios", target_os = "tvos"),
+         target_os = "macos",
+         target_os = "netbsd",
+         target_os = "openbsd",
+@@ -102,7 +102,7 @@
+         target_os = "freebsd",
+         target_os = "haiku",
+         target_os = "illumos",
+-        target_os = "ios",
++        any(target_os = "ios", target_os = "tvos"),
+         target_os = "macos",
+         target_os = "netbsd",
+         target_os = "openbsd",
+@@ -116,7 +116,7 @@
+         target_os = "freebsd",
+         target_os = "haiku",
+         target_os = "illumos",
+-        target_os = "ios",
++        any(target_os = "ios", target_os = "tvos"),
+         target_os = "macos",
+         target_os = "netbsd",
+         target_os = "openbsd",
+@@ -130,7 +130,7 @@
+         target_os = "freebsd",
+         target_os = "haiku",
+         target_os = "illumos",
+-        target_os = "ios",
++        any(target_os = "ios", target_os = "tvos"),
+         target_os = "macos",
+         target_os = "netbsd",
+         target_os = "openbsd",
+@@ -143,7 +143,7 @@
+         target_os = "dragonfly",
+         target_os = "freebsd",
+         target_os = "haiku",
+-        target_os = "ios",
++        any(target_os = "ios", target_os = "tvos"),
+         target_os = "macos",
+         target_os = "netbsd",
+         target_os = "openbsd",
+@@ -156,7 +156,7 @@
+         target_os = "freebsd",
+         target_os = "haiku",
+         target_os = "illumos",
+-        target_os = "ios",
++        any(target_os = "ios", target_os = "tvos"),
+         target_os = "macos",
+         target_os = "netbsd",
+         target_os = "openbsd",
+@@ -174,7 +174,7 @@
+         target_os = "freebsd",
+         target_os = "haiku",
+         target_os = "illumos",
+-        target_os = "ios",
++        any(target_os = "ios", target_os = "tvos"),
+         target_os = "macos",
+         target_os = "netbsd",
+         target_os = "openbsd",
+@@ -188,7 +188,7 @@
+         target_os = "freebsd",
+         target_os = "haiku",
+         target_os = "illumos",
+-        target_os = "ios",
++        any(target_os = "ios", target_os = "tvos"),
+         target_os = "macos",
+         target_os = "netbsd",
+         target_os = "openbsd",
+@@ -201,7 +201,7 @@
+         target_os = "dragonfly",
+         target_os = "freebsd",
+         target_os = "haiku",
+-        target_os = "ios",
++        any(target_os = "ios", target_os = "tvos"),
+         target_os = "macos",
+         target_os = "netbsd",
+         target_os = "openbsd",
+@@ -213,7 +213,7 @@
+         target_os = "dragonfly",
+         target_os = "freebsd",
+         target_os = "haiku",
+-        target_os = "ios",
++        any(target_os = "ios", target_os = "tvos"),
+         target_os = "macos",
+         target_os = "netbsd",
+         target_os = "openbsd",
+@@ -226,7 +226,7 @@
+         target_os = "freebsd",
+         target_os = "haiku",
+         target_os = "illumos",
+-        target_os = "ios",
++        any(target_os = "ios", target_os = "tvos"),
+         target_os = "macos",
+         target_os = "netbsd",
+         target_os = "openbsd",
+@@ -240,7 +240,7 @@
+         target_os = "freebsd",
+         target_os = "haiku",
+         target_os = "illumos",
+-        target_os = "ios",
++        any(target_os = "ios", target_os = "tvos"),
+         target_os = "macos",
+         target_os = "netbsd",
+         target_os = "openbsd",
+@@ -254,7 +254,7 @@
+         target_os = "freebsd",
+         target_os = "haiku",
+         target_os = "illumos",
+-        target_os = "ios",
++        any(target_os = "ios", target_os = "tvos"),
+         target_os = "macos",
+         target_os = "netbsd",
+         target_os = "openbsd",
+@@ -268,7 +268,7 @@
+         target_os = "freebsd",
+         target_os = "haiku",
+         target_os = "illumos",
+-        target_os = "ios",
++        any(target_os = "ios", target_os = "tvos"),
+         target_os = "macos",
+         target_os = "netbsd",
+         target_os = "openbsd",
+@@ -284,7 +284,7 @@
+         target_os = "freebsd",
+         target_os = "haiku",
+         target_os = "illumos",
+-        target_os = "ios",
++        any(target_os = "ios", target_os = "tvos"),
+         target_os = "macos",
+         target_os = "netbsd",
+         target_os = "openbsd",
+@@ -298,7 +298,7 @@
+         target_os = "freebsd",
+         target_os = "haiku",
+         target_os = "illumos",
+-        target_os = "ios",
++        any(target_os = "ios", target_os = "tvos"),
+         target_os = "macos",
+         target_os = "netbsd",
+         target_os = "openbsd",
+@@ -312,7 +312,7 @@
+         target_os = "freebsd",
+         target_os = "haiku",
+         target_os = "illumos",
+-        target_os = "ios",
++        any(target_os = "ios", target_os = "tvos"),
+         target_os = "macos",
+         target_os = "netbsd",
+         target_os = "openbsd",
+@@ -326,7 +326,7 @@
+         target_os = "freebsd",
+         target_os = "haiku",
+         target_os = "illumos",
+-        target_os = "ios",
++        any(target_os = "ios", target_os = "tvos"),
+         target_os = "macos",
+         target_os = "netbsd",
+         target_os = "openbsd",
+@@ -340,7 +340,7 @@
+         target_os = "freebsd",
+         target_os = "haiku",
+         target_os = "illumos",
+-        target_os = "ios",
++        any(target_os = "ios", target_os = "tvos"),
+         target_os = "macos",
+         target_os = "netbsd",
+         target_os = "openbsd",
+@@ -354,7 +354,7 @@
+         target_os = "freebsd",
+         target_os = "haiku",
+         target_os = "illumos",
+-        target_os = "ios",
++        any(target_os = "ios", target_os = "tvos"),
+         target_os = "macos",
+         target_os = "netbsd",
+         target_os = "openbsd",
+@@ -362,7 +362,7 @@
+     )))]
+     pub const TIPC: Self = Self(c::AF_TIPC as _);
+     /// `AF_BLUETOOTH`
+-    #[cfg(not(any(windows, target_os = "illumos", target_os = "ios", target_os = "macos", target_os = "solaris")))]
++    #[cfg(not(any(windows, target_os = "illumos", any(target_os = "ios", target_os = "tvos"), target_os = "macos", target_os = "solaris")))]
+     pub const BLUETOOTH: Self = Self(c::AF_BLUETOOTH as _);
+     /// `AF_IUCV`
+     #[cfg(not(any(
+@@ -371,7 +371,7 @@
+         target_os = "freebsd",
+         target_os = "haiku",
+         target_os = "illumos",
+-        target_os = "ios",
++        any(target_os = "ios", target_os = "tvos"),
+         target_os = "macos",
+         target_os = "netbsd",
+         target_os = "openbsd",
+@@ -385,7 +385,7 @@
+         target_os = "freebsd",
+         target_os = "haiku",
+         target_os = "illumos",
+-        target_os = "ios",
++        any(target_os = "ios", target_os = "tvos"),
+         target_os = "macos",
+         target_os = "netbsd",
+         target_os = "openbsd",
+@@ -402,7 +402,7 @@
+         target_os = "freebsd",
+         target_os = "haiku",
+         target_os = "illumos",
+-        target_os = "ios",
++        any(target_os = "ios", target_os = "tvos"),
+         target_os = "macos",
+         target_os = "netbsd",
+         target_os = "openbsd",
+@@ -416,7 +416,7 @@
+         target_os = "freebsd",
+         target_os = "haiku",
+         target_os = "illumos",
+-        target_os = "ios",
++        any(target_os = "ios", target_os = "tvos"),
+         target_os = "macos",
+         target_os = "netbsd",
+         target_os = "openbsd",
+@@ -480,7 +480,7 @@
+         target_os = "dragonfly",
+         target_os = "haiku",
+         target_os = "illumos",
+-        target_os = "ios",
++        any(target_os = "ios", target_os = "tvos"),
+         target_os = "macos",
+         target_os = "openbsd",
+         target_os = "solaris",
+@@ -517,7 +517,7 @@
+         target_os = "freebsd",
+         target_os = "haiku",
+         target_os = "illumos",
+-        target_os = "ios",
++        any(target_os = "ios", target_os = "tvos"),
+         target_os = "macos",
+         target_os = "netbsd",
+         target_os = "openbsd",
+@@ -537,7 +537,7 @@
+         target_os = "freebsd",
+         target_os = "haiku",
+         target_os = "illumos",
+-        target_os = "ios",
++        any(target_os = "ios", target_os = "tvos"),
+         target_os = "macos",
+         target_os = "netbsd",
+         target_os = "openbsd",
+@@ -553,7 +553,7 @@
+         target_os = "dragonfly",
+         target_os = "haiku",
+         target_os = "illumos",
+-        target_os = "ios",
++        any(target_os = "ios", target_os = "tvos"),
+         target_os = "macos",
+         target_os = "netbsd",
+         target_os = "openbsd",
+@@ -566,7 +566,7 @@
+         target_os = "dragonfly",
+         target_os = "haiku",
+         target_os = "illumos",
+-        target_os = "ios",
++        any(target_os = "ios", target_os = "tvos"),
+         target_os = "macos",
+         target_os = "netbsd",
+         target_os = "solaris",
+@@ -584,7 +584,7 @@
+         target_os = "fuchsia",
+         target_os = "haiku",
+         target_os = "illumos",
+-        target_os = "ios",
++        any(target_os = "ios", target_os = "tvos"),
+         target_os = "macos",
+         target_os = "netbsd",
+         target_os = "openbsd",
+@@ -602,7 +602,7 @@
+         target_os = "dragonfly",
+         target_os = "haiku",
+         target_os = "illumos",
+-        target_os = "ios",
++        any(target_os = "ios", target_os = "tvos"),
+         target_os = "macos",
+         target_os = "netbsd",
+         target_os = "openbsd",
+@@ -647,11 +647,11 @@
+     /// [`acceptfrom_with`]: crate::net::acceptfrom_with
+     pub struct AcceptFlags: c::c_int {
+         /// `SOCK_NONBLOCK`
+-        #[cfg(not(any(windows, target_os = "haiku", target_os = "ios", target_os = "macos")))]
++        #[cfg(not(any(windows, target_os = "haiku", any(target_os = "ios", target_os = "tvos"), target_os = "macos")))]
+         const NONBLOCK = c::SOCK_NONBLOCK;
+ 
+         /// `SOCK_CLOEXEC`
+-        #[cfg(not(any(windows, target_os = "haiku", target_os = "ios", target_os = "macos")))]
++        #[cfg(not(any(windows, target_os = "haiku", any(target_os = "ios", target_os = "tvos"), target_os = "macos")))]
+         const CLOEXEC = c::SOCK_CLOEXEC;
+     }
+ }
+@@ -662,11 +662,11 @@
+     /// [`socket`]: crate::net::socket
+     pub struct SocketFlags: c::c_int {
+         /// `SOCK_NONBLOCK`
+-        #[cfg(not(any(windows, target_os = "haiku", target_os = "ios", target_os = "macos")))]
++        #[cfg(not(any(windows, target_os = "haiku", any(target_os = "ios", target_os = "tvos"), target_os = "macos")))]
+         const NONBLOCK = c::SOCK_NONBLOCK;
+ 
+         /// `SOCK_CLOEXEC`
+-        #[cfg(not(any(windows, target_os = "haiku", target_os = "ios", target_os = "macos")))]
++        #[cfg(not(any(windows, target_os = "haiku", any(target_os = "ios", target_os = "tvos"), target_os = "macos")))]
+         const CLOEXEC = c::SOCK_CLOEXEC;
+     }
+ }
+--- a/src/backend/libc/net/write_sockaddr.rs
++++ b/src/backend/libc/net/write_sockaddr.rs
+@@ -27,7 +27,7 @@
+             target_os = "dragonfly",
+             target_os = "freebsd",
+             target_os = "haiku",
+-            target_os = "ios",
++            any(target_os = "ios", target_os = "tvos"),
+             target_os = "macos",
+             target_os = "netbsd",
+             target_os = "openbsd",
+@@ -54,7 +54,7 @@
+         target_os = "dragonfly",
+         target_os = "freebsd",
+         target_os = "haiku",
+-        target_os = "ios",
++        any(target_os = "ios", target_os = "tvos"),
+         target_os = "macos",
+         target_os = "netbsd",
+         target_os = "openbsd",
+@@ -73,7 +73,7 @@
+         target_os = "dragonfly",
+         target_os = "freebsd",
+         target_os = "haiku",
+-        target_os = "ios",
++        any(target_os = "ios", target_os = "tvos"),
+         target_os = "macos",
+         target_os = "netbsd",
+         target_os = "openbsd",
+--- a/src/backend/libc/offset.rs
++++ b/src/backend/libc/offset.rs
+@@ -184,7 +184,7 @@
+     target_os = "emscripten",
+     target_os = "haiku",
+     target_os = "illumos",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "linux",
+     target_os = "l4re",
+     target_os = "macos",
+@@ -307,7 +307,7 @@
+     target_os = "android",
+     target_os = "emscripten",
+     target_os = "haiku",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "linux",
+     target_os = "macos",
+     target_os = "redox",
+@@ -317,7 +317,7 @@
+ #[cfg(target_os = "android")]
+ pub(super) use readwrite_pv64::{preadv64 as libc_preadv, pwritev64 as libc_pwritev};
+ // macOS added preadv and pwritev in version 11.0
+-#[cfg(any(target_os = "ios", target_os = "macos"))]
++#[cfg(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos"))]
+ mod readwrite_pv {
+     use super::c;
+ 
+@@ -339,7 +339,7 @@
+ }
+ #[cfg(all(target_os = "linux", target_env = "gnu"))]
+ pub(super) use c::{preadv64v2 as libc_preadv2, pwritev64v2 as libc_pwritev2};
+-#[cfg(any(target_os = "ios", target_os = "macos"))]
++#[cfg(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos"))]
+ pub(super) use readwrite_pv::{preadv as libc_preadv, pwritev as libc_pwritev};
+ 
+ #[cfg(not(any(
+@@ -349,7 +349,7 @@
+     target_os = "dragonfly",
+     target_os = "fuchsia",
+     target_os = "illumos",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "linux",
+     target_os = "l4re",
+     target_os = "macos",
+--- a/src/backend/libc/process/types.rs
++++ b/src/backend/libc/process/types.rs
+@@ -60,7 +60,7 @@
+     #[cfg(not(any(
+         target_os = "haiku",
+         target_os = "illumos",
+-        target_os = "ios",
++        any(target_os = "ios", target_os = "tvos"),
+         target_os = "macos",
+         target_os = "solaris",
+     )))]
+@@ -88,7 +88,7 @@
+         target_os = "freebsd",
+         target_os = "haiku",
+         target_os = "illumos",
+-        target_os = "ios",
++        any(target_os = "ios", target_os = "tvos"),
+         target_os = "macos",
+         target_os = "netbsd",
+         target_os = "openbsd",
+@@ -102,7 +102,7 @@
+         target_os = "freebsd",
+         target_os = "haiku",
+         target_os = "illumos",
+-        target_os = "ios",
++        any(target_os = "ios", target_os = "tvos"),
+         target_os = "macos",
+         target_os = "netbsd",
+         target_os = "openbsd",
+@@ -116,7 +116,7 @@
+         target_os = "freebsd",
+         target_os = "haiku",
+         target_os = "illumos",
+-        target_os = "ios",
++        any(target_os = "ios", target_os = "tvos"),
+         target_os = "macos",
+         target_os = "netbsd",
+         target_os = "openbsd",
+@@ -130,7 +130,7 @@
+         target_os = "freebsd",
+         target_os = "haiku",
+         target_os = "illumos",
+-        target_os = "ios",
++        any(target_os = "ios", target_os = "tvos"),
+         target_os = "macos",
+         target_os = "netbsd",
+         target_os = "openbsd",
+@@ -144,7 +144,7 @@
+         target_os = "freebsd",
+         target_os = "haiku",
+         target_os = "illumos",
+-        target_os = "ios",
++        any(target_os = "ios", target_os = "tvos"),
+         target_os = "macos",
+         target_os = "netbsd",
+         target_os = "openbsd",
+@@ -160,7 +160,7 @@
+         target_os = "freebsd",
+         target_os = "haiku",
+         target_os = "illumos",
+-        target_os = "ios",
++        any(target_os = "ios", target_os = "tvos"),
+         target_os = "macos",
+         target_os = "netbsd",
+         target_os = "openbsd",
+@@ -169,7 +169,7 @@
+     Rttime = c::RLIMIT_RTTIME as c::c_int,
+ }
+ 
+-#[cfg(any(target_os = "ios", target_os = "macos"))]
++#[cfg(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos"))]
+ impl Resource {
+     /// `RLIMIT_RSS`
+     #[allow(non_upper_case_globals)]
+@@ -226,7 +226,7 @@
+         target_os = "freebsd",
+         target_os = "haiku",
+         target_os = "illumos",
+-        target_os = "ios",
++        any(target_os = "ios", target_os = "tvos"),
+         target_os = "macos",
+         target_os = "netbsd",
+         target_os = "openbsd",
+@@ -277,7 +277,7 @@
+         target_os = "dragonfly",
+         target_os = "freebsd",
+         target_os = "haiku",
+-        target_os = "ios",
++        any(target_os = "ios", target_os = "tvos"),
+         target_os = "macos",
+         target_os = "netbsd",
+         target_os = "openbsd",
+@@ -315,7 +315,7 @@
+                 target_os = "freebsd",
+                 target_os = "haiku",
+                 target_os = "illumos",
+-                target_os = "ios",
++                any(target_os = "ios", target_os = "tvos"),
+                 target_os = "macos",
+                 target_os = "netbsd",
+                 target_os = "openbsd",
+@@ -349,7 +349,7 @@
+                 target_os = "dragonfly",
+                 target_os = "freebsd",
+                 target_os = "haiku",
+-                target_os = "ios",
++                any(target_os = "ios", target_os = "tvos"),
+                 target_os = "macos",
+                 target_os = "netbsd",
+                 target_os = "openbsd",
+--- a/src/backend/libc/termios/types.rs
++++ b/src/backend/libc/termios/types.rs
+@@ -97,7 +97,7 @@
+     target_os = "freebsd",
+     target_os = "haiku",
+     target_os = "illumos",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "netbsd",
+     target_os = "openbsd",
+@@ -137,39 +137,39 @@
+ pub const VEOL2: usize = c::VEOL2 as usize;
+ 
+ /// `IGNBRK`
+-#[cfg(not(any(target_os = "ios", target_os = "macos")))]
++#[cfg(not(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos")))]
+ pub const IGNBRK: c::c_uint = c::IGNBRK;
+ 
+ /// `BRKINT`
+-#[cfg(not(any(target_os = "ios", target_os = "macos")))]
++#[cfg(not(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos")))]
+ pub const BRKINT: c::c_uint = c::BRKINT;
+ 
+ /// `IGNPAR`
+-#[cfg(not(any(target_os = "ios", target_os = "macos")))]
++#[cfg(not(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos")))]
+ pub const IGNPAR: c::c_uint = c::IGNPAR;
+ 
+ /// `PARMRK`
+-#[cfg(not(any(target_os = "ios", target_os = "macos")))]
++#[cfg(not(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos")))]
+ pub const PARMRK: c::c_uint = c::PARMRK;
+ 
+ /// `INPCK`
+-#[cfg(not(any(target_os = "ios", target_os = "macos")))]
++#[cfg(not(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos")))]
+ pub const INPCK: c::c_uint = c::INPCK;
+ 
+ /// `ISTRIP`
+-#[cfg(not(any(target_os = "ios", target_os = "macos")))]
++#[cfg(not(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos")))]
+ pub const ISTRIP: c::c_uint = c::ISTRIP;
+ 
+ /// `INLCR`
+-#[cfg(not(any(target_os = "ios", target_os = "macos")))]
++#[cfg(not(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos")))]
+ pub const INLCR: c::c_uint = c::INLCR;
+ 
+ /// `IGNCR`
+-#[cfg(not(any(target_os = "ios", target_os = "macos")))]
++#[cfg(not(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos")))]
+ pub const IGNCR: c::c_uint = c::IGNCR;
+ 
+ /// `ICRNL`
+-#[cfg(not(any(target_os = "ios", target_os = "macos")))]
++#[cfg(not(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos")))]
+ pub const ICRNL: c::c_uint = c::ICRNL;
+ 
+ /// `IUCLC`
+@@ -177,21 +177,21 @@
+ pub const IUCLC: c::c_uint = c::IUCLC;
+ 
+ /// `IXON`
+-#[cfg(not(any(target_os = "ios", target_os = "macos")))]
++#[cfg(not(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos")))]
+ pub const IXON: c::c_uint = c::IXON;
+ 
+ /// `IXANY`
+-#[cfg(not(any(target_os = "ios", target_os = "macos", target_os = "redox")))]
++#[cfg(not(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos", target_os = "redox")))]
+ pub const IXANY: c::c_uint = c::IXANY;
+ 
+ /// `IXOFF`
+-#[cfg(not(any(target_os = "ios", target_os = "macos")))]
++#[cfg(not(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos")))]
+ pub const IXOFF: c::c_uint = c::IXOFF;
+ 
+ /// `IMAXBEL`
+ #[cfg(not(any(
+     target_os = "haiku",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "redox"
+ )))]
+@@ -204,7 +204,7 @@
+     target_os = "freebsd",
+     target_os = "haiku",
+     target_os = "illumos",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "netbsd",
+     target_os = "openbsd",
+@@ -214,14 +214,14 @@
+ pub const IUTF8: c::c_uint = c::IUTF8;
+ 
+ /// `OPOST`
+-#[cfg(not(any(target_os = "ios", target_os = "macos")))]
++#[cfg(not(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos")))]
+ pub const OPOST: c::c_uint = c::OPOST;
+ 
+ /// `OLCUC`
+ #[cfg(not(any(
+     target_os = "dragonfly",
+     target_os = "freebsd",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "netbsd",
+     target_os = "redox",
+@@ -229,26 +229,26 @@
+ pub const OLCUC: c::c_uint = c::OLCUC;
+ 
+ /// `ONLCR`
+-#[cfg(not(any(target_os = "ios", target_os = "macos")))]
++#[cfg(not(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos")))]
+ pub const ONLCR: c::c_uint = c::ONLCR;
+ 
+ /// `OCRNL`
+-#[cfg(not(any(target_os = "ios", target_os = "macos")))]
++#[cfg(not(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos")))]
+ pub const OCRNL: c::c_uint = c::OCRNL;
+ 
+ /// `ONOCR`
+-#[cfg(not(any(target_os = "ios", target_os = "macos")))]
++#[cfg(not(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos")))]
+ pub const ONOCR: c::c_uint = c::ONOCR;
+ 
+ /// `ONLRET`
+-#[cfg(not(any(target_os = "ios", target_os = "macos")))]
++#[cfg(not(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos")))]
+ pub const ONLRET: c::c_uint = c::ONLRET;
+ 
+ /// `OFILL`
+ #[cfg(not(any(
+     target_os = "dragonfly",
+     target_os = "freebsd",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "netbsd",
+     target_os = "openbsd",
+@@ -259,7 +259,7 @@
+ #[cfg(not(any(
+     target_os = "dragonfly",
+     target_os = "freebsd",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "netbsd",
+     target_os = "openbsd",
+@@ -271,7 +271,7 @@
+     target_os = "dragonfly",
+     target_os = "freebsd",
+     target_os = "illumos",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "netbsd",
+     target_os = "openbsd",
+@@ -286,7 +286,7 @@
+     target_os = "freebsd",
+     target_os = "fuchsia",
+     target_os = "illumos",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "netbsd",
+     target_os = "openbsd",
+@@ -301,7 +301,7 @@
+     target_os = "freebsd",
+     target_os = "fuchsia",
+     target_os = "illumos",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "netbsd",
+     target_os = "openbsd",
+@@ -315,7 +315,7 @@
+     target_os = "dragonfly",
+     target_os = "freebsd",
+     target_os = "illumos",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "netbsd",
+     target_os = "openbsd",
+@@ -330,7 +330,7 @@
+     target_os = "freebsd",
+     target_os = "fuchsia",
+     target_os = "illumos",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "netbsd",
+     target_os = "openbsd",
+@@ -347,7 +347,7 @@
+     target_os = "freebsd",
+     target_os = "fuchsia",
+     target_os = "illumos",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "netbsd",
+     target_os = "openbsd",
+@@ -364,7 +364,7 @@
+     target_os = "freebsd",
+     target_os = "fuchsia",
+     target_os = "illumos",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "netbsd",
+     target_os = "openbsd",
+@@ -381,7 +381,7 @@
+     target_os = "freebsd",
+     target_os = "fuchsia",
+     target_os = "illumos",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "netbsd",
+     target_os = "openbsd",
+@@ -393,7 +393,7 @@
+ /// `TABDLY`
+ #[cfg(not(any(
+     target_os = "dragonfly",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "netbsd",
+     target_os = "openbsd",
+@@ -408,7 +408,7 @@
+     target_os = "dragonfly",
+     target_os = "fuchsia",
+     target_os = "illumos",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "netbsd",
+     target_os = "openbsd",
+@@ -425,7 +425,7 @@
+     target_os = "freebsd",
+     target_os = "fuchsia",
+     target_os = "illumos",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "netbsd",
+     target_os = "openbsd",
+@@ -442,7 +442,7 @@
+     target_os = "freebsd",
+     target_os = "fuchsia",
+     target_os = "illumos",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "netbsd",
+     target_os = "openbsd",
+@@ -458,7 +458,7 @@
+     target_os = "emscripten",
+     target_os = "fuchsia",
+     target_os = "illumos",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "netbsd",
+     target_os = "openbsd",
+@@ -472,7 +472,7 @@
+     target_os = "dragonfly",
+     target_os = "freebsd",
+     target_os = "illumos",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "netbsd",
+     target_os = "openbsd",
+@@ -487,7 +487,7 @@
+     target_os = "freebsd",
+     target_os = "fuchsia",
+     target_os = "illumos",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "netbsd",
+     target_os = "openbsd",
+@@ -504,7 +504,7 @@
+     target_os = "freebsd",
+     target_os = "fuchsia",
+     target_os = "illumos",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "netbsd",
+     target_os = "openbsd",
+@@ -519,7 +519,7 @@
+     target_os = "dragonfly",
+     target_os = "freebsd",
+     target_os = "illumos",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "netbsd",
+     target_os = "openbsd",
+@@ -534,7 +534,7 @@
+     target_os = "freebsd",
+     target_os = "fuchsia",
+     target_os = "illumos",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "netbsd",
+     target_os = "openbsd",
+@@ -551,7 +551,7 @@
+     target_os = "freebsd",
+     target_os = "fuchsia",
+     target_os = "illumos",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "netbsd",
+     target_os = "openbsd",
+@@ -566,7 +566,7 @@
+     target_os = "dragonfly",
+     target_os = "freebsd",
+     target_os = "illumos",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "netbsd",
+     target_os = "openbsd",
+@@ -581,7 +581,7 @@
+     target_os = "freebsd",
+     target_os = "fuchsia",
+     target_os = "illumos",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "netbsd",
+     target_os = "openbsd",
+@@ -598,7 +598,7 @@
+     target_os = "freebsd",
+     target_os = "fuchsia",
+     target_os = "illumos",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "netbsd",
+     target_os = "openbsd",
+@@ -668,7 +668,7 @@
+ #[cfg(not(any(
+     target_os = "dragonfly",
+     target_os = "haiku",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "openbsd"
+ )))]
+@@ -680,7 +680,7 @@
+     target_os = "freebsd",
+     target_os = "haiku",
+     target_os = "illumos",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "netbsd",
+     target_os = "openbsd",
+@@ -694,7 +694,7 @@
+     target_os = "freebsd",
+     target_os = "haiku",
+     target_os = "illumos",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "netbsd",
+     target_os = "openbsd",
+@@ -706,7 +706,7 @@
+ #[cfg(not(any(
+     target_os = "dragonfly",
+     target_os = "haiku",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "openbsd"
+ )))]
+@@ -717,7 +717,7 @@
+     target_os = "dragonfly",
+     target_os = "freebsd",
+     target_os = "haiku",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "netbsd",
+     target_os = "openbsd",
+@@ -730,7 +730,7 @@
+     target_os = "dragonfly",
+     target_os = "freebsd",
+     target_os = "haiku",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "netbsd",
+     target_os = "openbsd",
+@@ -743,7 +743,7 @@
+     target_os = "dragonfly",
+     target_os = "freebsd",
+     target_os = "haiku",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "netbsd",
+     target_os = "openbsd",
+@@ -756,7 +756,7 @@
+     target_os = "dragonfly",
+     target_os = "freebsd",
+     target_os = "haiku",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "netbsd",
+     target_os = "openbsd",
+@@ -771,7 +771,7 @@
+     target_os = "dragonfly",
+     target_os = "freebsd",
+     target_os = "haiku",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "netbsd",
+     target_os = "openbsd",
+@@ -786,7 +786,7 @@
+     target_os = "dragonfly",
+     target_os = "freebsd",
+     target_os = "haiku",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "netbsd",
+     target_os = "openbsd",
+@@ -801,7 +801,7 @@
+     target_os = "dragonfly",
+     target_os = "freebsd",
+     target_os = "haiku",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "netbsd",
+     target_os = "openbsd",
+@@ -816,7 +816,7 @@
+     target_os = "dragonfly",
+     target_os = "freebsd",
+     target_os = "haiku",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "netbsd",
+     target_os = "openbsd",
+@@ -825,51 +825,51 @@
+ pub const B4000000: Speed = c::B4000000;
+ 
+ /// `CSIZE`
+-#[cfg(not(any(target_os = "ios", target_os = "macos")))]
++#[cfg(not(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos")))]
+ pub const CSIZE: c::c_uint = c::CSIZE;
+ 
+ /// `CS5`
+-#[cfg(not(any(target_os = "ios", target_os = "macos")))]
++#[cfg(not(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos")))]
+ pub const CS5: c::c_uint = c::CS5;
+ 
+ /// `CS6`
+-#[cfg(not(any(target_os = "ios", target_os = "macos")))]
++#[cfg(not(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos")))]
+ pub const CS6: c::c_uint = c::CS6;
+ 
+ /// `CS7`
+-#[cfg(not(any(target_os = "ios", target_os = "macos")))]
++#[cfg(not(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos")))]
+ pub const CS7: c::c_uint = c::CS7;
+ 
+ /// `CS8`
+-#[cfg(not(any(target_os = "ios", target_os = "macos")))]
++#[cfg(not(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos")))]
+ pub const CS8: c::c_uint = c::CS8;
+ 
+ /// `CSTOPB`
+-#[cfg(not(any(target_os = "ios", target_os = "macos")))]
++#[cfg(not(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos")))]
+ pub const CSTOPB: c::c_uint = c::CSTOPB;
+ 
+ /// `CREAD`
+-#[cfg(not(any(target_os = "ios", target_os = "macos")))]
++#[cfg(not(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos")))]
+ pub const CREAD: c::c_uint = c::CREAD;
+ 
+ /// `PARENB`
+-#[cfg(not(any(target_os = "ios", target_os = "macos")))]
++#[cfg(not(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos")))]
+ pub const PARENB: c::c_uint = c::PARENB;
+ 
+ /// `PARODD`
+-#[cfg(not(any(target_os = "ios", target_os = "macos")))]
++#[cfg(not(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos")))]
+ pub const PARODD: c::c_uint = c::PARODD;
+ 
+ /// `HUPCL`
+-#[cfg(not(any(target_os = "ios", target_os = "macos")))]
++#[cfg(not(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos")))]
+ pub const HUPCL: c::c_uint = c::HUPCL;
+ 
+ /// `CLOCAL`
+-#[cfg(not(any(target_os = "ios", target_os = "macos")))]
++#[cfg(not(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos")))]
+ pub const CLOCAL: c::c_uint = c::CLOCAL;
+ 
+ /// `ISIG`
+-#[cfg(not(any(target_os = "ios", target_os = "macos")))]
++#[cfg(not(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos")))]
+ pub const ISIG: c::c_uint = c::ISIG;
+ 
+ /// `ICANON`—A flag for the `c_lflag` field of [`Termios`] indicating
+@@ -877,31 +877,31 @@
+ pub const ICANON: Tcflag = c::ICANON;
+ 
+ /// `ECHO`
+-#[cfg(not(any(target_os = "ios", target_os = "macos")))]
++#[cfg(not(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos")))]
+ pub const ECHO: c::c_uint = c::ECHO;
+ 
+ /// `ECHOE`
+-#[cfg(not(any(target_os = "ios", target_os = "macos")))]
++#[cfg(not(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos")))]
+ pub const ECHOE: c::c_uint = c::ECHOE;
+ 
+ /// `ECHOK`
+-#[cfg(not(any(target_os = "ios", target_os = "macos")))]
++#[cfg(not(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos")))]
+ pub const ECHOK: c::c_uint = c::ECHOK;
+ 
+ /// `ECHONL`
+-#[cfg(not(any(target_os = "ios", target_os = "macos")))]
++#[cfg(not(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos")))]
+ pub const ECHONL: c::c_uint = c::ECHONL;
+ 
+ /// `NOFLSH`
+-#[cfg(not(any(target_os = "ios", target_os = "macos")))]
++#[cfg(not(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos")))]
+ pub const NOFLSH: c::c_uint = c::NOFLSH;
+ 
+ /// `TOSTOP`
+-#[cfg(not(any(target_os = "ios", target_os = "macos")))]
++#[cfg(not(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos")))]
+ pub const TOSTOP: c::c_uint = c::TOSTOP;
+ 
+ /// `IEXTEN`
+-#[cfg(not(any(target_os = "ios", target_os = "macos")))]
++#[cfg(not(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos")))]
+ pub const IEXTEN: c::c_uint = c::IEXTEN;
+ 
+ /// `EXTA`
+@@ -909,7 +909,7 @@
+     target_os = "emscripten",
+     target_os = "haiku",
+     target_os = "illumos",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "redox",
+     target_os = "solaris",
+@@ -921,7 +921,7 @@
+     target_os = "emscripten",
+     target_os = "haiku",
+     target_os = "illumos",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "redox",
+     target_os = "solaris",
+@@ -933,7 +933,7 @@
+     target_os = "dragonfly",
+     target_os = "freebsd",
+     target_os = "haiku",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "netbsd",
+     target_os = "openbsd",
+@@ -947,7 +947,7 @@
+     target_os = "freebsd",
+     target_os = "haiku",
+     target_os = "illumos",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "netbsd",
+     target_os = "openbsd",
+@@ -962,7 +962,7 @@
+     target_os = "emscripten",
+     target_os = "freebsd",
+     target_os = "haiku",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "netbsd",
+     target_os = "openbsd",
+@@ -984,7 +984,7 @@
+     target_os = "freebsd",
+     target_os = "haiku",
+     target_os = "illumos",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "netbsd",
+     target_os = "openbsd",
+@@ -994,7 +994,7 @@
+ pub const CMSPAR: c::c_uint = c::CMSPAR;
+ 
+ /// `CRTSCTS`
+-#[cfg(not(any(target_os = "ios", target_os = "macos", target_os = "redox")))]
++#[cfg(not(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos", target_os = "redox")))]
+ pub const CRTSCTS: c::c_uint = c::CRTSCTS;
+ 
+ /// `XCASE`
+@@ -1002,29 +1002,29 @@
+ pub const XCASE: c::c_uint = c::XCASE;
+ 
+ /// `ECHOCTL`
+-#[cfg(not(any(target_os = "ios", target_os = "macos", target_os = "redox")))]
++#[cfg(not(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos", target_os = "redox")))]
+ pub const ECHOCTL: c::c_uint = c::ECHOCTL;
+ 
+ /// `ECHOPRT`
+-#[cfg(not(any(target_os = "ios", target_os = "macos", target_os = "redox")))]
++#[cfg(not(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos", target_os = "redox")))]
+ pub const ECHOPRT: c::c_uint = c::ECHOPRT;
+ 
+ /// `ECHOKE`
+-#[cfg(not(any(target_os = "ios", target_os = "macos", target_os = "redox")))]
++#[cfg(not(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos", target_os = "redox")))]
+ pub const ECHOKE: c::c_uint = c::ECHOKE;
+ 
+ /// `FLUSHO`
+-#[cfg(not(any(target_os = "ios", target_os = "macos", target_os = "redox")))]
++#[cfg(not(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos", target_os = "redox")))]
+ pub const FLUSHO: c::c_uint = c::FLUSHO;
+ 
+ /// `PENDIN`
+-#[cfg(not(any(target_os = "ios", target_os = "macos", target_os = "redox")))]
++#[cfg(not(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos", target_os = "redox")))]
+ pub const PENDIN: c::c_uint = c::PENDIN;
+ 
+ /// `EXTPROC`
+ #[cfg(not(any(
+     target_os = "haiku",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "redox"
+ )))]
+@@ -1036,7 +1036,7 @@
+     target_os = "freebsd",
+     target_os = "haiku",
+     target_os = "illumos",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "netbsd",
+     target_os = "openbsd",
+--- a/src/backend/libc/thread/syscalls.rs
++++ b/src/backend/libc/thread/syscalls.rs
+@@ -18,7 +18,7 @@
+     target_os = "emscripten",
+     target_os = "freebsd",
+     target_os = "haiku",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "openbsd",
+     target_os = "redox",
+@@ -42,7 +42,7 @@
+     target_os = "emscripten",
+     target_os = "freebsd", // FreeBSD 12 has clock_nanosleep, but libc targets FreeBSD 11.
+     target_os = "haiku",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "openbsd",
+     target_os = "redox",
+@@ -136,7 +136,7 @@
+     target_os = "emscripten",
+     target_os = "freebsd", // FreeBSD 12 has clock_nanosleep, but libc targets FreeBSD 11.
+     target_os = "haiku",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "openbsd",
+     target_os = "redox",
+--- a/src/backend/libc/time/types.rs
++++ b/src/backend/libc/time/types.rs
+@@ -114,7 +114,7 @@
+ /// all of them are always supported.
+ ///
+ /// [`clock_gettime`]: crate::time::clock_gettime
+-#[cfg(not(any(target_os = "ios", target_os = "macos", target_os = "wasi")))]
++#[cfg(not(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos", target_os = "wasi")))]
+ #[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
+ #[cfg_attr(not(target_os = "dragonfly"), repr(i32))]
+ #[cfg_attr(target_os = "dragonfly", repr(u64))]
+@@ -165,7 +165,7 @@
+ /// has to fail with `INVAL` due to an unsupported clock. See
+ /// [`DynamicClockId`] for a greater set of clocks, with the caveat that not
+ /// all of them are always supported.
+-#[cfg(any(target_os = "ios", target_os = "macos"))]
++#[cfg(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos"))]
+ #[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
+ #[repr(u32)]
+ #[non_exhaustive]
+--- a/src/fs/at.rs
++++ b/src/fs/at.rs
+@@ -9,9 +9,9 @@
+ use crate::ffi::{CStr, CString};
+ #[cfg(not(any(target_os = "illumos", target_os = "solaris")))]
+ use crate::fs::Access;
+-#[cfg(any(target_os = "ios", target_os = "macos"))]
++#[cfg(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos"))]
+ use crate::fs::CloneFlags;
+-#[cfg(not(any(target_os = "ios", target_os = "macos", target_os = "wasi")))]
++#[cfg(not(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos", target_os = "wasi")))]
+ use crate::fs::FileType;
+ #[cfg(any(target_os = "android", target_os = "linux"))]
+ use crate::fs::RenameFlags;
+@@ -328,7 +328,7 @@
+ ///  - [Apple]
+ ///
+ /// [Apple]: https://opensource.apple.com/source/xnu/xnu-3789.21.4/bsd/man/man2/clonefile.2.auto.html
+-#[cfg(any(target_os = "ios", target_os = "macos"))]
++#[cfg(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos"))]
+ #[inline]
+ pub fn fclonefileat<Fd: AsFd, DstFd: AsFd, P: path::Arg>(
+     src: Fd,
+@@ -349,7 +349,7 @@
+ ///
+ /// [POSIX]: https://pubs.opengroup.org/onlinepubs/9699919799/functions/mknodat.html
+ /// [Linux]: https://man7.org/linux/man-pages/man2/mknodat.2.html
+-#[cfg(not(any(target_os = "ios", target_os = "macos", target_os = "wasi")))]
++#[cfg(not(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos", target_os = "wasi")))]
+ #[inline]
+ pub fn mknodat<P: path::Arg, Fd: AsFd>(
+     dirfd: Fd,
+--- a/src/fs/constants.rs
++++ b/src/fs/constants.rs
+@@ -8,7 +8,7 @@
+ #[cfg(not(target_os = "redox"))]
+ pub use backend::fs::types::AtFlags;
+ 
+-#[cfg(any(target_os = "ios", target_os = "macos"))]
++#[cfg(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos"))]
+ pub use backend::fs::types::{CloneFlags, CopyfileFlags};
+ 
+ #[cfg(any(target_os = "android", target_os = "linux"))]
+--- a/src/fs/fd.rs
++++ b/src/fs/fd.rs
+@@ -315,7 +315,7 @@
+ #[cfg(not(any(
+     target_os = "dragonfly",
+     target_os = "haiku",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "redox",
+ )))]
+--- a/src/fs/mod.rs
++++ b/src/fs/mod.rs
+@@ -14,7 +14,7 @@
+     target_os = "dragonfly",
+     target_os = "haiku",
+     target_os = "illumos",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "netbsd",
+     target_os = "openbsd",
+@@ -23,20 +23,20 @@
+ )))]
+ mod fadvise;
+ pub(crate) mod fcntl;
+-#[cfg(any(target_os = "ios", target_os = "macos"))]
++#[cfg(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos"))]
+ mod fcntl_darwin;
+-#[cfg(any(target_os = "ios", target_os = "macos"))]
++#[cfg(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos"))]
+ mod fcopyfile;
+ pub(crate) mod fd;
+ mod file_type;
+-#[cfg(any(target_os = "ios", target_os = "macos"))]
++#[cfg(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos"))]
+ mod getpath;
+ #[cfg(not(any(
+     target_os = "dragonfly",
+     target_os = "freebsd",
+     target_os = "haiku",
+     target_os = "illumos",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "netbsd",
+     target_os = "openbsd",
+@@ -77,10 +77,10 @@
+ pub use abs::statvfs;
+ #[cfg(not(any(target_os = "illumos", target_os = "redox", target_os = "solaris")))]
+ pub use at::accessat;
+-#[cfg(any(target_os = "ios", target_os = "macos"))]
++#[cfg(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos"))]
+ pub use at::fclonefileat;
+ #[cfg(not(any(
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "redox",
+     target_os = "wasi",
+@@ -95,10 +95,10 @@
+     linkat, mkdirat, openat, readlinkat, renameat, statat, symlinkat, unlinkat, utimensat, RawMode,
+     UTIME_NOW, UTIME_OMIT,
+ };
+-#[cfg(any(target_os = "ios", target_os = "macos"))]
++#[cfg(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos"))]
+ pub use constants::CloneFlags;
+ /// `copyfile_flags_t`
+-#[cfg(any(target_os = "ios", target_os = "macos"))]
++#[cfg(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos"))]
+ pub use constants::CopyfileFlags;
+ pub use constants::{Access, FdFlags, Mode, Nsecs, OFlags, Secs, Timespec};
+ #[cfg(not(target_os = "redox"))]
+@@ -115,7 +115,7 @@
+     target_os = "dragonfly",
+     target_os = "haiku",
+     target_os = "illumos",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "netbsd",
+     target_os = "openbsd",
+@@ -133,9 +133,9 @@
+ ))]
+ pub use fcntl::{fcntl_add_seals, fcntl_get_seals, SealFlags};
+ pub use fcntl::{fcntl_getfd, fcntl_getfl, fcntl_setfd, fcntl_setfl};
+-#[cfg(any(target_os = "ios", target_os = "macos"))]
++#[cfg(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos"))]
+ pub use fcntl_darwin::{fcntl_fullfsync, fcntl_rdadvise};
+-#[cfg(any(target_os = "ios", target_os = "macos"))]
++#[cfg(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos"))]
+ pub use fcopyfile::{
+     copyfile_state_alloc, copyfile_state_free, copyfile_state_get, copyfile_state_get_copied,
+     copyfile_state_t, fcopyfile,
+@@ -143,7 +143,7 @@
+ #[cfg(not(any(
+     target_os = "dragonfly",
+     target_os = "haiku",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "redox",
+ )))]
+@@ -183,14 +183,14 @@
+ #[cfg(any(target_os = "android", target_os = "linux"))]
+ pub use fd::{FsWord, NFS_SUPER_MAGIC, PROC_SUPER_MAGIC};
+ pub use file_type::FileType;
+-#[cfg(any(target_os = "ios", target_os = "macos"))]
++#[cfg(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos"))]
+ pub use getpath::getpath;
+ #[cfg(not(any(
+     target_os = "dragonfly",
+     target_os = "freebsd",
+     target_os = "haiku",
+     target_os = "illumos",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "netbsd",
+     target_os = "openbsd",
+--- a/src/io/ioctl.rs
++++ b/src/io/ioctl.rs
+@@ -42,7 +42,7 @@
+ ///
+ /// [Linux]: https://man7.org/linux/man-pages/man2/ioctl.2.html
+ /// [Winsock2]: https://docs.microsoft.com/en-us/windows/win32/api/winsock2/nf-winsock2-ioctlsocket
+-#[cfg(any(target_os = "ios", target_os = "macos"))]
++#[cfg(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos"))]
+ #[inline]
+ #[doc(alias = "FIOCLEX")]
+ #[doc(alias = "FD_CLOEXEC")]
+--- a/src/io/mod.rs
++++ b/src/io/mod.rs
+@@ -39,7 +39,7 @@
+ pub use fcntl::fcntl_dupfd_cloexec;
+ #[cfg(not(windows))]
+ pub use fcntl::{fcntl_getfd, fcntl_setfd, FdFlags};
+-#[cfg(any(target_os = "ios", target_os = "macos"))]
++#[cfg(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos"))]
+ pub use ioctl::ioctl_fioclex;
+ pub use ioctl::ioctl_fionbio;
+ #[cfg(not(target_os = "redox"))]
+@@ -66,7 +66,7 @@
+     windows,
+     target_os = "aix",
+     target_os = "haiku",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "wasi"
+ )))]
+--- a/src/io/pipe.rs
++++ b/src/io/pipe.rs
+@@ -5,7 +5,7 @@
+ #[cfg(any(target_os = "android", target_os = "linux"))]
+ use backend::fd::AsFd;
+ 
+-#[cfg(not(any(target_os = "ios", target_os = "macos")))]
++#[cfg(not(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos")))]
+ pub use backend::io::types::PipeFlags;
+ 
+ #[cfg(any(target_os = "android", target_os = "linux"))]
+@@ -57,7 +57,7 @@
+ #[cfg(not(any(
+     target_os = "aix",
+     target_os = "haiku",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos"
+ )))]
+ #[inline]
+--- a/src/termios/constants.rs
++++ b/src/termios/constants.rs
+@@ -3,7 +3,7 @@
+     target_os = "dragonfly",
+     target_os = "freebsd",
+     target_os = "haiku",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "netbsd",
+     target_os = "openbsd",
+@@ -14,7 +14,7 @@
+     target_os = "dragonfly",
+     target_os = "freebsd",
+     target_os = "haiku",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "netbsd",
+     target_os = "openbsd",
+@@ -25,7 +25,7 @@
+     target_os = "dragonfly",
+     target_os = "freebsd",
+     target_os = "haiku",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "netbsd",
+     target_os = "openbsd",
+@@ -36,7 +36,7 @@
+     target_os = "dragonfly",
+     target_os = "freebsd",
+     target_os = "haiku",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "netbsd",
+     target_os = "openbsd",
+@@ -49,7 +49,7 @@
+     target_os = "dragonfly",
+     target_os = "freebsd",
+     target_os = "haiku",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "netbsd",
+     target_os = "openbsd",
+@@ -62,7 +62,7 @@
+     target_os = "dragonfly",
+     target_os = "freebsd",
+     target_os = "haiku",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "netbsd",
+     target_os = "openbsd",
+@@ -75,7 +75,7 @@
+     target_os = "dragonfly",
+     target_os = "freebsd",
+     target_os = "haiku",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "netbsd",
+     target_os = "openbsd",
+@@ -88,7 +88,7 @@
+     target_os = "dragonfly",
+     target_os = "freebsd",
+     target_os = "haiku",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "netbsd",
+     target_os = "openbsd",
+@@ -98,7 +98,7 @@
+ #[cfg(not(any(
+     target_os = "dragonfly",
+     target_os = "haiku",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "openbsd"
+ )))]
+@@ -108,7 +108,7 @@
+     target_os = "freebsd",
+     target_os = "haiku",
+     target_os = "illumos",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "netbsd",
+     target_os = "openbsd",
+@@ -120,7 +120,7 @@
+     target_os = "freebsd",
+     target_os = "haiku",
+     target_os = "illumos",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "netbsd",
+     target_os = "openbsd",
+@@ -130,19 +130,19 @@
+ #[cfg(not(any(
+     target_os = "dragonfly",
+     target_os = "haiku",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "openbsd"
+ )))]
+ pub use backend::termios::types::B921600;
+-#[cfg(not(any(target_os = "ios", target_os = "macos")))]
++#[cfg(not(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos")))]
+ pub use backend::termios::types::BRKINT;
+ #[cfg(not(any(
+     target_os = "dragonfly",
+     target_os = "freebsd",
+     target_os = "fuchsia",
+     target_os = "illumos",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "netbsd",
+     target_os = "openbsd",
+@@ -157,7 +157,7 @@
+     target_os = "freebsd",
+     target_os = "fuchsia",
+     target_os = "illumos",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "netbsd",
+     target_os = "openbsd",
+@@ -169,7 +169,7 @@
+     target_os = "dragonfly",
+     target_os = "freebsd",
+     target_os = "illumos",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "netbsd",
+     target_os = "openbsd",
+@@ -181,7 +181,7 @@
+     target_os = "dragonfly",
+     target_os = "freebsd",
+     target_os = "haiku",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "netbsd",
+     target_os = "openbsd",
+@@ -193,7 +193,7 @@
+     target_os = "freebsd",
+     target_os = "haiku",
+     target_os = "illumos",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "netbsd",
+     target_os = "openbsd",
+@@ -206,14 +206,14 @@
+     target_os = "emscripten",
+     target_os = "freebsd",
+     target_os = "haiku",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "netbsd",
+     target_os = "openbsd",
+     target_os = "redox",
+ )))]
+ pub use backend::termios::types::CIBAUD;
+-#[cfg(not(any(target_os = "ios", target_os = "macos")))]
++#[cfg(not(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos")))]
+ pub use backend::termios::types::CLOCAL;
+ #[cfg(not(any(
+     target_os = "dragonfly",
+@@ -221,7 +221,7 @@
+     target_os = "freebsd",
+     target_os = "haiku",
+     target_os = "illumos",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "netbsd",
+     target_os = "openbsd",
+@@ -234,7 +234,7 @@
+     target_os = "freebsd",
+     target_os = "fuchsia",
+     target_os = "illumos",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "netbsd",
+     target_os = "openbsd",
+@@ -249,7 +249,7 @@
+     target_os = "freebsd",
+     target_os = "fuchsia",
+     target_os = "illumos",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "netbsd",
+     target_os = "openbsd",
+@@ -264,7 +264,7 @@
+     target_os = "freebsd",
+     target_os = "fuchsia",
+     target_os = "illumos",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "netbsd",
+     target_os = "openbsd",
+@@ -279,7 +279,7 @@
+     target_os = "freebsd",
+     target_os = "fuchsia",
+     target_os = "illumos",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "netbsd",
+     target_os = "openbsd",
+@@ -291,7 +291,7 @@
+     target_os = "dragonfly",
+     target_os = "freebsd",
+     target_os = "illumos",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "netbsd",
+     target_os = "openbsd",
+@@ -299,41 +299,41 @@
+     target_os = "solaris",
+ )))]
+ pub use backend::termios::types::CRDLY;
+-#[cfg(not(any(target_os = "ios", target_os = "macos")))]
++#[cfg(not(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos")))]
+ pub use backend::termios::types::CREAD;
+-#[cfg(not(any(target_os = "ios", target_os = "macos", target_os = "redox")))]
++#[cfg(not(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos", target_os = "redox")))]
+ pub use backend::termios::types::CRTSCTS;
+-#[cfg(not(any(target_os = "ios", target_os = "macos")))]
++#[cfg(not(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos")))]
+ pub use backend::termios::types::CS5;
+-#[cfg(not(any(target_os = "ios", target_os = "macos")))]
++#[cfg(not(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos")))]
+ pub use backend::termios::types::CS6;
+-#[cfg(not(any(target_os = "ios", target_os = "macos")))]
++#[cfg(not(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos")))]
+ pub use backend::termios::types::CS7;
+-#[cfg(not(any(target_os = "ios", target_os = "macos")))]
++#[cfg(not(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos")))]
+ pub use backend::termios::types::CS8;
+-#[cfg(not(any(target_os = "ios", target_os = "macos")))]
++#[cfg(not(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos")))]
+ pub use backend::termios::types::CSIZE;
+-#[cfg(not(any(target_os = "ios", target_os = "macos")))]
++#[cfg(not(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos")))]
+ pub use backend::termios::types::CSTOPB;
+-#[cfg(not(any(target_os = "ios", target_os = "macos")))]
++#[cfg(not(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos")))]
+ pub use backend::termios::types::ECHO;
+-#[cfg(not(any(target_os = "ios", target_os = "macos", target_os = "redox")))]
++#[cfg(not(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos", target_os = "redox")))]
+ pub use backend::termios::types::ECHOCTL;
+-#[cfg(not(any(target_os = "ios", target_os = "macos")))]
++#[cfg(not(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos")))]
+ pub use backend::termios::types::ECHOE;
+-#[cfg(not(any(target_os = "ios", target_os = "macos")))]
++#[cfg(not(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos")))]
+ pub use backend::termios::types::ECHOK;
+-#[cfg(not(any(target_os = "ios", target_os = "macos", target_os = "redox")))]
++#[cfg(not(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos", target_os = "redox")))]
+ pub use backend::termios::types::ECHOKE;
+-#[cfg(not(any(target_os = "ios", target_os = "macos")))]
++#[cfg(not(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos")))]
+ pub use backend::termios::types::ECHONL;
+-#[cfg(not(any(target_os = "ios", target_os = "macos", target_os = "redox")))]
++#[cfg(not(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos", target_os = "redox")))]
+ pub use backend::termios::types::ECHOPRT;
+ #[cfg(not(any(
+     target_os = "emscripten",
+     target_os = "haiku",
+     target_os = "illumos",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "redox",
+     target_os = "solaris",
+@@ -343,7 +343,7 @@
+     target_os = "emscripten",
+     target_os = "haiku",
+     target_os = "illumos",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "redox",
+     target_os = "solaris",
+@@ -351,7 +351,7 @@
+ pub use backend::termios::types::EXTB;
+ #[cfg(not(any(
+     target_os = "haiku",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "redox"
+ )))]
+@@ -361,7 +361,7 @@
+     target_os = "freebsd",
+     target_os = "fuchsia",
+     target_os = "illumos",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "netbsd",
+     target_os = "openbsd",
+@@ -376,7 +376,7 @@
+     target_os = "freebsd",
+     target_os = "fuchsia",
+     target_os = "illumos",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "netbsd",
+     target_os = "openbsd",
+@@ -389,7 +389,7 @@
+     target_os = "dragonfly",
+     target_os = "freebsd",
+     target_os = "illumos",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "netbsd",
+     target_os = "openbsd",
+@@ -397,34 +397,34 @@
+     target_os = "solaris",
+ )))]
+ pub use backend::termios::types::FFDLY;
+-#[cfg(not(any(target_os = "ios", target_os = "macos", target_os = "redox")))]
++#[cfg(not(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos", target_os = "redox")))]
+ pub use backend::termios::types::FLUSHO;
+-#[cfg(not(any(target_os = "ios", target_os = "macos")))]
++#[cfg(not(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos")))]
+ pub use backend::termios::types::HUPCL;
+-#[cfg(not(any(target_os = "ios", target_os = "macos")))]
++#[cfg(not(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos")))]
+ pub use backend::termios::types::ICRNL;
+-#[cfg(not(any(target_os = "ios", target_os = "macos")))]
++#[cfg(not(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos")))]
+ pub use backend::termios::types::IEXTEN;
+-#[cfg(not(any(target_os = "ios", target_os = "macos")))]
++#[cfg(not(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos")))]
+ pub use backend::termios::types::IGNBRK;
+-#[cfg(not(any(target_os = "ios", target_os = "macos")))]
++#[cfg(not(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos")))]
+ pub use backend::termios::types::IGNCR;
+-#[cfg(not(any(target_os = "ios", target_os = "macos")))]
++#[cfg(not(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos")))]
+ pub use backend::termios::types::IGNPAR;
+ #[cfg(not(any(
+     target_os = "haiku",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "redox"
+ )))]
+ pub use backend::termios::types::IMAXBEL;
+-#[cfg(not(any(target_os = "ios", target_os = "macos")))]
++#[cfg(not(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos")))]
+ pub use backend::termios::types::INLCR;
+-#[cfg(not(any(target_os = "ios", target_os = "macos")))]
++#[cfg(not(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos")))]
+ pub use backend::termios::types::INPCK;
+-#[cfg(not(any(target_os = "ios", target_os = "macos")))]
++#[cfg(not(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos")))]
+ pub use backend::termios::types::ISIG;
+-#[cfg(not(any(target_os = "ios", target_os = "macos")))]
++#[cfg(not(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos")))]
+ pub use backend::termios::types::ISTRIP;
+ #[cfg(any(
+     linux_raw,
+@@ -440,7 +440,7 @@
+     target_os = "freebsd",
+     target_os = "haiku",
+     target_os = "illumos",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "netbsd",
+     target_os = "openbsd",
+@@ -448,18 +448,18 @@
+     target_os = "solaris",
+ )))]
+ pub use backend::termios::types::IUTF8;
+-#[cfg(not(any(target_os = "ios", target_os = "macos", target_os = "redox")))]
++#[cfg(not(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos", target_os = "redox")))]
+ pub use backend::termios::types::IXANY;
+-#[cfg(not(any(target_os = "ios", target_os = "macos")))]
++#[cfg(not(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos")))]
+ pub use backend::termios::types::IXOFF;
+-#[cfg(not(any(target_os = "ios", target_os = "macos")))]
++#[cfg(not(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos")))]
+ pub use backend::termios::types::IXON;
+ #[cfg(not(any(
+     target_os = "dragonfly",
+     target_os = "freebsd",
+     target_os = "fuchsia",
+     target_os = "illumos",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "netbsd",
+     target_os = "openbsd",
+@@ -472,7 +472,7 @@
+     target_os = "freebsd",
+     target_os = "fuchsia",
+     target_os = "illumos",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "netbsd",
+     target_os = "openbsd",
+@@ -484,7 +484,7 @@
+     target_os = "dragonfly",
+     target_os = "freebsd",
+     target_os = "illumos",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "netbsd",
+     target_os = "openbsd",
+@@ -492,14 +492,14 @@
+     target_os = "solaris",
+ )))]
+ pub use backend::termios::types::NLDLY;
+-#[cfg(not(any(target_os = "ios", target_os = "macos")))]
++#[cfg(not(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos")))]
+ pub use backend::termios::types::NOFLSH;
+-#[cfg(not(any(target_os = "ios", target_os = "macos")))]
++#[cfg(not(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos")))]
+ pub use backend::termios::types::OCRNL;
+ #[cfg(not(any(
+     target_os = "dragonfly",
+     target_os = "freebsd",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "netbsd",
+     target_os = "openbsd",
+@@ -508,7 +508,7 @@
+ #[cfg(not(any(
+     target_os = "dragonfly",
+     target_os = "freebsd",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "netbsd",
+     target_os = "openbsd",
+@@ -517,33 +517,33 @@
+ #[cfg(not(any(
+     target_os = "dragonfly",
+     target_os = "freebsd",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "netbsd",
+     target_os = "redox",
+ )))]
+ pub use backend::termios::types::OLCUC;
+-#[cfg(not(any(target_os = "ios", target_os = "macos")))]
++#[cfg(not(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos")))]
+ pub use backend::termios::types::ONLCR;
+-#[cfg(not(any(target_os = "ios", target_os = "macos")))]
++#[cfg(not(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos")))]
+ pub use backend::termios::types::ONLRET;
+-#[cfg(not(any(target_os = "ios", target_os = "macos")))]
++#[cfg(not(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos")))]
+ pub use backend::termios::types::ONOCR;
+-#[cfg(not(any(target_os = "ios", target_os = "macos")))]
++#[cfg(not(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos")))]
+ pub use backend::termios::types::OPOST;
+-#[cfg(not(any(target_os = "ios", target_os = "macos")))]
++#[cfg(not(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos")))]
+ pub use backend::termios::types::PARENB;
+-#[cfg(not(any(target_os = "ios", target_os = "macos")))]
++#[cfg(not(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos")))]
+ pub use backend::termios::types::PARMRK;
+-#[cfg(not(any(target_os = "ios", target_os = "macos")))]
++#[cfg(not(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos")))]
+ pub use backend::termios::types::PARODD;
+-#[cfg(not(any(target_os = "ios", target_os = "macos", target_os = "redox")))]
++#[cfg(not(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos", target_os = "redox")))]
+ pub use backend::termios::types::PENDIN;
+ #[cfg(not(any(
+     target_os = "dragonfly",
+     target_os = "fuchsia",
+     target_os = "illumos",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "netbsd",
+     target_os = "openbsd",
+@@ -558,7 +558,7 @@
+     target_os = "freebsd",
+     target_os = "fuchsia",
+     target_os = "illumos",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "netbsd",
+     target_os = "openbsd",
+@@ -573,7 +573,7 @@
+     target_os = "freebsd",
+     target_os = "fuchsia",
+     target_os = "illumos",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "netbsd",
+     target_os = "openbsd",
+@@ -587,7 +587,7 @@
+     target_os = "emscripten",
+     target_os = "fuchsia",
+     target_os = "illumos",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "netbsd",
+     target_os = "openbsd",
+@@ -597,7 +597,7 @@
+ pub use backend::termios::types::TAB3;
+ #[cfg(not(any(
+     target_os = "dragonfly",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "netbsd",
+     target_os = "openbsd",
+@@ -606,14 +606,14 @@
+     target_os = "solaris",
+ )))]
+ pub use backend::termios::types::TABDLY;
+-#[cfg(not(any(target_os = "ios", target_os = "macos")))]
++#[cfg(not(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos")))]
+ pub use backend::termios::types::TOSTOP;
+ #[cfg(not(any(
+     target_os = "dragonfly",
+     target_os = "freebsd",
+     target_os = "haiku",
+     target_os = "illumos",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "netbsd",
+     target_os = "openbsd",
+@@ -625,7 +625,7 @@
+     target_os = "freebsd",
+     target_os = "fuchsia",
+     target_os = "illumos",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "netbsd",
+     target_os = "openbsd",
+@@ -640,7 +640,7 @@
+     target_os = "freebsd",
+     target_os = "fuchsia",
+     target_os = "illumos",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "netbsd",
+     target_os = "openbsd",
+@@ -653,7 +653,7 @@
+     target_os = "dragonfly",
+     target_os = "freebsd",
+     target_os = "illumos",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "netbsd",
+     target_os = "openbsd",
+@@ -668,7 +668,7 @@
+     target_os = "freebsd",
+     target_os = "haiku",
+     target_os = "illumos",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "netbsd",
+     target_os = "openbsd",
+@@ -714,7 +714,7 @@
+         #[cfg(not(any(
+             target_os = "dragonfly",
+             target_os = "haiku",
+-            target_os = "ios",
++            any(target_os = "ios", target_os = "tvos"),
+             target_os = "macos",
+             target_os = "openbsd"
+         )))]
+@@ -724,7 +724,7 @@
+             target_os = "freebsd",
+             target_os = "haiku",
+             target_os = "illumos",
+-            target_os = "ios",
++            any(target_os = "ios", target_os = "tvos"),
+             target_os = "macos",
+             target_os = "netbsd",
+             target_os = "openbsd",
+@@ -736,7 +736,7 @@
+             target_os = "freebsd",
+             target_os = "haiku",
+             target_os = "illumos",
+-            target_os = "ios",
++            any(target_os = "ios", target_os = "tvos"),
+             target_os = "macos",
+             target_os = "netbsd",
+             target_os = "openbsd",
+@@ -746,7 +746,7 @@
+         #[cfg(not(any(
+             target_os = "dragonfly",
+             target_os = "haiku",
+-            target_os = "ios",
++            any(target_os = "ios", target_os = "tvos"),
+             target_os = "macos",
+             target_os = "openbsd"
+         )))]
+@@ -755,7 +755,7 @@
+             target_os = "dragonfly",
+             target_os = "freebsd",
+             target_os = "haiku",
+-            target_os = "ios",
++            any(target_os = "ios", target_os = "tvos"),
+             target_os = "macos",
+             target_os = "netbsd",
+             target_os = "openbsd",
+@@ -766,7 +766,7 @@
+             target_os = "dragonfly",
+             target_os = "freebsd",
+             target_os = "haiku",
+-            target_os = "ios",
++            any(target_os = "ios", target_os = "tvos"),
+             target_os = "macos",
+             target_os = "netbsd",
+             target_os = "openbsd",
+@@ -777,7 +777,7 @@
+             target_os = "dragonfly",
+             target_os = "freebsd",
+             target_os = "haiku",
+-            target_os = "ios",
++            any(target_os = "ios", target_os = "tvos"),
+             target_os = "macos",
+             target_os = "netbsd",
+             target_os = "openbsd",
+@@ -788,7 +788,7 @@
+             target_os = "dragonfly",
+             target_os = "freebsd",
+             target_os = "haiku",
+-            target_os = "ios",
++            any(target_os = "ios", target_os = "tvos"),
+             target_os = "macos",
+             target_os = "netbsd",
+             target_os = "openbsd",
+@@ -801,7 +801,7 @@
+             target_os = "dragonfly",
+             target_os = "freebsd",
+             target_os = "haiku",
+-            target_os = "ios",
++            any(target_os = "ios", target_os = "tvos"),
+             target_os = "macos",
+             target_os = "netbsd",
+             target_os = "openbsd",
+@@ -814,7 +814,7 @@
+             target_os = "dragonfly",
+             target_os = "freebsd",
+             target_os = "haiku",
+-            target_os = "ios",
++            any(target_os = "ios", target_os = "tvos"),
+             target_os = "macos",
+             target_os = "netbsd",
+             target_os = "openbsd",
+@@ -827,7 +827,7 @@
+             target_os = "dragonfly",
+             target_os = "freebsd",
+             target_os = "haiku",
+-            target_os = "ios",
++            any(target_os = "ios", target_os = "tvos"),
+             target_os = "macos",
+             target_os = "netbsd",
+             target_os = "openbsd",
+@@ -840,7 +840,7 @@
+             target_os = "dragonfly",
+             target_os = "freebsd",
+             target_os = "haiku",
+-            target_os = "ios",
++            any(target_os = "ios", target_os = "tvos"),
+             target_os = "macos",
+             target_os = "netbsd",
+             target_os = "openbsd",
+--- a/src/termios/mod.rs
++++ b/src/termios/mod.rs
+@@ -15,7 +15,7 @@
+     target_os = "dragonfly",
+     target_os = "freebsd",
+     target_os = "haiku",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "netbsd",
+     target_os = "openbsd",
+@@ -27,7 +27,7 @@
+     target_os = "dragonfly",
+     target_os = "freebsd",
+     target_os = "haiku",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "netbsd",
+     target_os = "openbsd",
+@@ -39,7 +39,7 @@
+     target_os = "dragonfly",
+     target_os = "freebsd",
+     target_os = "haiku",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "netbsd",
+     target_os = "openbsd",
+@@ -51,7 +51,7 @@
+     target_os = "dragonfly",
+     target_os = "freebsd",
+     target_os = "haiku",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "netbsd",
+     target_os = "openbsd",
+@@ -65,7 +65,7 @@
+     target_os = "dragonfly",
+     target_os = "freebsd",
+     target_os = "haiku",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "netbsd",
+     target_os = "openbsd",
+@@ -79,7 +79,7 @@
+     target_os = "dragonfly",
+     target_os = "freebsd",
+     target_os = "haiku",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "netbsd",
+     target_os = "openbsd",
+@@ -93,7 +93,7 @@
+     target_os = "dragonfly",
+     target_os = "freebsd",
+     target_os = "haiku",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "netbsd",
+     target_os = "openbsd",
+@@ -107,7 +107,7 @@
+     target_os = "dragonfly",
+     target_os = "freebsd",
+     target_os = "haiku",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "netbsd",
+     target_os = "openbsd",
+@@ -118,7 +118,7 @@
+ #[cfg(not(any(
+     target_os = "dragonfly",
+     target_os = "haiku",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "openbsd",
+     target_os = "wasi",
+@@ -129,7 +129,7 @@
+     target_os = "freebsd",
+     target_os = "haiku",
+     target_os = "illumos",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "netbsd",
+     target_os = "openbsd",
+@@ -142,7 +142,7 @@
+     target_os = "freebsd",
+     target_os = "haiku",
+     target_os = "illumos",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "netbsd",
+     target_os = "openbsd",
+@@ -153,20 +153,20 @@
+ #[cfg(not(any(
+     target_os = "dragonfly",
+     target_os = "haiku",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "openbsd",
+     target_os = "wasi",
+ )))]
+ pub use constants::B921600;
+-#[cfg(not(any(target_os = "ios", target_os = "macos", target_os = "wasi")))]
++#[cfg(not(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos", target_os = "wasi")))]
+ pub use constants::BRKINT;
+ #[cfg(not(any(
+     target_os = "dragonfly",
+     target_os = "freebsd",
+     target_os = "fuchsia",
+     target_os = "illumos",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "netbsd",
+     target_os = "openbsd",
+@@ -182,7 +182,7 @@
+     target_os = "freebsd",
+     target_os = "fuchsia",
+     target_os = "illumos",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "netbsd",
+     target_os = "openbsd",
+@@ -195,7 +195,7 @@
+     target_os = "dragonfly",
+     target_os = "freebsd",
+     target_os = "illumos",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "netbsd",
+     target_os = "openbsd",
+@@ -208,7 +208,7 @@
+     target_os = "dragonfly",
+     target_os = "freebsd",
+     target_os = "haiku",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "netbsd",
+     target_os = "openbsd",
+@@ -221,7 +221,7 @@
+     target_os = "freebsd",
+     target_os = "haiku",
+     target_os = "illumos",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "netbsd",
+     target_os = "openbsd",
+@@ -235,7 +235,7 @@
+     target_os = "emscripten",
+     target_os = "freebsd",
+     target_os = "haiku",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "netbsd",
+     target_os = "openbsd",
+@@ -243,7 +243,7 @@
+     target_os = "wasi",
+ )))]
+ pub use constants::CIBAUD;
+-#[cfg(not(any(target_os = "ios", target_os = "macos", target_os = "wasi")))]
++#[cfg(not(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos", target_os = "wasi")))]
+ pub use constants::CLOCAL;
+ #[cfg(not(any(
+     target_os = "dragonfly",
+@@ -251,7 +251,7 @@
+     target_os = "freebsd",
+     target_os = "haiku",
+     target_os = "illumos",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "netbsd",
+     target_os = "openbsd",
+@@ -265,7 +265,7 @@
+     target_os = "freebsd",
+     target_os = "fuchsia",
+     target_os = "illumos",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "netbsd",
+     target_os = "openbsd",
+@@ -281,7 +281,7 @@
+     target_os = "freebsd",
+     target_os = "fuchsia",
+     target_os = "illumos",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "netbsd",
+     target_os = "openbsd",
+@@ -297,7 +297,7 @@
+     target_os = "freebsd",
+     target_os = "fuchsia",
+     target_os = "illumos",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "netbsd",
+     target_os = "openbsd",
+@@ -313,7 +313,7 @@
+     target_os = "freebsd",
+     target_os = "fuchsia",
+     target_os = "illumos",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "netbsd",
+     target_os = "openbsd",
+@@ -326,7 +326,7 @@
+     target_os = "dragonfly",
+     target_os = "freebsd",
+     target_os = "illumos",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "netbsd",
+     target_os = "openbsd",
+@@ -335,51 +335,51 @@
+     target_os = "wasi",
+ )))]
+ pub use constants::CRDLY;
+-#[cfg(not(any(target_os = "ios", target_os = "macos", target_os = "wasi")))]
++#[cfg(not(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos", target_os = "wasi")))]
+ pub use constants::CREAD;
+ #[cfg(not(any(
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "redox",
+     target_os = "wasi"
+ )))]
+ pub use constants::CRTSCTS;
+-#[cfg(not(any(target_os = "ios", target_os = "macos", target_os = "wasi")))]
++#[cfg(not(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos", target_os = "wasi")))]
+ pub use constants::CS5;
+-#[cfg(not(any(target_os = "ios", target_os = "macos", target_os = "wasi")))]
++#[cfg(not(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos", target_os = "wasi")))]
+ pub use constants::CS6;
+-#[cfg(not(any(target_os = "ios", target_os = "macos", target_os = "wasi")))]
++#[cfg(not(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos", target_os = "wasi")))]
+ pub use constants::CS7;
+-#[cfg(not(any(target_os = "ios", target_os = "macos", target_os = "wasi")))]
++#[cfg(not(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos", target_os = "wasi")))]
+ pub use constants::CS8;
+-#[cfg(not(any(target_os = "ios", target_os = "macos", target_os = "wasi")))]
++#[cfg(not(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos", target_os = "wasi")))]
+ pub use constants::CSIZE;
+-#[cfg(not(any(target_os = "ios", target_os = "macos", target_os = "wasi")))]
++#[cfg(not(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos", target_os = "wasi")))]
+ pub use constants::CSTOPB;
+-#[cfg(not(any(target_os = "ios", target_os = "macos", target_os = "wasi")))]
++#[cfg(not(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos", target_os = "wasi")))]
+ pub use constants::ECHO;
+ #[cfg(not(any(
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "redox",
+     target_os = "wasi"
+ )))]
+ pub use constants::ECHOCTL;
+-#[cfg(not(any(target_os = "ios", target_os = "macos", target_os = "wasi")))]
++#[cfg(not(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos", target_os = "wasi")))]
+ pub use constants::ECHOE;
+-#[cfg(not(any(target_os = "ios", target_os = "macos", target_os = "wasi")))]
++#[cfg(not(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos", target_os = "wasi")))]
+ pub use constants::ECHOK;
+ #[cfg(not(any(
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "redox",
+     target_os = "wasi"
+ )))]
+ pub use constants::ECHOKE;
+-#[cfg(not(any(target_os = "ios", target_os = "macos", target_os = "wasi")))]
++#[cfg(not(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos", target_os = "wasi")))]
+ pub use constants::ECHONL;
+ #[cfg(not(any(
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "redox",
+     target_os = "wasi"
+@@ -389,7 +389,7 @@
+     target_os = "emscripten",
+     target_os = "haiku",
+     target_os = "illumos",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "redox",
+     target_os = "solaris",
+@@ -400,7 +400,7 @@
+     target_os = "emscripten",
+     target_os = "haiku",
+     target_os = "illumos",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "redox",
+     target_os = "solaris",
+@@ -409,7 +409,7 @@
+ pub use constants::EXTB;
+ #[cfg(not(any(
+     target_os = "haiku",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "redox",
+     target_os = "wasi",
+@@ -420,7 +420,7 @@
+     target_os = "freebsd",
+     target_os = "fuchsia",
+     target_os = "illumos",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "netbsd",
+     target_os = "openbsd",
+@@ -436,7 +436,7 @@
+     target_os = "freebsd",
+     target_os = "fuchsia",
+     target_os = "illumos",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "netbsd",
+     target_os = "openbsd",
+@@ -450,7 +450,7 @@
+     target_os = "dragonfly",
+     target_os = "freebsd",
+     target_os = "illumos",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "netbsd",
+     target_os = "openbsd",
+@@ -460,39 +460,39 @@
+ )))]
+ pub use constants::FFDLY;
+ #[cfg(not(any(
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "redox",
+     target_os = "wasi"
+ )))]
+ pub use constants::FLUSHO;
+-#[cfg(not(any(target_os = "ios", target_os = "macos", target_os = "wasi")))]
++#[cfg(not(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos", target_os = "wasi")))]
+ pub use constants::HUPCL;
+-#[cfg(not(any(target_os = "ios", target_os = "macos", target_os = "wasi")))]
++#[cfg(not(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos", target_os = "wasi")))]
+ pub use constants::ICRNL;
+-#[cfg(not(any(target_os = "ios", target_os = "macos", target_os = "wasi")))]
++#[cfg(not(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos", target_os = "wasi")))]
+ pub use constants::IEXTEN;
+-#[cfg(not(any(target_os = "ios", target_os = "macos", target_os = "wasi")))]
++#[cfg(not(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos", target_os = "wasi")))]
+ pub use constants::IGNBRK;
+-#[cfg(not(any(target_os = "ios", target_os = "macos", target_os = "wasi")))]
++#[cfg(not(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos", target_os = "wasi")))]
+ pub use constants::IGNCR;
+-#[cfg(not(any(target_os = "ios", target_os = "macos", target_os = "wasi")))]
++#[cfg(not(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos", target_os = "wasi")))]
+ pub use constants::IGNPAR;
+ #[cfg(not(any(
+     target_os = "haiku",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "redox",
+     target_os = "wasi",
+ )))]
+ pub use constants::IMAXBEL;
+-#[cfg(not(any(target_os = "ios", target_os = "macos", target_os = "wasi")))]
++#[cfg(not(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos", target_os = "wasi")))]
+ pub use constants::INLCR;
+-#[cfg(not(any(target_os = "ios", target_os = "macos", target_os = "wasi")))]
++#[cfg(not(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos", target_os = "wasi")))]
+ pub use constants::INPCK;
+-#[cfg(not(any(target_os = "ios", target_os = "macos", target_os = "wasi")))]
++#[cfg(not(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos", target_os = "wasi")))]
+ pub use constants::ISIG;
+-#[cfg(not(any(target_os = "ios", target_os = "macos", target_os = "wasi")))]
++#[cfg(not(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos", target_os = "wasi")))]
+ pub use constants::ISTRIP;
+ #[cfg(any(
+     linux_raw,
+@@ -508,7 +508,7 @@
+     target_os = "freebsd",
+     target_os = "haiku",
+     target_os = "illumos",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "netbsd",
+     target_os = "openbsd",
+@@ -518,22 +518,22 @@
+ )))]
+ pub use constants::IUTF8;
+ #[cfg(not(any(
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "redox",
+     target_os = "wasi"
+ )))]
+ pub use constants::IXANY;
+-#[cfg(not(any(target_os = "ios", target_os = "macos", target_os = "wasi")))]
++#[cfg(not(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos", target_os = "wasi")))]
+ pub use constants::IXOFF;
+-#[cfg(not(any(target_os = "ios", target_os = "macos", target_os = "wasi")))]
++#[cfg(not(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos", target_os = "wasi")))]
+ pub use constants::IXON;
+ #[cfg(not(any(
+     target_os = "dragonfly",
+     target_os = "freebsd",
+     target_os = "fuchsia",
+     target_os = "illumos",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "netbsd",
+     target_os = "openbsd",
+@@ -547,7 +547,7 @@
+     target_os = "freebsd",
+     target_os = "fuchsia",
+     target_os = "illumos",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "netbsd",
+     target_os = "openbsd",
+@@ -560,7 +560,7 @@
+     target_os = "dragonfly",
+     target_os = "freebsd",
+     target_os = "illumos",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "netbsd",
+     target_os = "openbsd",
+@@ -569,14 +569,14 @@
+     target_os = "wasi",
+ )))]
+ pub use constants::NLDLY;
+-#[cfg(not(any(target_os = "ios", target_os = "macos", target_os = "wasi")))]
++#[cfg(not(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos", target_os = "wasi")))]
+ pub use constants::NOFLSH;
+-#[cfg(not(any(target_os = "ios", target_os = "macos", target_os = "wasi")))]
++#[cfg(not(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos", target_os = "wasi")))]
+ pub use constants::OCRNL;
+ #[cfg(not(any(
+     target_os = "dragonfly",
+     target_os = "freebsd",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "netbsd",
+     target_os = "openbsd",
+@@ -586,7 +586,7 @@
+ #[cfg(not(any(
+     target_os = "dragonfly",
+     target_os = "freebsd",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "netbsd",
+     target_os = "openbsd",
+@@ -596,29 +596,29 @@
+ #[cfg(not(any(
+     target_os = "dragonfly",
+     target_os = "freebsd",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "netbsd",
+     target_os = "redox",
+     target_os = "wasi",
+ )))]
+ pub use constants::OLCUC;
+-#[cfg(not(any(target_os = "ios", target_os = "macos", target_os = "wasi")))]
++#[cfg(not(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos", target_os = "wasi")))]
+ pub use constants::ONLCR;
+-#[cfg(not(any(target_os = "ios", target_os = "macos", target_os = "wasi")))]
++#[cfg(not(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos", target_os = "wasi")))]
+ pub use constants::ONLRET;
+-#[cfg(not(any(target_os = "ios", target_os = "macos", target_os = "wasi")))]
++#[cfg(not(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos", target_os = "wasi")))]
+ pub use constants::ONOCR;
+-#[cfg(not(any(target_os = "ios", target_os = "macos", target_os = "wasi")))]
++#[cfg(not(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos", target_os = "wasi")))]
+ pub use constants::OPOST;
+-#[cfg(not(any(target_os = "ios", target_os = "macos", target_os = "wasi")))]
++#[cfg(not(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos", target_os = "wasi")))]
+ pub use constants::PARENB;
+-#[cfg(not(any(target_os = "ios", target_os = "macos", target_os = "wasi")))]
++#[cfg(not(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos", target_os = "wasi")))]
+ pub use constants::PARMRK;
+-#[cfg(not(any(target_os = "ios", target_os = "macos", target_os = "wasi")))]
++#[cfg(not(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos", target_os = "wasi")))]
+ pub use constants::PARODD;
+ #[cfg(not(any(
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "redox",
+     target_os = "wasi"
+@@ -628,7 +628,7 @@
+     target_os = "dragonfly",
+     target_os = "fuchsia",
+     target_os = "illumos",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "netbsd",
+     target_os = "openbsd",
+@@ -644,7 +644,7 @@
+     target_os = "freebsd",
+     target_os = "fuchsia",
+     target_os = "illumos",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "netbsd",
+     target_os = "openbsd",
+@@ -660,7 +660,7 @@
+     target_os = "freebsd",
+     target_os = "fuchsia",
+     target_os = "illumos",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "netbsd",
+     target_os = "openbsd",
+@@ -675,7 +675,7 @@
+     target_os = "emscripten",
+     target_os = "fuchsia",
+     target_os = "illumos",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "netbsd",
+     target_os = "openbsd",
+@@ -686,7 +686,7 @@
+ pub use constants::TAB3;
+ #[cfg(not(any(
+     target_os = "dragonfly",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "netbsd",
+     target_os = "openbsd",
+@@ -696,14 +696,14 @@
+     target_os = "wasi",
+ )))]
+ pub use constants::TABDLY;
+-#[cfg(not(any(target_os = "ios", target_os = "macos", target_os = "wasi")))]
++#[cfg(not(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos", target_os = "wasi")))]
+ pub use constants::TOSTOP;
+ #[cfg(not(any(
+     target_os = "dragonfly",
+     target_os = "freebsd",
+     target_os = "haiku",
+     target_os = "illumos",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "netbsd",
+     target_os = "openbsd",
+@@ -716,7 +716,7 @@
+     target_os = "freebsd",
+     target_os = "fuchsia",
+     target_os = "illumos",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "netbsd",
+     target_os = "openbsd",
+@@ -732,7 +732,7 @@
+     target_os = "freebsd",
+     target_os = "fuchsia",
+     target_os = "illumos",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "netbsd",
+     target_os = "openbsd",
+@@ -746,7 +746,7 @@
+     target_os = "dragonfly",
+     target_os = "freebsd",
+     target_os = "illumos",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "netbsd",
+     target_os = "openbsd",
+@@ -762,7 +762,7 @@
+     target_os = "freebsd",
+     target_os = "haiku",
+     target_os = "illumos",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "netbsd",
+     target_os = "openbsd",
+--- a/src/thread/clock.rs
++++ b/src/thread/clock.rs
+@@ -6,7 +6,7 @@
+     target_os = "dragonfly",
+     target_os = "emscripten",
+     target_os = "freebsd", // FreeBSD 12 has clock_nanosleep, but libc targets FreeBSD 11.
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "openbsd",
+     target_os = "redox",
+@@ -31,7 +31,7 @@
+     target_os = "emscripten",
+     target_os = "freebsd", // FreeBSD 12 has clock_nanosleep, but libc targets FreeBSD 11.
+     target_os = "haiku",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "openbsd",
+     target_os = "redox",
+@@ -59,7 +59,7 @@
+     target_os = "emscripten",
+     target_os = "freebsd", // FreeBSD 12 has clock_nanosleep, but libc targets FreeBSD 11.
+     target_os = "haiku",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "openbsd",
+     target_os = "redox",
+--- a/src/thread/mod.rs
++++ b/src/thread/mod.rs
+@@ -16,7 +16,7 @@
+     target_os = "emscripten",
+     target_os = "freebsd",
+     target_os = "haiku",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "openbsd",
+     target_os = "redox",

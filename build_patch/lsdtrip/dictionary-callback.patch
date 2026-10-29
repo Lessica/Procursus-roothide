@@ -1,0 +1,11 @@
+--- a/ls.m
++++ b/ls.m
+@@ -133,7 +133,7 @@
+ #endif
+ 
+ 
+-void keyDumper (CFStringRef Key, void *Value, void *Nesting)
++void keyDumper (const void *Key, const void *Value, void *Nesting)
+ {
+ 	// My own dumper, in simplisting format
+ 

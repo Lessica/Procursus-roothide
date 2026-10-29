@@ -1,0 +1,50 @@
+From 01b9abd7716cf24d3de870fd563e118d0d71123f Mon Sep 17 00:00:00 2001
+From: Brendan Hack <ffmpeg@bendys.com>
+Date: Wed, 24 Aug 2022 18:44:39 +1000
+Subject: [PATCH] avfilter/vf_frei0r: set align to 1 for frei0r frames
+
+The frei0r API requires linesize to be width * 4.
+Since the align property of ff_default_get_video_buffer2
+specifies line alignment, not buffer alignment, the
+previous value of 16 breaks this requirement for frames
+whose width is a multiple of 8, but not a multiple of 16
+as it adds extra padding to ensure line aligment.
+
+Fix Trac ticket #9873
+---
+ libavfilter/vf_frei0r.c | 9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
+
+diff --git a/libavfilter/vf_frei0r.c b/libavfilter/vf_frei0r.c
+index 66351d6678065..59873dc502ed6 100644
+--- a/libavfilter/vf_frei0r.c
++++ b/libavfilter/vf_frei0r.c
+@@ -359,14 +359,17 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
+ {
+     Frei0rContext *s = inlink->dst->priv;
+     AVFilterLink *outlink = inlink->dst->outputs[0];
+-    AVFrame *out = ff_default_get_video_buffer2(outlink, outlink->w, outlink->h, 16);
++    /* align parameter is the line alignment, not the buffer alignment.
++     * frei0r expects line size to be width*4 so we want an align of 1
++     * to ensure lines aren't padded out. */
++    AVFrame *out = ff_default_get_video_buffer2(outlink, outlink->w, outlink->h, 1);
+     if (!out)
+         goto fail;
+ 
+     av_frame_copy_props(out, in);
+ 
+     if (in->linesize[0] != out->linesize[0]) {
+-        AVFrame *in2 = ff_default_get_video_buffer2(outlink, outlink->w, outlink->h, 16);
++        AVFrame *in2 = ff_default_get_video_buffer2(outlink, outlink->w, outlink->h, 1);
+         if (!in2)
+             goto fail;
+         av_frame_copy(in2, in);
+@@ -481,7 +484,7 @@ static int source_config_props(AVFilterLink *outlink)
+ static int source_request_frame(AVFilterLink *outlink)
+ {
+     Frei0rContext *s = outlink->src->priv;
+-    AVFrame *frame = ff_default_get_video_buffer2(outlink, outlink->w, outlink->h, 16);
++    AVFrame *frame = ff_default_get_video_buffer2(outlink, outlink->w, outlink->h, 1);
+ 
+     if (!frame)
+         return AVERROR(ENOMEM);

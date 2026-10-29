@@ -1,0 +1,5 @@
+--- a/build.rs
++++ b/build.rs
+@@ -16 +16 @@
+-        "darwin" | "ios" => builder.file("c/darwin.c"),
++        "darwin" | "ios" | "tvos" => builder.file("c/darwin.c"),

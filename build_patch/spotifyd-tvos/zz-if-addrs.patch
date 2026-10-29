@@ -1,0 +1,13 @@
+--- a/Cargo.toml
++++ b/Cargo.toml
+@@ -1,1 +1,2 @@
+ parking_lot_core = { path = "../spotifyd-parking_lot_core" }
++if-addrs = { path = "../spotifyd-if-addrs" }
+--- a/Cargo.lock
++++ b/Cargo.lock
+@@ -1,5 +1,3 @@
+ name = "if-addrs"
+ version = "0.6.7"
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "2273e421f7c4f0fc99e1934fe4776f59d8df2972f4199d703fc0da9f2a9f73de"
+ dependencies = [

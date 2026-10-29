@@ -1,0 +1,118 @@
+.\" -*- nroff -*-
+.\"*******************************************************************
+.\"
+.\" This file was generated with po4a. Translate the source file.
+.\"
+.\"*******************************************************************
+.TH SAVELOG 8 "30 Dec 2017" Debian 
+.SH 名前
+savelog \- ログファイルの保存
+.SH 書式
+\fBsavelog\fP [\-m mode] [\-u user] [\-g group] [\-t] [\-p] [\-c cycle] [\-l] [\-j]
+[\-J] [\-1\ .\|.\ \-9] [\-C] [\-d] [\-l] [\-r rolldir] [\-n] [\-q] [\-D dateformat]
+file ...
+.
+.SH 説明
+\fBsavelog\fP コマンドは、古いファイルのコピーを保存し、オプションで圧縮を行います。\fIfile\fP
+の古いバージョンは、以下のように名前がつきます。
+.RS
+.sp 1
+\fIfile\fP.\fI<number>\fP\fI<compress_suffix>\fP
+.sp 1
+.RE
+\fI<number>\fP は版番号です。0 が最も新しくなります。版番号が > 0 の場合、\fB\-l\fP
+を指定して抑制しない限り圧縮します。版番号 0 は、プロセスがまだ I/O のために開いている可能性があるため、圧縮しません。ファイルを
+\fIcycle\fP 版までしか保存しません。
+.sp 1
+ファイルがまだ存在せず、\fB\-t\fP を与えられると、ファイルを生成します。
+.sp 1
+ファイルが存在し、ファイルの長さが 0 バイトより大きい場合、以下のアクションを実行します。
+.sp 1
+.IP 1)
+Version numbered files are cycled.  Version \fIfile\fP\fB\&.2\fP is moved to
+version \fIfile\fP\fB\&.3\fP, version \fIfile\fP\fB\&.1\fP is moved to version
+\fIfile\fP\fB\&.2\fP, and so on.  Finally version \fIfile\fP\fB\&.0\fP is moved to
+version \fIfile\fP\fB\&.1\fP, and version \fIfile\fP is deleted.  Both compressed
+names and uncompressed names are cycled, regardless of \fB\-l\fP.  Missing
+version files are ignored.
+.
+.IP 2)
+The new \fIfile\fP\fB\&.1\fP is compressed unless the \fB\-l\fP flag was given.  It is
+changed subject to the \fB\-m\fP, \fB\-u\fP, and \fB\-g\fP flags.
+.
+.IP 3)
+The main \fIfile\fP is moved to \fIfile\fP\fB.0\fP.
+.
+.IP 4)
+\fB\-m\fP, \fB\-u\fP, \fB\-g\fP, \fB\-t\fP, \fB\-p\fP の各フラグが与えられた場合、そのフラグに該当する空の \fIfile\fP
+を生成します。\fB\-p\fP フラグの場合、以前と同じ所有者、グループ、パーミッションで生成します。
+.
+.IP 5)
+The new \fIfile\fP\fB\&.0\fP is changed subject to the \fB\-m\fP, \fB\-u\fP, and \fB\-g\fP
+flags.
+.
+.SH オプション
+.TP 
+\fB\-m mode\fP
+ログファイルを mode に chmod します。\fB\-t\fP を暗示します。
+.TP 
+\fB\-u user\fP
+ログファイルを user に chown します。\fB\-t\fP を暗示します。
+.TP 
+\fB\-g group\fP
+ログファイルを group に chgrp します。\fB\-t\fP を暗示します。
+.TP 
+\fB\-c cycle\fP
+Save cycle versions of the logfile (default: 7).  The \fIcycle\fP count must be
+at least 2.
+.TP 
+\fB\-t\fP
+新しいログファイルを生成するよう touch します。
+.TP 
+\fB\-l\fP
+ログファイルを圧縮しません (デフォルト: 圧縮する)
+.TP 
+\fB\-p\fP
+ログファイルの所有者、グループ、パーミッションを保持します。
+.TP 
+\fB\-j\fP
+gzip に代えて bzip2 で圧縮
+.TP 
+\fB\-J\fP
+gzip に代えて xz で圧縮
+.sp 1
+For xz no strength option is set, and xz decides on the default based on the
+total amount of physical RAM.  Note that xz can use a very large amount of
+memory for the higher compression levels.
+.TP 
+\fB\-1\ .\|.\ \-9\fP
+圧縮強度やメモリー使用量 (デフォルト: 9、xz 除く)
+.TP 
+\fB\-C\fP
+強制的な循環ログファイルの一掃
+.TP 
+\fB\-d\fP
+循環に標準日を使用します。
+.TP 
+\fB\-D dateformat\fP
+override date format, in the syntax understood by the \fBdate\fP(1)  command
+.TP 
+\fB\-r\fP
+use \fIrolldir\fP instead of \&.\& to roll files
+.TP 
+\fB\-n\fP
+空ファイルを回転しない
+.TP 
+\fB\-q\fP
+静かに
+.SH バグ
+If a process is still writing to \fIfile\fP\fB\&.0\fP, and savelog moves it to
+\fIfile\fP\fB\&.1\fP and compresses it, data could be lost.
+.
+.SH 関連項目
+\fBlogrotate\fP(8)
+.SH 翻訳
+倉澤 望 <nabetaro@debian.or.jp>, 2012
+.br
+Debian JP Documentation ML <debian-doc@debian.or.jp>
+

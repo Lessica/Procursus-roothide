@@ -1,0 +1,14 @@
+Make the single-statement conditional explicit; the following block is unconditional.
+
+--- a/C/7zip/Compress/LZMA/LZMAEncoder.cpp
++++ b/C/7zip/Compress/LZMA/LZMAEncoder.cpp
+@@ -965,8 +965,10 @@
+       lenTest = lenTestTemp;
+ 
+       if (repIndex == 0)
++      {
+         startLen = lenTest + 1;
++      }
+ 
+       // if (_maxMode)
+         {

@@ -1,0 +1,40 @@
+--- upx-3.96/src/filter/cto.h
++++ upx/src/filter/cto.h
+@@ -129,6 +129,7 @@
+ #if 0 || defined(TESTING)
+     printf("\ncalls=%d noncalls=%d noncalls2=%d text_size=%x calltrickoffset=%x\n",calls,noncalls,noncalls2,size,cto);
+ #endif
++    (void)noncalls2;
+     return 0;
+ }
+ 
+--- upx-3.96/src/filter/ctoj.h
++++ upx/src/filter/ctoj.h
+@@ -128,6 +128,7 @@
+ #if 0 || defined(TESTING)
+     printf("\ncalls=%d noncalls=%d noncalls2=%d text_size=%x calltrickoffset=%x\n",calls,noncalls,noncalls2,size,cto);
+ #endif
++    (void)noncalls2;
+     return 0;
+ }
+ 
+--- upx-3.96/src/filter/ctok.h
++++ upx/src/filter/ctok.h
+@@ -129,6 +129,7 @@
+ #if 0 || defined(TESTING)
+     printf("\ncalls=%d noncalls=%d noncalls2=%d text_size=%x calltrickoffset=%x\n",calls,noncalls,noncalls2,size,cto);
+ #endif
++    (void)noncalls2;
+     return 0;
+ }
+ 
+--- upx-3.96/src/filter/ctojr.h
++++ upx/src/filter/ctojr.h
+@@ -254,6 +254,7 @@
+         calls,noncalls,noncalls2,size,cto8);
+     printf("CALL/JMP/JCC  %d  %d  %d\n",wtally[0],wtally[1],wtally[2]);
+ #endif
++    (void)noncalls2;
+     return 0;
+ }
+ 

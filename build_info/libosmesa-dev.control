@@ -1,0 +1,10 @@
+Package: libosmesa-dev
+Version: @DEB_MESA_V@
+Architecture: @DEB_ARCH@
+Maintainer: @DEB_MAINTAINER@
+Section: Development
+Depends: libosmesa8 (= @DEB_MESA_V@), mesa-common-dev (= @DEB_MESA_V@)
+Priority: optional
+Homepage: https://mesa3d.org/
+Description: Mesa off-screen rendering development files
+ This package provides the OSMesa pkg-config metadata and linker symlink.

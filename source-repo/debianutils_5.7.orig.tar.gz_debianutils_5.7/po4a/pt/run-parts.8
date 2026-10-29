@@ -1,0 +1,123 @@
+.\" Hey, Emacs!  This is an -*- nroff -*- source file.
+.\" Build-from-directory and this manpage are Copyright 1994 by Ian Jackson.
+.\" Changes to this manpage are Copyright 1996 by Jeff Noxon.
+.\" More
+.\"
+.\" This is free software; see the GNU General Public Licence version 2
+.\" or later for copying conditions.  There is NO warranty.
+.\"*******************************************************************
+.\"
+.\" This file was generated with po4a. Translate the source file.
+.\"
+.\"*******************************************************************
+.TH RUN\-PARTS 8 "27 Jun 2012" Debian 
+.SH NOME
+run\-parts \- corre scripts ou programas num directório
+.SH SINOPSE
+.PP
+\fBrun\-parts\fP [\-\-test] [\-\-verbose] [\-\-debug] [\-\-report] [\-\-lsbsysinit]
+[\-\-regex=RE] [\-\-umask=umask] [\-\-arg=argument] [\-\-exit\-on\-error] [\-\-help]
+[\-\-version] [\-\-list] [\-\-reverse] [\-\-] DIRECTORY
+.PP
+\fBrun\-parts\fP \-V
+.SH DESCRIÇÃO
+.PP
+\fBrun\-parts\fP corre todos os ficheiros executáveis chamados dentro dos
+limites descritos em baixo, encontrados no directório \fIdirectório\fP. Os
+outros ficheiros e directórios são ignorados em silêncio.
+
+Se nenhuma das opções  \-\-lsbsysinit ou \-\-regex for indicada, então os nomes
+devem consistir inteiramente de letras ASCII maiúsculas ou minúsculas
+números ASCII, underscores do ASCII, e traços menos (\-) do ASCII.
+
+Se a opção \-\-lsbsysinit for usada, então os nomes não podem terminar em
+\&.dpkg\-old nem .dpkg\-dist nem .dpkg\-new nem .dpkg\-tmp, e têm de pertencer a
+um ou mais dos seguintes 'namespaces': o namespace atribuído a LANANA
+(^[a\-z0\-9]+$); os namespaces hierárquicos e reservados LSB
+(^_?([a\-z0\-9_.]+\-)+[a\-z0\-9]+$); e o namespace do script cron de Debian
+(^[a\-zA\-Z0\-9_\-]+$).
+
+Se a opção \-\-regex for usada, os nomes têm de corresponder à extensão
+regular extensa e personalizada especificada como argumento dessa opção.
+
+Files are run sequentially in the lexical sort order (according to the
+C/POSIX locale character collation rules) of their names unless the
+\-\-reverse option is given, in which case they are run in the opposite order.
+
+.SH OPÇÕES
+.TP 
+\fB\-\-test\fP
+escreve os nomes dos scripts que deveriam ser executados, mas na realidade
+não os executa.
+.TP 
+\fB\-\-list\fP
+escreve os nomes de todos os ficheiros correspondentes (não limitado aos
+executáveis), mas na realidade não os executa. Esta opção não pode ser usada
+com \-\-test.
+.TP 
+\fB\-v, \-\-verbose\fP
+escreve o nome de cada script no stderr antes de correr.
+.TP 
+\fB\-\-report\fP
+semelhante a \fB\-\-verbose\fP, mas apenas escreve os nomes dos scripts que
+produzem resultados (output). O nome do script é escrito para qualquer um
+dos stdout ou stderr onde o script esteja programado para escrever primeiro.
+.TP 
+\fB\-d, \-\-debug\fP
+print to stderr which scripts get selected for running and which don't.
+.TP 
+\fB\-\-reverse\fP
+reverte a ordem de execução dos scripts.
+.TP 
+\fB\-\-exit\-on\-error\fP
+termina assim que um script retorne com um código de terminar de não\-zero.
+.TP 
+\fB\-\-lsbsysinit\fP
+usa namespaces LSB em vez do comportamento clássico.
+.TP 
+\fB\-\-new\-session\fP
+corre cada script numa sessão de processo separado. Se usar esta opção,
+matar o run\-parts não irá terminar o script a correr presentemente, este irá
+correr até o seu trabalho estar completo.
+.TP 
+\fB\-\-regex=\fP\fIRE\fP
+valida nomes de ficheiros contra a expressão regular extensa e personalizada
+\fIRE\fP. Veja a secção EXEMPLOS para um exemplo.
+.TP 
+\fB\-u, \-\-umask=\fP\fIumask\fP
+define a umask para \fIumask\fP antes de correr os scripts. \fIumask\fP deve ser
+especificado em octal. Por predefinição o umask é definido para 022.
+.TP 
+\fB\-a, \-\-arg=\fP\fIargumento\fP
+passa \fIargumento\fP aos scripts. Use \fB\-\-arg\fP uma vez por cada argumento que
+deseja passar.
+.TP 
+\fB\-\-\fP
+especifica que é o fim das opções. Qualquer nome de ficheiro após \fB\-\-\fP não
+será interpretado como uma opção mesmo que comece com um hífen.
+.TP 
+\fB\-h, \-\-help\fP
+mostra informação de utilização e termina.
+.TP 
+\fB\-V, \-\-version\fP
+mostra a versão e o copyright e termina.
+
+.SH EXEMPLOS
+.P
+Escreve os nomes de todos os ficheiros em /etc que começam com um 'p' e
+terminam com um 'd':
+.P
+run\-parts \-\-list \-\-regex \[aq]^p.*d$\[aq] /etc
+
+.SH COPYRIGHT
+.P
+Copyright (C) 1994 Ian Jackson.
+.P
+Copyright (C) 1996 Jeff Noxon.
+.P
+Copyright (C) 1996, 1997, 1998 Guy Maor
+.P
+Copyright (C) 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009 Clint Adams
+
+\fBrun\-parts\fP é software livre; veja a GNU General Public License versão 2 ou
+mais recente para condições ao copiar. \fINão\fP tem garantia.

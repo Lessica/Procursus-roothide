@@ -1,0 +1,122 @@
+.\" -*- nroff -*-
+.\"*******************************************************************
+.\"
+.\" This file was generated with po4a. Translate the source file.
+.\"
+.\"*******************************************************************
+.TH SAVELOG 8 "30 Dec 2017" Debian 
+.SH IME
+savelog \- shrani datoteko dnevnika
+.SH POVZETEK
+\fBsavelog\fP [\-m način] [\-u uporabnik] [\-g skupina] [\-t] [\-p] [\-c cikel] [\-l]
+[\-j] [\-C] [\-d] [\-l] [\-r rolldir] [\-n] [\-q] [\-D oblikadatuma] datoteka ...
+.
+.SH OPIS
+Ukaz \fBsavelog\fP shrani in po želji stisne stare kopije datotek. Starejše
+različice \fIfile\fP se imenujejo:
+.RS
+.sp 1
+\fIfile\fP.\fI<number>\fP\fI<compress_suffix>\fP
+.sp 1
+.RE
+kjer je \fI<number>\fP številka različice, 0 predstavlja najnovejšo.
+Različice številka > 0 so stisnjene, razen če to prepreči \fB\-l\fP.
+Različica številka 0 ni stisnjena, saj ima lahko opravilo \fIfile\fP še vedno
+odprt za I/O.  Samo \fIcycle\fP različic datoteke je ohranjenih.
+.sp 1
+Če datoteka ne obstaja in je \fB\-t\fP podan, bo ustvarjena.
+.sp 1
+Za datoteke, ki obstajajo in imajo dolžino večjo od nič, so opravljena
+naslednja dejanja:
+.sp 1
+.IP 1)
+Version numbered files are cycled.  Version \fIfile\fP\fB\&.2\fP is moved to
+version \fIfile\fP\fB\&.3\fP, version \fIfile\fP\fB\&.1\fP is moved to version
+\fIfile\fP\fB\&.2\fP, and so on.  Finally version \fIfile\fP\fB\&.0\fP is moved to
+version \fIfile\fP\fB\&.1\fP, and version \fIfile\fP is deleted.  Both compressed
+names and uncompressed names are cycled, regardless of \fB\-l\fP.  Missing
+version files are ignored.
+.
+.IP 2)
+The new \fIfile\fP\fB\&.1\fP is compressed unless the \fB\-l\fP flag was given.  It is
+changed subject to the \fB\-m\fP, \fB\-u\fP, and \fB\-g\fP flags.
+.
+.IP 3)
+The main \fIfile\fP is moved to \fIfile\fP\fB.0\fP.
+.
+.IP 4)
+Če so podane zastavice \fB\-m\fP, \fB\-u\fP, \fB\-g\fP, \fB\-t\fP, ali pa \fB\-p\fP, je
+ustvarjena prazna \fIfile\fP glede na podane zastavice.  Z zastavico \fB\-p\fP , je
+datoteka ustvarjena z enakim lastništvom, skupino in pravicami kot prej.
+.
+.IP 5)
+The new \fIfile\fP\fB\&.0\fP is changed subject to the \fB\-m\fP, \fB\-u\fP, and \fB\-g\fP
+flags.
+.
+.SH MOŽNOSTI
+.TP 
+\fB\-m način\fP
+chmod datoteke dnevnikov k danim pravicam, predpostavi \fB\-t\fP
+.TP 
+\fB\-u uporabnik\fP
+chown datoteke dnevnikov k uporabniku, predpostavi \fB\-t\fP
+.TP 
+\fB\-g skupina\fP
+chgrp datoteke dnevnikov k skupini, predpostavi \fB\-t\fP
+.TP 
+\fB\-c cycle\fP
+Save cycle versions of the logfile (default: 7).  The \fIcycle\fP count must be
+at least 2.
+.TP 
+\fB\-t\fP
+ustvari "touch" novo datoteko dnevnika
+.TP 
+\fB\-l\fP
+ne stiskaj datotek dnevnikov (privzeto: stiskaj)
+.TP 
+\fB\-p\fP
+ohrani lastništvo, skupino in dovojenja datoteke dnevnika
+.TP 
+\fB\-j\fP
+stisni z bzip2 namesto z gzip
+.TP 
+\fB\-J\fP
+stisni z xz2 namesto z gzip
+.sp 1
+For xz no strength option is set, and xz decides on the default based on the
+total amount of physical RAM.  Note that xz can use a very large amount of
+memory for the higher compression levels.
+.TP 
+\fB\-1\ .\|.\ \-9\fP
+moč stiskanja ali poraba pomnilnika (privzeto: 9, razen za xz)
+.TP 
+\fB\-C\fP
+prisili čiščenje krožnih datotek dnevnikov
+.TP 
+\fB\-d\fP
+za obračanje uporabi standardni datum
+.TP 
+\fB\-D oblika datuma\fP
+override date format, in the syntax understood by the \fBdate\fP(1)  command
+.TP 
+\fB\-r\fP
+use \fIrolldir\fP instead of \&.\& to roll files
+.TP 
+\fB\-n\fP
+ne vrti praznih datotek
+.TP 
+\fB\-q\fP
+molči
+.SH HROŠČI
+If a process is still writing to \fIfile\fP\fB\&.0\fP, and savelog moves it to
+\fIfile\fP\fB\&.1\fP and compresses it, data could be lost.
+.
+.SH "OGLEJTE SI TUDI"
+\fBlogrotate\fP(8)
+.SH TRANSLATION
+This document is a translation.
+
+Regarding errors such as tihs one, contact
+.nh
+<\fIsl@li.org\fR>,
+.hy

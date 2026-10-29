@@ -1,0 +1,19 @@
+stages:
+- build
+- test
+build-job:
+  image: debian:unstable
+  stage: build
+  script:
+  - apt update
+  - apt -u upgrade -y
+  - apt install -y automake build-essential po4a
+  - autoreconf -fiv
+  - "./configure"
+  - make distcheck
+  - make
+
+sast:
+  stage: test
+include:
+- template: Security/SAST.gitlab-ci.yml

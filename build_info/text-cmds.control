@@ -1,0 +1,9 @@
+Package: text-cmds
+Section: Utilities
+Version: @DEB_TEXT-CMDS_V@
+Architecture: @DEB_ARCH@
+Maintainer: @DEB_MAINTAINER@
+Depends: libncursesw6, base (>= 2)
+Conflicts: basic-cmds (<< 67.100.1)
+Priority: standard
+Description: banner, bintrans (uuencode, uudecode), col, colrm, column, ee, lam, look, md5, rev, rs, ul, unvis, vis

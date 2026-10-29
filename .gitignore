@@ -1,0 +1,17 @@
+build_base/
+build_source/
+build_stage/
+build_work/
+build_dist/
+build_strap/
+build_pack/
+build_repo/
+source-temp/
+pack-cache/
+source-old/
+
+!.gitkeep
+.DS_Store
+*.p12
+__pycache__/
+*.pyc

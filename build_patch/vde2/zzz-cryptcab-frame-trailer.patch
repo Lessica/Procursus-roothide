@@ -1,0 +1,56 @@
+--- a/src/vde_cryptcab/cryptcab.c
++++ b/src/vde_cryptcab/cryptcab.c
+@@ -94,7 +94,7 @@
+ 	int i;
+ 	unsigned long long pktcounter=0;
+ 	for(i=0;i<8;i++){
+-		pktcounter+=block[size-12+i]<<(i*8);
++		pktcounter+=(unsigned long long)block[size-12+i]<<(i*8);
+ 	}
+ 	if(pktcounter>p->counter){
+ 		p->counter=pktcounter;
+@@ -113,7 +113,7 @@
+ isvalid_crc32(unsigned char *block, int len)
+ {
+ 	unsigned char *crc=(unsigned char *)crc32(block,len-4);
+-	if(strncmp((char*)block+(len-4),(char*)crc,4)==0){
++	if(memcmp((char*)block+(len-4),(char*)crc,4)==0){
+ 		free(crc);
+ 		return 1;
+ 	}else{
+--- a/src/vde_cryptcab/vde_cryptcab_client.c
++++ b/src/vde_cryptcab/vde_cryptcab_client.c
+@@ -326,6 +326,15 @@
+ 				case ST_AUTH + PKT_DATA:
+ 					vc_printlog(4,"Data pkt received (%d Bytes)",pkt.len); 
+ 					pkt_dec.len = data_decrypt(pkt.data+1, pkt_dec.data, pkt.len-1, p1);
++					if (pkt_dec.len < 0)
++						break;
++					if (enc_type != ENC_NOENC) {
++						if (pkt_dec.len < 12 ||
++						    !isvalid_crc32(pkt_dec.data, pkt_dec.len) ||
++						    !isvalid_timestamp(pkt_dec.data, pkt_dec.len, p1))
++							break;
++						pkt_dec.len -= 12;
++					}
+ 					
+ 					vde_send(p1->plug,pkt_dec.data,pkt_dec.len,0);	
+ 					break;
+--- a/src/vde_cryptcab/vde_cryptcab_server.c
++++ b/src/vde_cryptcab/vde_cryptcab_server.c
+@@ -435,6 +435,15 @@
+ 				case (ST_AUTH + PKT_DATA):
+ 					vc_printlog(4,"Data pkt received (%d Bytes)",pkt.len); 
+ 					pkt_dec.len = data_decrypt(pkt.data+1, pkt_dec.data, pkt.len-1, p1);
++					if (pkt_dec.len < 0)
++						break;
++					if (enc_type != ENC_NOENC) {
++						if (pkt_dec.len < 12 ||
++						    !isvalid_crc32(pkt_dec.data, pkt_dec.len) ||
++						    !isvalid_timestamp(pkt_dec.data, pkt_dec.len, p1))
++							break;
++						pkt_dec.len -= 12;
++					}
+ 					set_expire(p1, CMD_KEEPALIVE);
+ 					vde_send(p1->plug,pkt_dec.data,pkt_dec.len,0);	
+ 					break;

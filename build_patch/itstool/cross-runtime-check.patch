@@ -1,0 +1,25 @@
+--- a/configure.ac
++++ b/configure.ac
+@@ -13,12 +13,14 @@ AC_SUBST([DATADIR])
+ AM_PATH_PYTHON([2.6])
+ 
+ py_module=libxml2
+-AC_MSG_CHECKING(for python module $py_module)
+-echo "import $py_module" | $PYTHON - &>/dev/null
+-if test $? -ne 0; then
+-	AC_MSG_RESULT(not found)
+-	AC_MSG_ERROR(Python module $py_module is needed to run this package)
+-else
+-	AC_MSG_RESULT(found)
++if test "$cross_compiling" != yes; then
++	AC_MSG_CHECKING(for python module $py_module)
++	echo "import $py_module" | $PYTHON - &>/dev/null
++	if test $? -ne 0; then
++		AC_MSG_RESULT(not found)
++		AC_MSG_ERROR(Python module $py_module is needed to run this package)
++	else
++		AC_MSG_RESULT(found)
++	fi
+ fi
+ 
+ AC_CONFIG_FILES([

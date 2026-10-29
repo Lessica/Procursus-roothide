@@ -1,0 +1,107 @@
+--- a/symredirect.cpp
++++ b/symredirect.cpp
+@@ -215,3 +215,104 @@
++// Normal binding is a stateful stream: an ordinal can cover many symbols.
++// Keep the input ordinal separate from the rewritten output ordinal so a
++// redirected symbol cannot change the library of the next ordinary symbol.
++static void* rebindNormal(int shimOrdinal, struct mach_header_64* header,
++                          void* data, uint32_t* size)
++{
++    uint8_t* p = static_cast<uint8_t*>(data);
++    uint8_t* end = p + *size;
++    int inputOrdinal = 0, outputOrdinal = 0;
++    bool ordinalSet = false, changed = false;
++    const char* symbol = NULL;
++    std::vector<uint8_t> output;
++    while (p < end) {
++        uint8_t* start = p;
++        uint8_t code = *p++, opcode = code & BIND_OPCODE_MASK;
++        uint8_t immediate = code & BIND_IMMEDIATE_MASK;
++        bool bind = false;
++        switch (opcode) {
++            case BIND_OPCODE_DONE:
++                output.insert(output.end(), start, end);
++                p = end;
++                continue;
++            case BIND_OPCODE_SET_DYLIB_ORDINAL_IMM:
++                inputOrdinal = outputOrdinal = immediate;
++                ordinalSet = true;
++                break;
++            case BIND_OPCODE_SET_DYLIB_ORDINAL_ULEB:
++                inputOrdinal = outputOrdinal = (int)read_uleb128(&p, end);
++                ordinalSet = true;
++                break;
++            case BIND_OPCODE_SET_DYLIB_SPECIAL_IMM:
++                inputOrdinal = outputOrdinal = immediate ? (int8_t)(0xf0 | immediate) : 0;
++                ordinalSet = true;
++                break;
++            case BIND_OPCODE_SET_SYMBOL_TRAILING_FLAGS_IMM:
++                symbol = reinterpret_cast<const char*>(p);
++                while (p < end && *p) ++p;
++                if (p == end) abort();
++                ++p;
++                break;
++            case BIND_OPCODE_SET_TYPE_IMM:
++                break;
++            case BIND_OPCODE_SET_ADDEND_SLEB:
++                read_sleb128(&p, end);
++                break;
++            case BIND_OPCODE_SET_SEGMENT_AND_OFFSET_ULEB:
++            case BIND_OPCODE_ADD_ADDR_ULEB:
++                read_uleb128(&p, end);
++                break;
++            case BIND_OPCODE_DO_BIND:
++            case BIND_OPCODE_DO_BIND_ADD_ADDR_IMM_SCALED:
++                bind = true;
++                break;
++            case BIND_OPCODE_DO_BIND_ADD_ADDR_ULEB:
++                read_uleb128(&p, end);
++                bind = true;
++                break;
++            case BIND_OPCODE_DO_BIND_ULEB_TIMES_SKIPPING_ULEB:
++                bind = read_uleb128(&p, end) != 0;
++                read_uleb128(&p, end);
++                break;
++            case BIND_OPCODE_THREADED:
++                if (immediate == BIND_SUBOPCODE_THREADED_SET_BIND_ORDINAL_TABLE_SIZE_ULEB)
++                    read_uleb128(&p, end);
++                else if (immediate != BIND_SUBOPCODE_THREADED_APPLY)
++                    abort();
++                break;
++            default:
++                abort();
++        }
++        if (bind) {
++            assert(ordinalSet && symbol);
++            int ordinal = processSymbol(header, inputOrdinal, symbol) ? shimOrdinal : inputOrdinal;
++            if (ordinal != outputOrdinal) {
++                if (ordinal <= 0) {
++                    output.push_back(BIND_OPCODE_SET_DYLIB_SPECIAL_IMM | (ordinal & BIND_IMMEDIATE_MASK));
++                } else if (ordinal <= BIND_IMMEDIATE_MASK) {
++                    output.push_back(BIND_OPCODE_SET_DYLIB_ORDINAL_IMM | ordinal);
++                } else {
++                    uint8_t bytes[10];
++                    size_t count = write_uleb128(ordinal, bytes);
++                    output.push_back(BIND_OPCODE_SET_DYLIB_ORDINAL_ULEB);
++                    output.insert(output.end(), bytes, bytes + count);
++                }
++                outputOrdinal = ordinal;
++                changed = true;
++            }
++        }
++        output.insert(output.end(), start, p);
++    }
++    if (!changed) return NULL;
++    assert(output.size() <= UINT32_MAX);
++    void* result = malloc(output.size());
++    if (!result) abort();
++    memcpy(result, output.data(), output.size());
++    *size = static_cast<uint32_t>(output.size());
++    return result;
++}
++
+ void* rebind(int shimOrdinal, struct mach_header_64* header, enum bindtype type, void* data, uint32_t* size)
+ {
++    if (type == bindtype_bind) return rebindNormal(shimOrdinal, header, data, size);
++
+     bool rebuilt=false;

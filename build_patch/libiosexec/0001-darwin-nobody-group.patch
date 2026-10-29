@@ -1,0 +1,27 @@
+--- a/getgrent.c
++++ b/getgrent.c
+@@ -292,10 +292,20 @@
+ 		p_gr->gr_passwd = strsep(&bp, ":\n");
+ 		if (!(cp = strsep(&bp, ":\n")))
+ 			continue;
+-		ul = strtoul(cp, &endp, 10);
+-		if (endp == cp || *endp != '\0' || ul >= GID_MAX)
+-			continue;
+-		p_gr->gr_gid = ul;
++#ifdef __APPLE__
++		/* Darwin nobody is (gid_t)-2, outside the BSD GID_MAX range.
++		 * Accept its signed and uint32_t spellings, not other negative IDs.
++		 */
++		if (!strcmp(cp, "-2") || !strcmp(cp, "4294967294")) {
++			p_gr->gr_gid = (gid_t)-2;
++		} else
++#endif
++		{
++			ul = strtoul(cp, &endp, 10);
++			if (endp == cp || *endp != '\0' || ul >= GID_MAX)
++				continue;
++			p_gr->gr_gid = ul;
++		}
+ 		if (search && name == NULL && p_gr->gr_gid != gid)
+ 			continue;
+ 		cp = NULL;

@@ -1,0 +1,16 @@
+--- a/src/detection/os/os_ios.m
++++ b/src/detection/os/os_ios.m
+@@ -10,8 +10,13 @@
+     FF_STRBUF_AUTO_DESTROY machine = ffStrbufCreate();
+     ffSysctlGetString("hw.machine", &machine);
++#if TARGET_OS_TV
++    ffStrbufSetStatic(&os->name, "tvOS");
++    ffStrbufSetStatic(&os->id, "tvos");
++#else
+     bool iPad = ffStrbufStartsWithS(&machine, "iPad");
+     ffStrbufSetStatic(&os->name, iPad ? "iPadOS" : "iOS");
+     ffStrbufSetStatic(&os->id, iPad ? "ipados" : "ios");
++#endif
+     ffStrbufSetStatic(&os->idLike, "macos"); // picks the Apple logo
+ 
+     NSDictionary* dict = [NSDictionary dictionaryWithContentsOfURL:[NSURL fileURLWithPath:@"/System/Library/CoreServices/SystemVersion.plist" isDirectory:NO]

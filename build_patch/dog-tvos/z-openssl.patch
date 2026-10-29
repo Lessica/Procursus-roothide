@@ -1,0 +1,28 @@
+--- a/Cargo.lock
++++ b/Cargo.lock
+@@ -369,0 +370,6 @@
++name = "once_cell"
++version = "1.21.4"
++source = "registry+https://github.com/rust-lang/crates.io-index"
++checksum = "9f7c3e4beb33f85d45ae3e3a1792185706c8e16d043238c593331cc7cd313b50"
++
++[[package]]
+@@ -371 +377 @@
+-version = "0.10.30"
++version = "0.10.35"
+@@ -373 +379 @@
+-checksum = "8d575eff3665419f9b83678ff2815858ad9d11567e082f5ac1814baba4e2bcb4"
++checksum = "549430950c79ae24e6d02e0b7404534ecf311d94cc9f861e9e4020187d13d885"
+@@ -376 +382 @@
+- "cfg-if 0.1.10",
++ "cfg-if 1.0.0",
+@@ -378 +383,0 @@
+- "lazy_static",
+@@ -379,0 +385 @@
++ "once_cell",
+@@ -391 +397 @@
+-version = "0.9.58"
++version = "0.9.64"
+@@ -393 +399 @@
+-checksum = "a842db4709b604f0fe5d1170ae3565899be2ad3d9cbc72dedc789ac0511f78de"
++checksum = "209efc2fe0e980c8849efacdb567f975a1c80245c4f6980d6f012733bfa851af"

@@ -1,0 +1,15 @@
+--- a/Cargo.toml
++++ b/Cargo.toml
+@@ -49,2 +49,5 @@
+ [profile.dev.package.backtrace]
+ opt-level = 3
++
++[patch.crates-io]
++block = { path = "../bender-block" }
+--- a/Cargo.lock
++++ b/Cargo.lock
+@@ -105,4 +105,2 @@
+ name = "block"
+ version = "0.1.6"
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "0d8c1fef690941d3e7788d328517591fecc684c084084702d6ff1641e993699a"

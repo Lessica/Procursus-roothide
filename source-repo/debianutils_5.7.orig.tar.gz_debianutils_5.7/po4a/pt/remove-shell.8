@@ -1,0 +1,20 @@
+.\"*******************************************************************
+.\"
+.\" This file was generated with po4a. Translate the source file.
+.\"
+.\"*******************************************************************
+.TH REMOVE\-SHELL 8 "23 Sep 2021"  
+.SH NOME
+remove\-shell \- remove shells da lista de shells de login válidas
+.SH SINOPSE
+\fBremove\-shell\fP \fInome_shell\fP [\fInome_shell\fP...]
+.SH DESCRIÇÃO
+\fBremove\-shell\fP opera nos ficheiros temporários \fI/etc/shells.tmp\fP e
+\fI/etc/shells.tmp2\fP para remover as shells indicadas da lista de shells de
+login válidas, e copia o resultado de volta para \fI/etc/shells\fP.
+.SH ENVIRONMENT
+.TP 
+\fIDPKG_ROOT\fP
+specifies the base path under which \fI/etc/shells\fP resides.
+.SH "VEJA TAMBÉM"
+\fBshells\fP(5)

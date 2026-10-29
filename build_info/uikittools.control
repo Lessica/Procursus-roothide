@@ -1,0 +1,10 @@
+Package: uikittools
+Essential: yes
+Version: @DEB_UIKITTOOLS_V@
+Architecture: @DEB_ARCH@
+Maintainer: @DEB_MAINTAINER@
+Section: Utilities
+Priority: required
+Suggests: uikittools-extra (= @DEB_UIKITTOOLS_V@)
+Breaks: uikittools-extra (<< 2.1.6)
+Description: Command line access for UIKit/LaunchServices/CoreServices

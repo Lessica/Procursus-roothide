@@ -1,0 +1,8 @@
+Package: iokittools
+Version: @DEB_IOKITTOOLS_V@
+Architecture: @DEB_ARCH@
+Maintainer: @DEB_MAINTAINER@
+Section: Administration
+Priority: optional
+Homepage: https://github.com/apple-oss-distributions/IOKitTools
+Description: IOKit tools - ioclasscount, ioallocount and ioreg manpage

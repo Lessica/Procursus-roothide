@@ -1,0 +1,31 @@
+.\" -*- nroff -*-
+.\"*******************************************************************
+.\"
+.\" This file was generated with po4a. Translate the source file.
+.\"
+.\"*******************************************************************
+.TH WHICH 1 "29 Jun 2016" Debian 
+.SH NOME
+which \- localizza un comando
+.SH SINTASSI
+which [\-a] nomefile ...
+.SH DESCRIZIONE
+\fBwhich\fP returns the pathnames of the files (or links) which would be
+executed in the current environment, had its arguments been given as
+commands in a strictly POSIX\-conformant shell.  It does this by searching
+the PATH for executable files matching the names of the arguments.  It does
+not canonicalize path names.
+.SH OPZIONI
+.TP 
+\fB\-a\fP
+stampa tutti i nomi di percorso che corrispondono a ciascun argomento
+.SH "STATO D'USCITA"
+.TP 
+\fB0\fP
+se tutti i comandi specificati vengono trovati e sono eseguibili
+.TP 
+\fB1\fP
+se uno o più dei comandi specificati non esiste o non è eseguibile
+.TP 
+\fB2\fP
+se viene specificata un'opzione non valida

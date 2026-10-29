@@ -1,0 +1,11 @@
+--- a/notifyutil/notifyutil.c
++++ b/notifyutil/notifyutil.c
+@@ -35,1 +35,5 @@
+ #include <dispatch/dispatch.h>
++/* The jailbroken tvOS runtime exports mach_msg despite SDK availability. */
++extern mach_msg_return_t tvos_mach_msg(mach_msg_header_t *, mach_msg_option_t,
++    mach_msg_size_t, mach_msg_size_t, mach_port_name_t, mach_msg_timeout_t,
++    mach_port_name_t) __asm("_mach_msg");
+@@ -297,1 +301,1 @@
+-	status = mach_msg(&msg.header, MACH_RCV_MSG, 0, sizeof(msg), port, 0, MACH_PORT_NULL);
++	status = tvos_mach_msg(&msg.header, MACH_RCV_MSG, 0, sizeof(msg), port, 0, MACH_PORT_NULL);

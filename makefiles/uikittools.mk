@@ -1,0 +1,88 @@
+ifneq ($(PROCURSUS),1)
+$(error Use the main Makefile)
+endif
+
+ifneq (,$(findstring bridgeos,$(MEMO_TARGET)))
+SUBPROJECTS        += uikittools
+else
+STRAPPROJECTS      += uikittools
+endif
+UIKITTOOLS_COMMIT  := 13c99c06e160851dd2f44af3f04bdfc208cf8520
+UIKITTOOLS_VERSION := 2.1.8
+DEB_UIKITTOOLS_V   ?= $(UIKITTOOLS_VERSION)
+
+uikittools-setup: setup
+	$(call GITHUB_ARCHIVE,owngoal-dev,uikittools-ng,$(UIKITTOOLS_COMMIT),$(UIKITTOOLS_COMMIT))
+	$(call EXTRACT_TAR,uikittools-ng-$(UIKITTOOLS_COMMIT).tar.gz,uikittools-ng-$(UIKITTOOLS_COMMIT),uikittools)
+
+ifneq (,$(findstring darwin,$(MEMO_TARGET)))
+UIKITTOOLS_MAKE_ARGS += NO_COMPAT=1
+endif
+
+ifneq ($(wildcard $(BUILD_WORK)/uikittools/.build_complete),)
+uikittools:
+	@echo "Using previously built uikittools."
+else
+uikittools: uikittools-setup gettext
+	+$(MAKE) -C $(BUILD_WORK)/uikittools \
+		PREFIX="$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)" \
+		LOCALEDIR="$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share/locale" \
+		APP_PATH="$(MEMO_PREFIX)/Applications" \
+		NLS=1
+	+$(MAKE) -C $(BUILD_WORK)/uikittools install \
+		PREFIX="$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)" \
+		LOCALEDIR="$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share/locale" \
+		DESTDIR="$(BUILD_STAGE)/uikittools" \
+		APP_PATH="$(MEMO_PREFIX)/Applications" \
+		NLS=1 \
+		$(UIKITTOOLS_MAKE_ARGS)
+	$(call AFTER_BUILD,,,,NO-VROOT)
+endif
+
+uikittools-package: uikittools-stage
+	# uikittools.mk Package Structure
+	rm -rf $(BUILD_DIST)/uikittools{,-extra}
+
+	# uikittools.mk Prep uikittools
+	cp -a $(BUILD_STAGE)/uikittools $(BUILD_DIST)
+	rm -f $(BUILD_DIST)/uikittools/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/{uinotify,uisave,lsrebuild,uidisplay,uishoot} \
+		$(BUILD_DIST)/uikittools/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share/man/man1/{uinotify,uisave,lsrebuild,uidisplay,uishoot}.1$(MEMO_MANPAGE_SUFFIX) \
+		$(BUILD_DIST)/uikittools/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share/man/*/man1/{uinotify,uisave,lsrebuild,uidisplay,uishoot}.1$(MEMO_MANPAGE_SUFFIX)
+
+	# uikittools.mk Prep uikittools-extra
+	cp -a $(BUILD_STAGE)/uikittools $(BUILD_DIST)/uikittools-extra
+	rm -rf $(BUILD_DIST)/uikittools-extra/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/!(uinotify|uisave|lsrebuild|uidisplay|uishoot) \
+		$(BUILD_DIST)/uikittools-extra/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share/man/man1/!(uinotify|uisave|lsrebuild|uidisplay|uishoot).1$(MEMO_MANPAGE_SUFFIX) \
+		$(BUILD_DIST)/uikittools-extra/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share/man/*/man1/!(uinotify|uisave|lsrebuild|uidisplay|uishoot).1$(MEMO_MANPAGE_SUFFIX) \
+		$(BUILD_DIST)/uikittools-extra/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share/locale
+
+	# uikittools.mk Sign
+	$(call SIGN,uikittools,general.xml)
+	$(call SIGN,uikittools-extra,general.xml)
+
+ifeq (,$(findstring darwin,$(MEMO_TARGET)))
+	$(LDID) -S$(BUILD_WORK)/uikittools/lsrebuild.plist $(BUILD_DIST)/uikittools-extra/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/lsrebuild
+	$(LDID) -M -S$(BUILD_WORK)/uikittools/mgask.plist $(BUILD_DIST)/uikittools/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/mgask
+	$(LDID) -M -S$(BUILD_WORK)/uikittools/sbreload.plist $(BUILD_DIST)/uikittools/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/sbreload
+	$(LDID) -M -S$(BUILD_WORK)/uikittools/uialert.plist $(BUILD_DIST)/uikittools/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/uialert
+	$(LDID) -M -S$(BUILD_WORK)/uikittools/uicache.plist $(BUILD_DIST)/uikittools/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/uicache
+ifneq (,$(findstring iphoneos,$(MEMO_TARGET)))
+	$(LDID) -S$(BUILD_WORK)/uikittools/uidisplay.plist $(BUILD_DIST)/uikittools-extra/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/uidisplay
+	$(LDID) -S$(BUILD_WORK)/uikittools/uinotify.plist $(BUILD_DIST)/uikittools-extra/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/uinotify
+	$(LDID) -S$(BUILD_WORK)/uikittools/uisave.plist $(BUILD_DIST)/uikittools-extra/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/uisave
+endif
+	$(LDID) -M -S$(BUILD_WORK)/uikittools/uiopen.plist $(BUILD_DIST)/uikittools/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/uiopen
+	$(LDID) -S$(BUILD_WORK)/uikittools/uishoot.plist $(BUILD_DIST)/uikittools-extra/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/uishoot
+
+	find $(BUILD_DIST)/uikittools -name '.ldid*' -type f -delete
+	find $(BUILD_DIST)/uikittools-extra -name '.ldid*' -type f -delete
+endif
+
+	# uikittools.mk Make .debs
+	$(call PACK,uikittools,DEB_UIKITTOOLS_V)
+	$(call PACK,uikittools-extra,DEB_UIKITTOOLS_V)
+
+	# uikittools.mk Build cleanup
+	rm -rf $(BUILD_DIST)/uikittools{,-extra}
+
+.PHONY: uikittools uikittools-package

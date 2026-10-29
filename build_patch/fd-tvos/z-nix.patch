@@ -1,0 +1,15 @@
+--- a/Cargo.toml
++++ b/Cargo.toml
+@@ -95,0 +96,4 @@
++
++[patch.crates-io]
++nix024 = { package = "nix", path = "../fd-nix-0.24.2" }
++nix025 = { package = "nix", path = "../fd-nix-0.25.0" }
+--- a/Cargo.lock
++++ b/Cargo.lock
+@@ -551,2 +550,0 @@
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "195cdbc1741b8134346d515b3a56a1c94b0912758009cfd53f99ea0f57b065fc"
+@@ -562,2 +559,0 @@
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "e322c04a9e3440c327fca7b6c8a63e6890a32fa2ad689db972425f07e0d22abb"

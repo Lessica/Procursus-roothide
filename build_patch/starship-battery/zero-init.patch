@@ -1,0 +1,9 @@
+--- a/src/platform/darwin/iokit/wrappers.rs
++++ b/src/platform/darwin/iokit/wrappers.rs
+@@ -60,5 +59,1 @@
+-            // MSRV is 1.32 and `std::mem::MaybeUninit` appeared only at 1.36
+-            // TODO: Switch to `MaybeUninit` as soon as MSRV will be bumped.
+-            #[allow(deprecated)]
+-            let mut props: CFMutableDictionaryRef = mem::uninitialized();
+-
++            let mut props: CFMutableDictionaryRef = std::ptr::null_mut();

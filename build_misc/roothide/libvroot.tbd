@@ -1,0 +1,53 @@
+--- !tapi-tbd
+tbd-version:     4
+targets:         [ arm64-ios, arm64e-ios, arm64-tvos, arm64e-tvos ]
+uuids:
+  - target:          arm64-ios
+    value:           386EB224-26AB-3E42-86E8-A7322C623393
+  - target:          arm64e-ios
+    value:           EAF079FB-64D6-3EE4-B3BF-B3726EEFEC59
+flags:           [ not_app_extension_safe ]
+install-name:    '@loader_path/.jbroot/usr/lib/libvroot.dylib'
+current-version: 0
+compatibility-version: 0
+exports:
+  - targets:         [ arm64-ios, arm64e-ios, arm64-tvos, arm64e-tvos ]
+    symbols:         [ __mktemp, _vroot__ZNSt3__113basic_filebufIcNS_11char_traitsIcEEE4openEPKcj, 
+                       _vroot__ZNSt3__114basic_ifstreamIcNS_11char_traitsIcEEE4openEPKcj, 
+                       _vroot__ZNSt3__114basic_ifstreamIcNS_11char_traitsIcEEE4openERKNS_12basic_stringIcS2_NS_9allocatorIcEEEEj, 
+                       _vroot__ZNSt3__114basic_ofstreamIcNS_11char_traitsIcEEE4openEPKcj, 
+                       _vroot__ZNSt3__114basic_ofstreamIcNS_11char_traitsIcEEE4openERKNS_12basic_stringIcS2_NS_9allocatorIcEEEEj, 
+                       _vroot___bt_open, _vroot___hash_open, _vroot___opendir2, _vroot___rec_open, 
+                       _vroot_access, _vroot_acct, _vroot_bind, _vroot_chdir, _vroot_chmod, 
+                       _vroot_chmodx_np, _vroot_chown, _vroot_chroot, _vroot_connect, 
+                       _vroot_copyfile, _vroot_creat, _vroot_dbopen, _vroot_dladdr, 
+                       _vroot_dlopen, _vroot_exchangedata, _vroot_execl, _vroot_execle, 
+                       _vroot_execlp, _vroot_execv, _vroot_execvP, _vroot_execve, 
+                       _vroot_execvp, _vroot_faccessat, _vroot_fchmodat, _vroot_fchownat, 
+                       _vroot_fcntl, _vroot_fopen, '_vroot_fopen$DARWIN_EXTSN', _vroot_freopen, 
+                       _vroot_fsctl, _vroot_fstatat, _vroot_fts_open, _vroot_fts_open_b, 
+                       _vroot_ftw, _vroot_getattrlist, _vroot_getattrlistat, _vroot_getcwd, 
+                       _vroot_getfsstat, _vroot_getfsstat64, _vroot_getmntinfo, _vroot_getmntinfo_r_np, 
+                       _vroot_getpeername, _vroot_getsockname, _vroot_getwd, _vroot_getxattr, 
+                       _vroot_glob, _vroot_glob_b, _vroot_lchflags, _vroot_lchmod, 
+                       _vroot_lchown, _vroot_link, _vroot_linkat, _vroot_listxattr, 
+                       _vroot_lstat, _vroot_lstat64, _vroot_lstatx_np, _vroot_lutimes, 
+                       _vroot_mkdir, _vroot_mkdirat, _vroot_mkdirx_np, _vroot_mkdtemp, 
+                       _vroot_mkdtempat_np, _vroot_mkfifo, _vroot_mkfifox_np, _vroot_mknod, 
+                       _vroot_mkostemp, _vroot_mkostemps, _vroot_mkostempsat_np, 
+                       _vroot_mkpath_np, _vroot_mkpathat_np, _vroot_mkstemp, _vroot_mkstemp_dprotected_np, 
+                       _vroot_mkstemps, _vroot_mkstempsat_np, _vroot_mktemp, _vroot_mount, 
+                       _vroot_nftw, _vroot_open, _vroot_open_dprotected_np, _vroot_openat, 
+                       _vroot_opendir, _vroot_openx_np, _vroot_pathconf, _vroot_posix_spawn, 
+                       _vroot_readdir, _vroot_readdir_r, _vroot_readlink, _vroot_readlinkat, 
+                       _vroot_realpath, '_vroot_realpath$DARWIN_EXTSN', _vroot_remove, 
+                       _vroot_removexattr, _vroot_rename, _vroot_renameat, _vroot_renameatx_np, 
+                       _vroot_renamex_np, _vroot_rmdir, _vroot_scandir, _vroot_scandir_b, 
+                       _vroot_searchfs, _vroot_sem_open, _vroot_sem_unlink, _vroot_setattrlist, 
+                       _vroot_setattrlistat, _vroot_setxattr, _vroot_shm_open, _vroot_shm_unlink, 
+                       _vroot_stat, _vroot_stat64, _vroot_statfs, _vroot_statfs64, 
+                       _vroot_statvfs, _vroot_statx_np, _vroot_symlink, _vroot_symlinkat, 
+                       _vroot_sync_volume_np, _vroot_truncate, _vroot_undelete, _vroot_unlink, 
+                       _vroot_unlinkat, _vroot_unmount, _vroot_utime, _vroot_utimensat, 
+                       _vroot_utimes ]
+...

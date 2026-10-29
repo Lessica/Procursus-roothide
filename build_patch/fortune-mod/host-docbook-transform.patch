@@ -1,0 +1,14 @@
+--- a/util/FortuneMod/ManPage/Generate/App.pm
++++ b/util/FortuneMod/ManPage/Generate/App.pm
+@@ -51,8 +51,9 @@
+         __PACKAGE__->do_system(
+             {
+                 cmd => [
+-                    "docmake",
+-                    "manpages",
++                    "xsltproc",
++                    "--nonet",
++                    "$ENV{DOCBOOK_XSL}/manpages/docbook.xsl",
+ "${CMAKE_CURRENT_SOURCE_DIR}/${subdir}/${basename}.docbook5.xml",
+                 ],
+             },

@@ -1,0 +1,35 @@
+--- a/tccmacho.c
++++ b/tccmacho.c
+@@ -1754,6 +1754,16 @@
+     dyldbv->platform = PLATFORM_MACOS;
+     dyldbv->minos = (10 << 16) + (6 << 8);
+     dyldbv->sdk = (10 << 16) + (6 << 8);
++#if defined(__ENVIRONMENT_IPHONE_OS_VERSION_MIN_REQUIRED__)
++    /* The native compiler runs on iOS; explicit *-osx cross targets stay macOS. */
++    if (CONFIG_TCC_CROSSPREFIX[0] == '\0') {
++    dyldbv->platform = 2; /* PLATFORM_IOS */
++    dyldbv->minos = ((__ENVIRONMENT_IPHONE_OS_VERSION_MIN_REQUIRED__ / 10000) << 16)
++        | (((__ENVIRONMENT_IPHONE_OS_VERSION_MIN_REQUIRED__ / 100) % 100) << 8)
++        | (__ENVIRONMENT_IPHONE_OS_VERSION_MIN_REQUIRED__ % 100);
++    dyldbv->sdk = dyldbv->minos;
++    }
++#endif
+     dyldbv->ntools = 0;
+ 
+     dyldsv = add_lc(mo, LC_SOURCE_VERSION, sizeof(*dyldsv));
+@@ -1903,6 +1913,15 @@
+     if (seg) {
+         seg->vmsize = curaddr - seg->vmaddr;
+         seg->filesize = fileofs - seg->fileoff;
++    }
++
++    /* Code signing covers complete executable pages, including their padding. */
++    for (i = 0; i < mo->nseg; i++) {
++        struct segment_command_64 *textseg = get_segment(mo, i);
++        if (!strcmp(textseg->segname, "__TEXT")) {
++            textseg->vmsize = (textseg->vmsize + SEG_PAGE_SIZE - 1) & -SEG_PAGE_SIZE;
++            textseg->filesize = (textseg->filesize + SEG_PAGE_SIZE - 1) & -SEG_PAGE_SIZE;
++        }
+     }
+ 
+     /* Fill symtab info */

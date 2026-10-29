@@ -1,0 +1,10 @@
+Package: mariadb-backup
+Version: @DEB_MARIADB_V@
+Architecture: @DEB_ARCH@
+Maintainer: @DEB_MAINTAINER@
+Depends: mariadb-client-core-10.5 (= @DEB_MARIADB_V@), libssl3, liblz4-1, liblzo2-2, liblzma5, libsnappy1v5
+Section: Data_Storage
+Priority: optional
+Homepage: https://mariadb.org/
+Description: MariaDB database backup tools
+ MariaDB Backup and its streaming archive utility.

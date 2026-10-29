@@ -1,0 +1,47 @@
+--- a/Cargo.toml
++++ b/Cargo.toml
+@@ -103,6 +103,7 @@
+ rustfmt-nightly = { path = "src/tools/rustfmt" }
+ 
+ [patch.crates-io]
++socket2 = { path = "vendor/socket2" }
+ getrandom = { path = "vendor/getrandom" }
+ getrandom_01 = { package = "getrandom", path = "vendor/getrandom-0.1.14" }
+ parking_lot_core = { path = "vendor/parking_lot_core" }
+--- a/Cargo.lock
++++ b/Cargo.lock
+@@ -4793,8 +4793,6 @@
+ [[package]]
+ name = "socket2"
+ version = "0.4.1"
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "765f090f0e423d2b55843402a07915add955e7d60657db13707a159727326cad"
+ dependencies = [
+  "libc",
+  "winapi",
+--- a/vendor/socket2/src/sockaddr.rs
++++ b/vendor/socket2/src/sockaddr.rs
+@@ -231,6 +231,7 @@
+                 target_os = "freebsd",
+                 target_os = "haiku",
+                 target_os = "ios",
++            target_os = "tvos",
+                 target_os = "macos",
+                 target_os = "netbsd",
+                 target_os = "openbsd"
+@@ -270,6 +271,7 @@
+                 target_os = "freebsd",
+                 target_os = "haiku",
+                 target_os = "ios",
++                target_os = "tvos",
+                 target_os = "macos",
+                 target_os = "netbsd",
+                 target_os = "openbsd"
+@@ -297,6 +299,7 @@
+             target_os = "haiku",
+             target_os = "hermit",
+             target_os = "ios",
++                target_os = "tvos",
+             target_os = "macos",
+             target_os = "netbsd",
+             target_os = "openbsd",

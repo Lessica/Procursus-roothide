@@ -1,0 +1,11 @@
+--- a/src/tosixel.c
++++ b/src/tosixel.c
+@@ -670,7 +670,7 @@
+ 
+         }
+ 
+-        if (y != 5) {
++        if (y > 5) {
+             /* DECGNL Graphics Next Line */
+             output->buffer[output->pos] = '-';
+             sixel_advance(output, 1);

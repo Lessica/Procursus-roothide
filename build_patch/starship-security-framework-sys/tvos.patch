@@ -1,0 +1,117 @@
+--- a/src/cipher_suite.rs
++++ b/src/cipher_suite.rs
+@@ -1,7 +1,7 @@
+-#[cfg(not(target_os = "ios"))]
++#[cfg(not(any(target_os = "ios", target_os = "tvos")))]
+ pub type SSLCipherSuite = u32;
+ 
+-#[cfg(target_os = "ios")]
++#[cfg(any(target_os = "ios", target_os = "tvos"))]
+ pub type SSLCipherSuite = u16;
+ 
+ pub const SSL_NULL_WITH_NULL_NULL: SSLCipherSuite = 0x0000;
+--- a/src/key.rs
++++ b/src/key.rs
+@@ -2,12 +2,12 @@
+ use core_foundation_sys::data::CFDataRef;
+ use core_foundation_sys::dictionary::CFDictionaryRef;
+ use core_foundation_sys::error::CFErrorRef;
+-#[cfg(any(feature = "OSX_10_12", target_os = "ios"))]
++#[cfg(any(feature = "OSX_10_12", any(target_os = "ios", target_os = "tvos")))]
+ use core_foundation_sys::string::CFStringRef;
+ 
+ use crate::base::SecKeyRef;
+ 
+-#[cfg(any(feature = "OSX_10_12", target_os = "ios"))]
++#[cfg(any(feature = "OSX_10_12", any(target_os = "ios", target_os = "tvos")))]
+ pub type SecKeyAlgorithm = CFStringRef;
+ 
+ extern "C" {
+@@ -20,12 +20,12 @@
+         error: *mut CFErrorRef,
+     ) -> SecKeyRef;
+ 
+-    #[cfg(any(feature = "OSX_10_12", target_os = "ios"))]
++    #[cfg(any(feature = "OSX_10_12", any(target_os = "ios", target_os = "tvos")))]
+     pub fn SecKeyCopyExternalRepresentation(key: SecKeyRef, error: *mut CFErrorRef) -> CFDataRef;
+-    #[cfg(any(feature = "OSX_10_12", target_os = "ios"))]
++    #[cfg(any(feature = "OSX_10_12", any(target_os = "ios", target_os = "tvos")))]
+     pub fn SecKeyCopyAttributes(key: SecKeyRef) -> CFDictionaryRef;
+ 
+-    #[cfg(any(feature = "OSX_10_12", target_os = "ios"))]
++    #[cfg(any(feature = "OSX_10_12", any(target_os = "ios", target_os = "tvos")))]
+     pub fn SecKeyCreateSignature(
+         key: SecKeyRef,
+         algorithm: SecKeyAlgorithm,
+@@ -34,7 +34,7 @@
+     ) -> CFDataRef;
+ }
+ 
+-#[cfg(any(feature = "OSX_10_12", target_os = "ios"))]
++#[cfg(any(feature = "OSX_10_12", any(target_os = "ios", target_os = "tvos")))]
+ macro_rules! names {
+     ($($i:ident => $x:ident),*) => {
+         extern "C" {
+@@ -58,7 +58,7 @@
+     }
+ }
+ 
+-#[cfg(any(feature = "OSX_10_12", target_os = "ios"))]
++#[cfg(any(feature = "OSX_10_12", any(target_os = "ios", target_os = "tvos")))]
+ names! {
+     ECIESEncryptionStandardX963SHA1AESGCM => kSecKeyAlgorithmECIESEncryptionStandardX963SHA1AESGCM,
+     ECIESEncryptionStandardX963SHA224AESGCM => kSecKeyAlgorithmECIESEncryptionStandardX963SHA224AESGCM,
+--- a/src/lib.rs
++++ b/src/lib.rs
+@@ -1,7 +1,7 @@
+ #![allow(bad_style)]
+ 
+ #[cfg_attr(
+-    any(target_os = "macos", target_os = "ios"),
++    any(target_os = "macos", any(target_os = "ios", target_os = "tvos")),
+     link(name = "Security", kind = "framework")
+ )]
+ extern "C" {}
+--- a/src/secure_transport.rs
++++ b/src/secure_transport.rs
+@@ -30,15 +30,15 @@
+ pub const kSSLSessionOptionBreakOnServerAuth: SSLSessionOption = 0;
+ pub const kSSLSessionOptionBreakOnCertRequested: SSLSessionOption = 1;
+ pub const kSSLSessionOptionBreakOnClientAuth: SSLSessionOption = 2;
+-#[cfg(any(feature = "OSX_10_9", target_os = "ios"))]
++#[cfg(any(feature = "OSX_10_9", any(target_os = "ios", target_os = "tvos")))]
+ pub const kSSLSessionOptionFalseStart: SSLSessionOption = 3;
+-#[cfg(any(feature = "OSX_10_9", target_os = "ios"))]
++#[cfg(any(feature = "OSX_10_9", any(target_os = "ios", target_os = "tvos")))]
+ pub const kSSLSessionOptionSendOneByteRecord: SSLSessionOption = 4;
+-#[cfg(all(feature = "OSX_10_11", not(target_os = "ios")))]
++#[cfg(all(feature = "OSX_10_11", not(any(target_os = "ios", target_os = "tvos"))))]
+ pub const kSSLSessionOptionAllowServerIdentityChange: SSLSessionOption = 5;
+-#[cfg(all(feature = "OSX_10_10", not(target_os = "ios")))]
++#[cfg(all(feature = "OSX_10_10", not(any(target_os = "ios", target_os = "tvos"))))]
+ pub const kSSLSessionOptionFallback: SSLSessionOption = 6;
+-#[cfg(all(feature = "OSX_10_11", not(target_os = "ios")))]
++#[cfg(all(feature = "OSX_10_11", not(any(target_os = "ios", target_os = "tvos"))))]
+ pub const kSSLSessionOptionBreakOnClientHello: SSLSessionOption = 7;
+ 
+ pub type SSLSessionState = c_int;
+--- a/src/trust.rs
++++ b/src/trust.rs
+@@ -2,7 +2,7 @@
+ use crate::base::SecKeyRef;
+ use core_foundation_sys::array::CFArrayRef;
+ use core_foundation_sys::base::{Boolean, CFIndex, CFTypeID, CFTypeRef, OSStatus};
+-#[cfg(any(feature = "OSX_10_13", target_os = "ios"))]
++#[cfg(any(feature = "OSX_10_13", any(target_os = "ios", target_os = "tvos")))]
+ use core_foundation_sys::error::CFErrorRef;
+ 
+ pub type SecTrustResultType = u32;
+@@ -33,7 +33,7 @@
+     ) -> OSStatus;
+     pub fn SecTrustEvaluate(trust: SecTrustRef, result: *mut SecTrustResultType) -> OSStatus;
+     // it should have been OSX_10_14, but due to back-compat it can't rely on the newer feature flag
+-    #[cfg(any(feature = "OSX_10_13", target_os = "ios"))]
++    #[cfg(any(feature = "OSX_10_13", any(target_os = "ios", target_os = "tvos")))]
+     pub fn SecTrustEvaluateWithError(trust: SecTrustRef, error: *mut CFErrorRef) -> bool;
+     pub fn SecTrustCreateWithCertificates(
+         certificates: CFTypeRef,

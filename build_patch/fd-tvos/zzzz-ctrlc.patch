@@ -1,0 +1,15 @@
+--- a/Cargo.toml
++++ b/Cargo.toml
+@@ -100,3 +100,4 @@
+ [patch.crates-io]
++ctrlc = { path = "../fd-ctrlc" }
+ rustix = { path = "../fd-rustix" }
+ nix024 = { package = "nix", path = "../fd-nix-0.24.2" }
+--- a/Cargo.lock
++++ b/Cargo.lock
+@@ -1,5 +1,3 @@
+ name = "ctrlc"
+ version = "3.2.3"
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "1d91974fbbe88ec1df0c24a4f00f99583667a7e2e6272b2b92d294d81e462173"
+ dependencies = [

@@ -1,0 +1,6 @@
+--- a/Cargo.toml
++++ b/Cargo.toml
+@@ -69,0 +70,3 @@
++native-tls = { path = "../dog-native-tls" }
++security-framework = { path = "../dog-security-framework" }
++security-framework-sys = { path = "../dog-security-framework-sys" }

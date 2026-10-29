@@ -1,0 +1,5 @@
+--- a/Cargo.toml
++++ b/Cargo.toml
+@@ -31 +31 @@
+-[target."cfg(any(target_os = \"macos\", target_os = \"ios\"))".dependencies.mach]
++[target."cfg(any(target_os = \"macos\", target_os = \"ios\", target_os = \"tvos\"))".dependencies.mach]

@@ -1,0 +1,94 @@
+--- a/tftpd/tftp-transfer.c
++++ b/tftpd/tftp-transfer.c
+@@ -67,7 +67,15 @@
+ 	uint16_t oldblock, windowblock;
+ 	char sendbuffer[MAXPKTSIZE];
+ 	char recvbuffer[MAXPKTSIZE];
+-	struct block_data window[WINDOWSIZE_MAX];
++	struct block_data *window;
++	int result = -1;
++
++	window = calloc(WINDOWSIZE_MAX, sizeof(*window));
++	if (window == NULL) {
++		tftp_log(LOG_ERR, "Cannot allocate transfer window");
++		send_error(peer, ENOMEM + 100);
++		return -1;
++	}
+ 
+ 	rp = (struct tftphdr *)recvbuffer;
+ 	*block = 1;
+@@ -86,7 +94,7 @@
+ 		if (size < 0) {
+ 			tftp_log(LOG_ERR, "read_file returned %d", size);
+ 			send_error(peer, errno + 100);
+-			return -1;
++			goto out;
+ 		}
+ 		window[windowblock].size = size;
+ 		windowblock++;
+@@ -100,7 +108,7 @@
+ 				tftp_log(LOG_ERR,
+ 				    "Cannot send DATA packet #%d, "
+ 				    "giving up", *block);
+-				return -1;
++				goto out;
+ 			}
+ 			tftp_log(LOG_ERR,
+ 			    "Cannot send DATA packet #%d, trying again",
+@@ -117,7 +125,7 @@
+ 						tftp_log(LOG_ERR,
+ 						    "Timeout #%d send ACK %d "
+ 						    "giving up", acktry, *block);
+-						return -1;
++						goto out;
+ 					}
+ 					tftp_log(LOG_WARNING,
+ 					    "Timeout #%d on ACK %d",
+@@ -130,7 +138,7 @@
+ 						    "seek_file failed: %s",
+ 						    strerror(errno));
+ 						send_error(peer, errno + 100);
+-						return -1;
++						goto out;
+ 					}
+ 					*block = window[0].block;
+ 					windowblock = 0;
+@@ -141,7 +149,7 @@
+ 				if (debug & DEBUG_SIMPLE)
+ 					tftp_log(LOG_ERR, "Aborting: %s",
+ 					    rp_strerror(n_ack));
+-				return -1;
++				goto out;
+ 			}
+ 			if (rp->th_opcode == ACK) {
+ 				/*
+@@ -170,7 +178,7 @@
+ 						    "seek_file failed: %s",
+ 						    strerror(errno));
+ 						send_error(peer, errno + 100);
+-						return -1;
++						goto out;
+ 					}
+ 					*block = window[0].block;
+ 					windowblock = 0;
+@@ -202,7 +210,7 @@
+ 						    "seek_file failed: %s",
+ 						    strerror(errno));
+ 						send_error(peer, errno + 100);
+-						return -1;
++						goto out;
+ 					}
+ 					*block = window[i + 1].block;
+ 					windowblock = 0;
+@@ -232,7 +240,10 @@
+ 		}
+ 		gettimeofday(&(ts->tstop), NULL);
+ 	} while (size == segsize);
+-	return 0;
++	result = 0;
++out:
++	free(window);
++	return result;
+ }
+ 
+ /*

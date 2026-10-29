@@ -1,0 +1,15 @@
+--- a/src/ktool/macho.py
++++ b/src/ktool/macho.py
+@@ -142,11 +142,7 @@
+         self.vm_address = cmd.vmaddr
+         self.file_address = cmd.fileoff
+         self.size = cmd.vmsize
+-        self.name = ""
+-        for i, c in enumerate(hex(cmd.segname)[2:]):
+-            if i % 2 == 0:
+-                self.name += chr(int(c + hex(cmd.segname)[2:][i + 1], 16))
+-        self.name = self.name[::-1]
++        self.name = cmd.segname.to_bytes(16, "little").rstrip(b"\x00").decode("latin-1")
+         self.sections = self._process_sections()
+ 
+         self.type = SectionType(S_FLAGS_MASKS.SECTION_TYPE & self.cmd.flags)

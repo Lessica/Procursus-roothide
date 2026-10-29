@@ -1,0 +1,10 @@
+Package: libmariadbd19
+Version: @DEB_MARIADB_V@
+Architecture: @DEB_ARCH@
+Maintainer: @DEB_MAINTAINER@
+Depends: mariadb-common, libssl3, liblz4-1, liblzo2-2, liblzma5, libsnappy1v5
+Section: Libraries
+Priority: optional
+Homepage: https://mariadb.org/
+Description: MariaDB embedded database runtime
+ The complete embedded MariaDB server shared library.

@@ -1,0 +1,24 @@
+--- a/hw/kdrive/ephyr/hostx.c
++++ b/hw/kdrive/ephyr/hostx.c
+@@ -38,6 +38,10 @@
+ #include <time.h>
+ #include <err.h>
+ 
++#ifdef __APPLE__
++#include <TargetConditionals.h>
++#endif
++
+ #include <sys/ipc.h>
+ #include <sys/shm.h>
+ #include <sys/time.h>
+@@ -474,6 +478,10 @@
+         }
+         free(error);
+     } else {
++#if defined(__APPLE__) && TARGET_OS_IPHONE
++        /* iOS raises SIGSYS for System V IPC; use the existing XImage fallback. */
++        return FALSE;
++#endif
+         shminfo->shmid = shmget(IPC_PRIVATE, size, IPC_CREAT|0666);
+         if (shminfo->shmid != -1) {
+             shminfo->shmaddr = shmat(shminfo->shmid, 0, 0);

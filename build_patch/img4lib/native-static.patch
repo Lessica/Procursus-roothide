@@ -1,0 +1,18 @@
+--- a/Makefile
++++ b/Makefile
+@@ -137,3 +137,15 @@
+ 
+ distclean: clean
+ 	-$(RM) img4 libimg4.a
++
++# Public archive objects are separate from the original LTO program objects.
++NATIVEOBJECTS = $(addprefix native/,$(LIBOBJECTS))
++libimg4-native.a: $(NATIVEOBJECTS)
++	rm -f $@
++	$(AR) $(ARFLAGS) $@ $^
++native/%.o: %.c
++	@mkdir -p $(@D)
++	$(CC) $(CFLAGS) -fno-lto -c $< -o $@
++native/%.o: %.s
++	@mkdir -p $(@D)
++	$(CC) $(CFLAGS) -fno-lto -x assembler-with-cpp -c $< -o $@

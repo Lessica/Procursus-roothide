@@ -1,0 +1,183 @@
+--- a/src/certificate.rs
++++ b/src/certificate.rs
+@@ -7,30 +7,30 @@
+ use security_framework_sys::base::{errSecParam, SecCertificateRef};
+ use security_framework_sys::certificate::*;
+ use std::fmt;
+-#[cfg(any(feature = "OSX_10_12", target_os = "ios"))]
++#[cfg(any(feature = "OSX_10_12", any(target_os = "ios", target_os = "tvos")))]
+ use std::ptr;
+ 
+ use crate::base::{Error, Result};
+-#[cfg(any(feature = "OSX_10_12", target_os = "ios"))]
++#[cfg(any(feature = "OSX_10_12", any(target_os = "ios", target_os = "tvos")))]
+ use crate::{cvt, key};
+-#[cfg(any(feature = "OSX_10_12", target_os = "ios"))]
++#[cfg(any(feature = "OSX_10_12", any(target_os = "ios", target_os = "tvos")))]
+ use core_foundation::base::FromVoid;
+-#[cfg(any(feature = "OSX_10_12", target_os = "ios"))]
++#[cfg(any(feature = "OSX_10_12", any(target_os = "ios", target_os = "tvos")))]
+ use core_foundation::number::CFNumber;
+-#[cfg(any(feature = "OSX_10_12", target_os = "ios"))]
++#[cfg(any(feature = "OSX_10_12", any(target_os = "ios", target_os = "tvos")))]
+ use core_foundation_sys::base::CFRelease;
+-#[cfg(any(feature = "OSX_10_12", target_os = "ios"))]
++#[cfg(any(feature = "OSX_10_12", any(target_os = "ios", target_os = "tvos")))]
+ use security_framework_sys::base::SecPolicyRef;
+-#[cfg(any(feature = "OSX_10_12", target_os = "ios"))]
++#[cfg(any(feature = "OSX_10_12", any(target_os = "ios", target_os = "tvos")))]
+ use security_framework_sys::item::*;
+-#[cfg(any(feature = "OSX_10_12", target_os = "ios"))]
++#[cfg(any(feature = "OSX_10_12", any(target_os = "ios", target_os = "tvos")))]
+ use security_framework_sys::policy::SecPolicyCreateBasicX509;
+-#[cfg(any(feature = "OSX_10_12", target_os = "ios"))]
++#[cfg(any(feature = "OSX_10_12", any(target_os = "ios", target_os = "tvos")))]
+ use security_framework_sys::trust::{
+     SecTrustCopyPublicKey, SecTrustCreateWithCertificates, SecTrustEvaluate, SecTrustRef,
+     SecTrustResultType,
+ };
+-#[cfg(any(feature = "OSX_10_12", target_os = "ios"))]
++#[cfg(any(feature = "OSX_10_12", any(target_os = "ios", target_os = "tvos")))]
+ use std::ops::Deref;
+ 
+ declare_TCFType! {
+@@ -82,7 +82,7 @@
+         }
+     }
+ 
+-    #[cfg(any(feature = "OSX_10_12", target_os = "ios"))]
++    #[cfg(any(feature = "OSX_10_12", any(target_os = "ios", target_os = "tvos")))]
+     /// Returns DER encoded subjectPublicKeyInfo of certificate if available. This can be used
+     /// for certificate pinning.
+     pub fn public_key_info_der(&self) -> Result<Option<Vec<u8>>> {
+@@ -92,7 +92,7 @@
+         Ok(self.pk_to_der(public_key))
+     }
+ 
+-    #[cfg(any(feature = "OSX_10_12", target_os = "ios"))]
++    #[cfg(any(feature = "OSX_10_12", any(target_os = "ios", target_os = "tvos")))]
+     fn pk_to_der(&self, public_key: key::SecKey) -> Option<Vec<u8>> {
+         let public_key_attributes = public_key.attributes();
+         let public_key_type = public_key_attributes
+@@ -112,7 +112,7 @@
+         Some(out)
+     }
+ 
+-    #[cfg(any(feature = "OSX_10_12", target_os = "ios"))]
++    #[cfg(any(feature = "OSX_10_12", any(target_os = "ios", target_os = "tvos")))]
+     /// Get public key from certificate
+     pub fn public_key(&self) -> Result<key::SecKey> {
+         unsafe {
+@@ -137,7 +137,7 @@
+     }
+ }
+ 
+-#[cfg(any(feature = "OSX_10_12", target_os = "ios"))]
++#[cfg(any(feature = "OSX_10_12", any(target_os = "ios", target_os = "tvos")))]
+ fn get_asn1_header_bytes(pkt: CFString, ksz: u32) -> Option<&'static [u8]> {
+     if pkt == unsafe { CFString::wrap_under_get_rule(kSecAttrKeyTypeRSA) } && ksz == 2048 {
+         return Some(&RSA_2048_ASN1_HEADER);
+@@ -158,25 +158,25 @@
+     None
+ }
+ 
+-#[cfg(any(feature = "OSX_10_12", target_os = "ios"))]
++#[cfg(any(feature = "OSX_10_12", any(target_os = "ios", target_os = "tvos")))]
+ const RSA_2048_ASN1_HEADER: [u8; 24] = [
+     0x30, 0x82, 0x01, 0x22, 0x30, 0x0d, 0x06, 0x09, 0x2a, 0x86, 0x48, 0x86, 0xf7, 0x0d, 0x01, 0x01,
+     0x01, 0x05, 0x00, 0x03, 0x82, 0x01, 0x0f, 0x00,
+ ];
+ 
+-#[cfg(any(feature = "OSX_10_12", target_os = "ios"))]
++#[cfg(any(feature = "OSX_10_12", any(target_os = "ios", target_os = "tvos")))]
+ const RSA_4096_ASN1_HEADER: [u8; 24] = [
+     0x30, 0x82, 0x02, 0x22, 0x30, 0x0d, 0x06, 0x09, 0x2a, 0x86, 0x48, 0x86, 0xf7, 0x0d, 0x01, 0x01,
+     0x01, 0x05, 0x00, 0x03, 0x82, 0x02, 0x0f, 0x00,
+ ];
+ 
+-#[cfg(any(feature = "OSX_10_12", target_os = "ios"))]
++#[cfg(any(feature = "OSX_10_12", any(target_os = "ios", target_os = "tvos")))]
+ const EC_DSA_SECP_256_R1_ASN1_HEADER: [u8; 26] = [
+     0x30, 0x59, 0x30, 0x13, 0x06, 0x07, 0x2a, 0x86, 0x48, 0xce, 0x3d, 0x02, 0x01, 0x06, 0x08, 0x2a,
+     0x86, 0x48, 0xce, 0x3d, 0x03, 0x01, 0x07, 0x03, 0x42, 0x00,
+ ];
+ 
+-#[cfg(any(feature = "OSX_10_12", target_os = "ios"))]
++#[cfg(any(feature = "OSX_10_12", any(target_os = "ios", target_os = "tvos")))]
+ const EC_DSA_SECP_384_R1_ASN1_HEADER: [u8; 23] = [
+     0x30, 0x76, 0x30, 0x10, 0x06, 0x07, 0x2a, 0x86, 0x48, 0xce, 0x3d, 0x02, 0x01, 0x06, 0x05, 0x2b,
+     0x81, 0x04, 0x00, 0x22, 0x03, 0x62, 0x00,
+--- a/src/key.rs
++++ b/src/key.rs
+@@ -1,19 +1,19 @@
+ //! Encryption key support
+ 
+ use core_foundation::base::TCFType;
+-#[cfg(any(feature = "OSX_10_12", target_os = "ios"))]
++#[cfg(any(feature = "OSX_10_12", any(target_os = "ios", target_os = "tvos")))]
+ use core_foundation::base::ToVoid;
+-#[cfg(any(feature = "OSX_10_12", target_os = "ios"))]
++#[cfg(any(feature = "OSX_10_12", any(target_os = "ios", target_os = "tvos")))]
+ use core_foundation::data::CFData;
+-#[cfg(any(feature = "OSX_10_12", target_os = "ios"))]
++#[cfg(any(feature = "OSX_10_12", any(target_os = "ios", target_os = "tvos")))]
+ use core_foundation::dictionary::CFDictionary;
+-#[cfg(any(feature = "OSX_10_12", target_os = "ios"))]
++#[cfg(any(feature = "OSX_10_12", any(target_os = "ios", target_os = "tvos")))]
+ use core_foundation::error::{CFError, CFErrorRef};
+ use security_framework_sys::base::SecKeyRef;
+-#[cfg(any(feature = "OSX_10_12", target_os = "ios"))]
++#[cfg(any(feature = "OSX_10_12", any(target_os = "ios", target_os = "tvos")))]
+ pub use security_framework_sys::key::Algorithm;
+ use security_framework_sys::key::SecKeyGetTypeID;
+-#[cfg(any(feature = "OSX_10_12", target_os = "ios"))]
++#[cfg(any(feature = "OSX_10_12", any(target_os = "ios", target_os = "tvos")))]
+ use security_framework_sys::key::{
+     SecKeyCopyAttributes, SecKeyCopyExternalRepresentation, SecKeyCreateSignature,
+ };
+@@ -29,14 +29,14 @@
+ unsafe impl Send for SecKey {}
+ 
+ impl SecKey {
+-    #[cfg(any(feature = "OSX_10_12", target_os = "ios"))]
++    #[cfg(any(feature = "OSX_10_12", any(target_os = "ios", target_os = "tvos")))]
+     /// Translates to SecKeyCopyAttributes
+     pub fn attributes(&self) -> CFDictionary {
+         let pka = unsafe { SecKeyCopyAttributes(self.to_void() as _) };
+         unsafe { CFDictionary::wrap_under_create_rule(pka) }
+     }
+ 
+-    #[cfg(any(feature = "OSX_10_12", target_os = "ios"))]
++    #[cfg(any(feature = "OSX_10_12", any(target_os = "ios", target_os = "tvos")))]
+     /// Translates to SecKeyCopyExternalRepresentation
+     pub fn external_representation(&self) -> Option<CFData> {
+         let mut error: CFErrorRef = ::std::ptr::null_mut();
+@@ -47,7 +47,7 @@
+         Some(unsafe { CFData::wrap_under_create_rule(data) })
+     }
+ 
+-    #[cfg(any(feature = "OSX_10_12", target_os = "ios"))]
++    #[cfg(any(feature = "OSX_10_12", any(target_os = "ios", target_os = "tvos")))]
+     /// Creates the cryptographic signature for a block of data using a private
+     /// key and specified algorithm.
+     pub fn create_signature(
+--- a/src/secure_transport.rs
++++ b/src/secure_transport.rs
+@@ -1675,7 +1675,7 @@
+     }
+ 
+     #[test]
+-    #[cfg_attr(target_os = "ios", ignore)] // FIXME what's going on with ios?
++    #[cfg_attr(any(target_os = "ios", target_os = "tvos"), ignore)] // FIXME what's going on with ios?
+     fn cipher_configuration() {
+         let mut ctx = p!(SslContext::new(
+             SslProtocolSide::SERVER,
+@@ -1711,7 +1711,7 @@
+     }
+ 
+     #[test]
+-    #[cfg_attr(target_os = "ios", ignore)] // FIXME same issue as cipher_configuration
++    #[cfg_attr(any(target_os = "ios", target_os = "tvos"), ignore)] // FIXME same issue as cipher_configuration
+     fn test_builder_blacklist_ciphers() {
+         let stream = p!(TcpStream::connect("google.com:443"));
+ 

@@ -1,0 +1,54 @@
+--- a/compiler-rt/cmake/config-ix.cmake
++++ b/compiler-rt/cmake/config-ix.cmake
+@@ -465,6 +465,27 @@
+   # We're setting the flag manually for each target OS
+   set(CMAKE_OSX_DEPLOYMENT_TARGET "")
+ 
++  # Keep availability overrides paired with the SDK used by each runtime.
++  function(procursus_darwin_headers platform)
++    set(root "${DARWIN_${platform}_SYSROOT}/usr/include")
++    set(overlay "${CMAKE_CURRENT_BINARY_DIR}/memo-include/${platform}")
++    foreach(header time.h _time.h unistd.h spawn.h ucontext.h signal.h
++        mach/task.h mach/mach_host.h mach/thread_act.h mach/message.h)
++      if(EXISTS "${root}/${header}")
++        file(READ "${root}/${header}" contents)
++        string(REGEX REPLACE "__IOS_PROHIBITED|__TVOS_PROHIBITED|__WATCHOS_PROHIBITED" "" contents "${contents}")
++        string(REGEX REPLACE "__API_UNAVAILABLE\\([^)]*\\)" "" contents "${contents}")
++        get_filename_component(parent "${overlay}/${header}" DIRECTORY)
++        file(MAKE_DIRECTORY "${parent}")
++        file(WRITE "${overlay}/${header}.tmp" "${contents}")
++        configure_file("${overlay}/${header}.tmp" "${overlay}/${header}" COPYONLY)
++        file(REMOVE "${overlay}/${header}.tmp")
++      endif()
++    endforeach()
++    set(DARWIN_${platform}_CFLAGS ${DARWIN_${platform}_CFLAGS}
++        -isystem "${overlay}" PARENT_SCOPE)
++  endfunction()
++
+   set(DARWIN_COMMON_CFLAGS -stdlib=libc++)
+   set(DARWIN_COMMON_LINK_FLAGS
+     -stdlib=libc++
+@@ -485,6 +506,7 @@
+ 
+   if(DARWIN_osx_SYSROOT)
+     list(APPEND DARWIN_osx_CFLAGS -isysroot ${DARWIN_osx_SYSROOT})
++    procursus_darwin_headers(osx)
+     list(APPEND DARWIN_osx_LINK_FLAGS -isysroot ${DARWIN_osx_SYSROOT})
+   endif()
+ 
+@@ -508,6 +530,7 @@
+           ${DARWIN_COMMON_CFLAGS}
+           ${DARWIN_${platform}sim_SANITIZER_MIN_VER_FLAG}
+           -isysroot ${DARWIN_${platform}sim_SYSROOT})
++        procursus_darwin_headers(${platform}sim)
+         set(DARWIN_${platform}sim_LINK_FLAGS
+           ${DARWIN_COMMON_LINK_FLAGS}
+           ${DARWIN_${platform}sim_SANITIZER_MIN_VER_FLAG}
+@@ -539,6 +562,7 @@
+           ${DARWIN_COMMON_CFLAGS}
+           ${DARWIN_${platform}_SANITIZER_MIN_VER_FLAG}
+           -isysroot ${DARWIN_${platform}_SYSROOT})
++        procursus_darwin_headers(${platform})
+         set(DARWIN_${platform}_LINK_FLAGS
+           ${DARWIN_COMMON_LINK_FLAGS}
+           ${DARWIN_${platform}_SANITIZER_MIN_VER_FLAG}

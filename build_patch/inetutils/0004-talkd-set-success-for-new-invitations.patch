@@ -1,0 +1,14 @@
+--- a/talkd/process.c
++++ b/talkd/process.c
+@@ -108,10 +108,10 @@
+       if (ptr)
+ 	{
+ 	  rp->id_num = htonl (ptr->id_num);
+-	  rp->answer = SUCCESS;
+ 	}
+       else
+ 	insert_table (msg, rp);
++      rp->answer = SUCCESS;
+       break;
+ 
+     case LOOK_UP:

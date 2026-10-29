@@ -1,0 +1,20 @@
+Subject: Keep low-address symbols in relocatable Mach-O objects
+
+MH_OBJECT symbols use section-relative values and may legitimately start at
+zero. Preserve the existing filter for linked images. Upstream removed this
+filter in the broader symbol-loader refactor (3e812278b5b5126f9d03ed6a2da1ea24ea7ad0c1,
+1920cca72517012a81d3ebafed7175da6b015be7); this is a local, narrow compatibility
+fix for 5.8.2, not a backport of that parser rewrite.
+
+--- a/libr/bin/p/bin_mach0.c
++++ b/libr/bin/p/bin_mach0.c
+@@ -235,7 +235,8 @@
+ 	Sdb *symcache = sdb_new0 ();
+ 	bin = (struct MACH0_(obj_t) *) obj->bin_obj;
+ 	for (i = 0; !syms[i].last; i++) {
+-		if (syms[i].name == NULL || syms[i].name[0] == '\0' || syms[i].addr < 100) {
++		if (syms[i].name == NULL || syms[i].name[0] == '\0' ||
++			(bin->hdr.filetype != MH_OBJECT && syms[i].addr < 100)) {
+ 			continue;
+ 		}
+ 		if (!(ptr = R_NEW0 (RBinSymbol))) {

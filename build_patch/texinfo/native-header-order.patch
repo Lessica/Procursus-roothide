@@ -1,0 +1,73 @@
+--- a/info/Makefile.am
++++ b/info/Makefile.am
+@@ -20,8 +20,8 @@
+ 
+ AM_CPPFLAGS =                                   \
+   -I$(top_srcdir)                               \
+-  -I$(top_srcdir)/gnulib/lib                    \
+-  -I$(top_builddir)/gnulib/lib                  \
++  -I$(top_builddir)/gnulib/lib                    \
++  -I$(top_srcdir)/gnulib/lib                  \
+   -DLOCALEDIR=\"$(datadir)/locale\"             \
+   -DINFODIR=\"$(infodir)\"                      \
+   -DINFODIR2=\"$(datadir)/info\"
+--- a/info/Makefile.in
++++ b/info/Makefile.in
+@@ -1319,8 +1319,8 @@
+ top_srcdir = @top_srcdir@
+ AM_CPPFLAGS = \
+   -I$(top_srcdir)                               \
+-  -I$(top_srcdir)/gnulib/lib                    \
+-  -I$(top_builddir)/gnulib/lib                  \
++  -I$(top_builddir)/gnulib/lib                    \
++  -I$(top_srcdir)/gnulib/lib                  \
+   -DLOCALEDIR=\"$(datadir)/locale\"             \
+   -DINFODIR=\"$(infodir)\"                      \
+   -DINFODIR2=\"$(datadir)/info\"
+--- a/util/Makefile.am
++++ b/util/Makefile.am
+@@ -36,8 +36,8 @@
+ localedir = $(datadir)/locale
+ AM_CPPFLAGS = 					\
+   -I$(top_srcdir)				\
++  -I$(top_builddir)/gnulib/lib			\
+   -I$(top_srcdir)/gnulib/lib			\
+-  -I$(top_builddir)/gnulib/lib			\
+   -DLOCALEDIR=\"$(localedir)\"
+ LDADD = $(top_builddir)/gnulib/lib/libgnu.a $(LIBINTL)
+ 
+--- a/util/Makefile.in
++++ b/util/Makefile.in
+@@ -1242,8 +1242,8 @@
+ w32_bat = makeinfo.bat pod2texi.bat texi2any.bat texindex.bat
+ AM_CPPFLAGS = \
+   -I$(top_srcdir)				\
++  -I$(top_builddir)/gnulib/lib			\
+   -I$(top_srcdir)/gnulib/lib			\
+-  -I$(top_builddir)/gnulib/lib			\
+   -DLOCALEDIR=\"$(localedir)\"
+ 
+ LDADD = $(top_builddir)/gnulib/lib/libgnu.a $(LIBINTL)
+--- a/install-info/Makefile.am
++++ b/install-info/Makefile.am
+@@ -30,7 +30,7 @@
+ localedir = $(datadir)/locale
+ AM_CPPFLAGS = 					\
+   -I$(top_srcdir)				\
++  -I$(top_builddir)/gnulib/lib			\
+   -I$(top_srcdir)/gnulib/lib			\
+-  -I$(top_builddir)/gnulib/lib			\
+   -DLOCALEDIR=\"$(localedir)\"
+ LDADD = $(top_builddir)/gnulib/lib/libgnu.a $(LIBINTL) $(LIBTHREAD)
+--- a/install-info/Makefile.in
++++ b/install-info/Makefile.in
+@@ -1156,8 +1156,8 @@
+ ginstall_info_SOURCES = install-info.c
+ AM_CPPFLAGS = \
+   -I$(top_srcdir)				\
++  -I$(top_builddir)/gnulib/lib			\
+   -I$(top_srcdir)/gnulib/lib			\
+-  -I$(top_builddir)/gnulib/lib			\
+   -DLOCALEDIR=\"$(localedir)\"
+ 
+ LDADD = $(top_builddir)/gnulib/lib/libgnu.a $(LIBINTL) $(LIBTHREAD)

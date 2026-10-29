@@ -1,0 +1,26 @@
+--- configure.ac
++++ configure.ac
+@@ -265,6 +265,15 @@
+ 
+ have_libxml2="1"
+ 
++AC_ARG_VAR([XML2_CFLAGS], [target libxml2 preprocessor flags])
++AC_ARG_VAR([XML2_LIBS], [target libxml2 linker flags])
++if test -n "${XML2_CFLAGS}${XML2_LIBS}" ; then
++  if test -z "${XML2_CFLAGS}" || test -z "${XML2_LIBS}" ; then
++    AC_MSG_ERROR([Set both XML2_CFLAGS and XML2_LIBS])
++  fi
++  CPPFLAGS="${CPPFLAGS} ${XML2_CFLAGS}"
++  LIBS="${LIBS} ${XML2_LIBS}"
++else
+ AC_ARG_WITH([xml2-config], [  --with-xml2-config      libxml2 config program],
+ if test "x${with_xml2_config}" = "xno" ; then
+   XML2_CONFIG=
+@@ -311,6 +320,7 @@
+   AC_MSG_RESULT([no])
+   have_libxml2="0"
+ fi
++fi
+ if test "x${have_libxml2}" = "x1" ; then
+   dnl Final sanity check, to make sure that xmlwriter is present.
+   AC_CHECK_HEADER([libxml/xmlwriter.h], , [have_libxml2="0"])

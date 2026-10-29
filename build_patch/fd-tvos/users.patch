@@ -1,0 +1,9 @@
+--- a/Cargo.toml
++++ b/Cargo.toml
+@@ -69 +69 @@
+-users = {git = "https://github.com/ogham/rust-users", rev = "5208452"}
++users = { path = "../lsd-users" }
+--- a/Cargo.lock
++++ b/Cargo.lock
+@@ -870 +869,0 @@
+-source = "git+https://github.com/ogham/rust-users?rev=5208452#5208452ff8fe98e21c4ae65a5c44d654f5efc0c8"

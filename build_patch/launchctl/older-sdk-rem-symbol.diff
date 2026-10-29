@@ -1,0 +1,44 @@
+--- a/rem.c
++++ b/rem.c
+@@ -26,6 +26,7 @@
+  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+  */
+ #include <errno.h>
++#include <dlfcn.h>
+ #include <stdint.h>
+ #include <stdio.h>
+ #include <string.h>
+@@ -34,13 +35,23 @@
+ #include "launchctl.h"
+ #include "xpc_private.h"
+ 
++/* The iOS 18 entry point is not in older SDK export stubs. Resolve it
++ * only when the existing availability guard permits the REM operation. */
++static int
++reboot_with_purpose(int purpose)
++{
++ int (*reboot_fn)(int) = (int (*)(int))dlsym(RTLD_DEFAULT,
++     "launch_userspace_reboot_with_purpose");
++ return reboot_fn ? reboot_fn(purpose) : ENOTSUP;
++}
++
+ int
+ enter_rem_cmd(xpc_object_t *msg, int argc, char **argv, char **envp, char **apple)
+ {
+ 	int ret = ENOTSUP;
+ 
+ 	if (__builtin_available(macOS 15.0, iOS 18.0, tvOS 18.0, watchOS 11.0, bridgeOS 9.0, *))
+-		ret = launch_userspace_reboot_with_purpose(4);
++		ret = reboot_with_purpose(4);
+ 
+ 	if (ret != 0)
+ 		fprintf(stderr, "Failed to enter REM: %d: %s\n", ret, xpc_strerror(ret));
+@@ -54,7 +65,7 @@
+ 	int ret = ENOTSUP;
+ 
+ 	if (__builtin_available(macOS 15.0, iOS 18.0, tvOS 18.0, watchOS 11.0, bridgeOS 9.0, *))
+-		ret = launch_userspace_reboot_with_purpose(5);
++		ret = reboot_with_purpose(5);
+ 
+ 	if (ret != 0)
+ 		fprintf(stderr, "Failed to enter REM (development): %d: %s\n", ret, xpc_strerror(ret));

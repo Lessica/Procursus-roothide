@@ -1,0 +1,11 @@
+--- a/util.c
++++ b/util.c
+@@ -410,6 +410,8 @@
+ 	upload_data.buf = rpc_req;
+ 	upload_data.len = strlen(rpc_req);
+ 	upload_data.pos = 0;
++	curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE_LARGE,
++			 (curl_off_t) upload_data.len);
+ 	sprintf(len_hdr, "Content-Length: %lu",
+ 		(unsigned long) upload_data.len);
+ 

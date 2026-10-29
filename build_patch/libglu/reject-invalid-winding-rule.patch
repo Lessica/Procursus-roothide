@@ -1,0 +1,10 @@
+--- a/src/libtess/tess.c
++++ b/src/libtess/tess.c
+@@ -223,6 +223,7 @@
+     default:
+       break;
+     }
++    break;
+ 
+   case GLU_TESS_BOUNDARY_ONLY:
+     tess->boundaryOnly = (value != 0);

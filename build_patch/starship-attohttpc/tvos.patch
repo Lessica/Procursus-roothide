@@ -1,0 +1,21 @@
+--- a/Cargo.toml
++++ b/Cargo.toml
+@@ -164,6 +164,6 @@
+ multipart-form = ["multipart", "mime"]
+ tls = ["native-tls", "openssl"]
+ tls-rustls = ["rustls", "webpki", "webpki-roots"]
+-[target."cfg(not(any(target_os = \"windows\", target_os = \"macos\", target_os = \"ios\")))".dependencies.openssl]
++[target."cfg(not(any(target_os = \"windows\", target_os = \"macos\", any(target_os = \"ios\", target_os = \"tvos\"))))".dependencies.openssl]
+ version = "0.10"
+ optional = true
+--- a/src/request/builder.rs
++++ b/src/request/builder.rs
+@@ -129,7 +129,7 @@
+     /// This is available only on Linux and when TLS support is enabled.
+     #[cfg(all(
+         feature = "tls",
+-        not(any(target_os = "windows", target_os = "macos", target_os = "ios"))
++        not(any(target_os = "windows", target_os = "macos", any(target_os = "ios", target_os = "tvos")))
+     ))]
+     pub fn basic_auth(self, username: impl std::fmt::Display, password: Option<impl std::fmt::Display>) -> Self {
+         let auth = match password {

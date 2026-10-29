@@ -1,0 +1,20 @@
+--- a/src/platform/unix/mod.rs
++++ b/src/platform/unix/mod.rs
+@@ -28,7 +28,7 @@
+ 
+ // pipe2(2) is not available on macOS, iOS or Haiku, so we need to use pipe(2) and fcntl(2)
+ #[inline]
+-#[cfg(any(target_os = "ios", target_os = "macos", target_os = "haiku"))]
++#[cfg(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos", target_os = "haiku"))]
+ fn pipe2(flags: nix::fcntl::OFlag) -> nix::Result<(RawFd, RawFd)> {
+     use nix::fcntl::{fcntl, FcntlArg, FdFlag, OFlag};
+ 
+@@ -59,7 +59,7 @@
+ }
+ 
+ #[inline]
+-#[cfg(not(any(target_os = "ios", target_os = "macos", target_os = "haiku")))]
++#[cfg(not(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos", target_os = "haiku")))]
+ fn pipe2(flags: nix::fcntl::OFlag) -> nix::Result<(RawFd, RawFd)> {
+     unistd::pipe2(flags)
+ }

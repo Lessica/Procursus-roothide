@@ -1,0 +1,11 @@
+--- a/compiler/rustc_llvm/build.rs
++++ b/compiler/rustc_llvm/build.rs
+@@ -264,7 +264,7 @@
+         if target.contains("sparc64") { "estdc++" } else { "c++" }
+     } else if target.contains("freebsd") {
+         "c++"
+-    } else if target.contains("darwin") {
++    } else if target.contains("apple") {
+         "c++"
+     } else if target.contains("netbsd") && llvm_static_stdcpp.is_some() {
+         // NetBSD uses a separate library when relocation is required

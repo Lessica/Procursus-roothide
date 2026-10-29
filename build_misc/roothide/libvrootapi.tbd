@@ -1,0 +1,43 @@
+--- !tapi-tbd
+tbd-version:     4
+targets:         [ arm64-ios, arm64e-ios, arm64-tvos, arm64e-tvos ]
+uuids:
+  - target:          arm64-ios
+    value:           AB6D848C-4604-30F4-BDCC-248B11365BB6
+  - target:          arm64e-ios
+    value:           A908B731-6C52-3899-9D54-2CB24057949D
+flags:           [ not_app_extension_safe ]
+install-name:    '@loader_path/.jbroot/usr/lib/libvrootapi.dylib'
+current-version: 0
+compatibility-version: 0
+exports:
+  - targets:         [ arm64-ios, arm64e-ios, arm64-tvos, arm64e-tvos ]
+    symbols:         [ __ZNSt3__113basic_filebufIcNS_11char_traitsIcEEE4openEPKcj, 
+                       __ZNSt3__114basic_ifstreamIcNS_11char_traitsIcEEE4openEPKcj, 
+                       __ZNSt3__114basic_ifstreamIcNS_11char_traitsIcEEE4openERKNS_12basic_stringIcS2_NS_9allocatorIcEEEEj, 
+                       __ZNSt3__114basic_ofstreamIcNS_11char_traitsIcEEE4openEPKcj, 
+                       __ZNSt3__114basic_ofstreamIcNS_11char_traitsIcEEE4openERKNS_12basic_stringIcS2_NS_9allocatorIcEEEEj, 
+                       ___bt_open, ___hash_open, ___opendir2, ___rec_open, _access, 
+                       _acct, _bind, _chdir, _chmod, _chmodx_np, _chown, _chroot, 
+                       _connect, _copyfile, _creat, _dbopen, _dladdr, _dlopen, _exchangedata, 
+                       _execl, _execle, _execlp, _execv, _execvP, _execve, _execvp, 
+                       _faccessat, _fchmodat, _fchownat, _fcntl, _fopen, '_fopen$DARWIN_EXTSN', 
+                       _freopen, _fsctl, _fstatat, _fts_open, _fts_open_b, _ftw, 
+                       _getattrlist, _getattrlistat, _getcwd, _getfsstat, _getfsstat64, 
+                       _getmntinfo, _getmntinfo_r_np, _getpeername, _getsockname, 
+                       _getwd, _getxattr, _glob, _glob_b, _lchflags, _lchmod, _lchown, 
+                       _link, _linkat, _listxattr, _lstat, _lstat64, _lstatx_np, 
+                       _lutimes, _mkdir, _mkdirat, _mkdirx_np, _mkdtemp, _mkdtempat_np, 
+                       _mkfifo, _mkfifox_np, _mknod, _mkostemp, _mkostemps, _mkostempsat_np, 
+                       _mkpath_np, _mkpathat_np, _mkstemp, _mkstemps, _mkstempsat_np, 
+                       _mount, _nftw, _open, _open_dprotected_np, _openat, _opendir, 
+                       _openx_np, _pathconf, _posix_spawn, _readdir, _readdir_r, 
+                       _readlink, _readlinkat, _realpath, '_realpath$DARWIN_EXTSN', 
+                       _remove, _removexattr, _rename, _renameat, _renameatx_np, 
+                       _renamex_np, _rmdir, _scandir, _scandir_b, _searchfs, _sem_open, 
+                       _sem_unlink, _setattrlist, _setattrlistat, _setxattr, _shm_open, 
+                       _shm_unlink, _stat, _stat64, _statfs, _statfs64, _statvfs, 
+                       _statx_np, _symlink, _symlinkat, _sync_volume_np, _truncate, 
+                       _undelete, _unlink, _unlinkat, _unmount, _utime, _utimensat, 
+                       _utimes ]
+...

@@ -1,0 +1,11 @@
+--- a/src/osdef.sh
++++ b/src/osdef.sh
+@@ -27,6 +27,8 @@
+ rm -f core* *.core
+ 
+ cat << EOF > osdef0.c
++/* Probe the original declarations before libiosexec redirects their names. */
++#define LIBIOSEXEC_INTERNAL
+ #ifndef __APPLE__
+ # define select select_declared_wrong
+ #endif

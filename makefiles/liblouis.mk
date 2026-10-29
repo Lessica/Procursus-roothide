@@ -1,0 +1,71 @@
+ifneq ($(PROCURSUS),1)
+$(error Use the main Makefile)
+endif
+
+SUBPROJECTS       += liblouis
+LIBLOUIS_VERSION  := 3.17.0
+DEB_LIBLOUIS_V    ?= $(LIBLOUIS_VERSION)-1
+
+liblouis-setup: setup
+	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://github.com/liblouis/liblouis/releases/download/v$(LIBLOUIS_VERSION)/liblouis-$(LIBLOUIS_VERSION).tar.gz)
+	$(call EXTRACT_TAR,liblouis-$(LIBLOUIS_VERSION).tar.gz,liblouis-$(LIBLOUIS_VERSION),liblouis)
+
+ifneq ($(wildcard $(BUILD_WORK)/liblouis/.build_complete),)
+liblouis:
+	@echo "Using previously built liblouis."
+else
+liblouis: liblouis-setup libyaml
+	cd $(BUILD_WORK)/liblouis && ./configure -C \
+		$(DEFAULT_CONFIGURE_FLAGS) \
+		--enable-ucs4
+	+$(MAKE) -C $(BUILD_WORK)/liblouis all
+	+$(MAKE) -C $(BUILD_WORK)/liblouis install \
+		DESTDIR=$(BUILD_STAGE)/liblouis
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Preserve installed LTO programs and dylib; rebuild the static library only.
+	+$(MAKE) -C $(BUILD_WORK)/liblouis/gnulib clean
+	+$(MAKE) -C $(BUILD_WORK)/liblouis/gnulib libgnu.la \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/liblouis/gnulib/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/liblouis/gnulib/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -static"
+	+$(MAKE) -C $(BUILD_WORK)/liblouis/liblouis clean
+	+$(MAKE) -C $(BUILD_WORK)/liblouis/liblouis liblouis.la \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/liblouis/liblouis/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/liblouis/liblouis/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -static"
+	cp -a $(BUILD_WORK)/liblouis/liblouis/.libs/liblouis.a $(BUILD_STAGE)/liblouis/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
+	$(call AFTER_BUILD,copy)
+endif
+liblouis-package: liblouis-stage
+	# liblouis.mk Package Structure
+	rm -rf $(BUILD_DIST)/liblouis{20,-dev,-data,-bin}
+	mkdir -p $(BUILD_DIST)/liblouis{20,-dev}/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib
+	mkdir -p $(BUILD_DIST)/liblouis-bin/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin
+	mkdir -p $(BUILD_DIST)/liblouis-data/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share/liblouis
+
+	# liblouis.mk Prep liblouis20
+	cp -a $(BUILD_STAGE)/liblouis/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/liblouis.20.dylib $(BUILD_DIST)/liblouis20/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib
+
+	# liblouis.mk Prep liblouis-dev
+	cp -a $(BUILD_STAGE)/liblouis/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/!(liblouis.20.dylib) $(BUILD_DIST)/liblouis-dev/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib
+	cp -a $(BUILD_STAGE)/liblouis/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include $(BUILD_DIST)/liblouis-dev/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)
+
+	# liblouis.mk Prep liblouis-bin
+	cp -a $(BUILD_STAGE)/liblouis/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/* $(BUILD_DIST)/liblouis-bin/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin
+
+	# liblouis.mk Prep liblouis-data
+	cp -a $(BUILD_STAGE)/liblouis/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share/liblouis/tables $(BUILD_DIST)/liblouis-data/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share/liblouis
+
+	# liblouis.mk Sign
+	$(call SIGN,liblouis20,general.xml)
+	$(call SIGN,liblouis-bin,general.xml)
+
+	# liblouis.mk Make .debs
+	$(call PACK,liblouis20,DEB_LIBLOUIS_V)
+	$(call PACK,liblouis-dev,DEB_LIBLOUIS_V)
+	$(call PACK,liblouis-bin,DEB_LIBLOUIS_V)
+	$(call PACK,liblouis-data,DEB_LIBLOUIS_V)
+
+	# liblouis.mk Build cleanup
+	rm -rf $(BUILD_DIST)/liblouis{20,-dev,-bin,-data}
+
+.PHONY: liblouis liblouis-package

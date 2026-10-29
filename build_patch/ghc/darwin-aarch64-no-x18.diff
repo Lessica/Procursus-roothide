@@ -1,0 +1,13 @@
+--- a/includes/CodeGen.Platform.hs
++++ b/includes/CodeGen.Platform.hs
+@@ -1027,6 +1027,10 @@
+ freeReg 29 = False
+ -- ip0 -- used for spill offset computations
+ freeReg 16 = False
++#if defined(darwin_HOST_OS)
++-- x18 is the platform register on Darwin and must not be allocated.
++freeReg 18 = False
++#endif
+ 
+ # if defined(REG_Base)
+ freeReg REG_Base  = False

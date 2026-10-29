@@ -1,0 +1,119 @@
+.\" -*- nroff -*-
+.\"*******************************************************************
+.\"
+.\" This file was generated with po4a. Translate the source file.
+.\"
+.\"*******************************************************************
+.TH SAVELOG 8 "30 Dez 2011" Debian 
+.SH NOME
+savelog \- grava um ficheiro de relatório (log)
+.SH SINOPSE
+\fBsavelog\fP [\-m modo] [\-u utilizador] [\-g grupo] [\-t] [\-p] [\-c ciclo] [\-l]
+[\-j] [\-J] [\-1\ .\|.\ \-9] [\-C] [\-d] [\-l] [\-r rolldir] [\-n] [\-q] [\-D
+formato\-data] ficheiro ...
+.
+.SH DESCRIÇÃO
+O comando \fBsavelog\fP grava e opcionalmente comprime as cópias antigas dos
+ficheiro. As versões antigas do \fIficheiro\fP são chamadas:
+.RS
+.sp 1
+\fIfile\fP.\fI<number>\fP\fI<compress_suffix>\fP
+.sp 1
+.RE
+onde \fI<number>\fP é o número da versão, sendo 0 a mais recente.
+Números de versão > maiores que 0 são comprimidos a menos que \fB\-l\fP o
+previna. O número de versão 0 não é comprimido porque um processo pode ainda
+ter o \fIficheiro\fP aberto para escrita/leitura. Apenas as versões com
+\fIciclo\fP do ficheiro são mantidas.
+.sp 1
+se o ficheiro não existir e for fornecido \fB\-t\fP, ele será criado.
+.sp 1
+Para ficheiros que existem, e têm tamanhos superiores a zero, são executadas
+as seguintes acções:
+.sp 1
+.IP 1)
+É feito um ciclo aos ficheiros com número de versão. O \fIficheiro\fP versão
+\fB\&.2\fP é movido para \fIficheiro\fP versão \fB\&.3\fP, \fIficheiro\fP versão \fB\&.1\fP
+é movido para \fIficheiro\fP versão \fB\&.2\fP, e assim sucessivamente. Finalmente
+o \fIficheiro\fP versão \fB\&.0\fP é movido para \fIficheiro\fP versão \fB\&.1\fP e o
+\fIficheiro\fP versão é apagado. É feito esta reciclagem a ambos nomes
+comprimidos e nomes não comprimidos, independentemente de \fB\-l\fP. Os
+ficheiros de versão em falta são ignorados.
+.
+.IP 2)
+O novo \fIficheiro\fP\fB\&.1\fP é comprimido a menos que a flag \fB\-l\fP seja
+usada. É alterado de acordo com as flags \fB\-m\fP, \fB\-u\fP, e \fB\-g\fP.
+.
+.IP 3)
+O \fIficheiro\fP principal é movido para \fIficheiro\fP\fB.0\fP.
+.
+.IP 4)
+Se as flags \fB\-m\fP, \fB\-u\fP, \fB\-g\fP, \fB\-t\fP, ou \fB\-p\fP forem usadas, então é
+criado um \fIficheiro\fP vazio de acordo com as flags usadas. Com a flag \fB\-p\fP,
+o ficheiro é criado com o mesmo dono, grupo e permissões como antes.
+.
+.IP 5)
+O novo \fIficheiro\fP\fB\&.0\fP é alterado de acordo com as flags \fB\-m\fP, \fB\-u\fP, e
+\fB\-g\fP.
+.
+.SH OPÇÕES
+.TP 
+\fB\-m modo\fP
+faz chmod aos ficheiros de relatório para modo, implica \fB\-t\fP
+.TP 
+\fB\-u utilizador\fP
+faz chown aos ficheiros de relatório para utilizador, implica \fB\-t\fP
+.TP 
+\fB\-g grupo\fP
+faz chgrp aos ficheiros de relatório para grupo, implica \fB\-t\fP
+.TP 
+\fB\-c ciclo\fP
+Grava versões de ciclo do ficheiro de relatório (predefinição: 7). A
+contagem de \fIciclo\fP tem de ser pelo menos 2.
+.TP 
+\fB\-t\fP
+toca novo ficheiro de relatório para existência
+.TP 
+\fB\-l\fP
+não comprime nenhuns ficheiros de relatório (predefinição: comprime)
+.TP 
+\fB\-p\fP
+preserva o dono, grupo e permissões do ficheiro de relatório
+.TP 
+\fB\-j\fP
+comprime com bzip2 em vez de gzip
+.TP 
+\fB\-J\fP
+comprime com xz em vez de gzip
+.sp 1
+Para xz nenhuma opção de força é definida, e o xz decide pela predefinição
+com base na quantidade total de RAM física. Note que o xz pode usar uma
+grande quantidade de memória para os níveis de compressão mais altos.
+.TP 
+\fB\-1\ .\|.\ \-9\fP
+força de compressão ou utilização de memória (predefinição: 9, excepto para
+xz)
+.TP 
+\fB\-C\fP
+força a limpeza dos ficheiros de relatório que fizeram ciclo.
+.TP 
+\fB\-d\fP
+usa data standard para a rotação
+.TP 
+\fB\-D formato\-data\fP
+sobrepõe o formato da data, na sintaxe compreendida pelo comando \fBdate\fP(1)
+.TP 
+\fB\-r\fP
+usa \fIrolldir\fP em vez de \&.\& para rodar os ficheiros
+.TP 
+\fB\-n\fP
+não faz rotação a ficheiros vazios
+.TP 
+\fB\-q\fP
+fica silencioso
+.SH BUGS
+Se um processo ainda estiver a escrever no \fIficheiro\fP\fB\&.0\fP, e o savelog o
+mover para \fIficheiro\fP\fB\&.1\fP e o comprimir, podem\-se perder dados.
+.
+.SH "VEJA TAMBÉM"
+\fBlogrotate\fP(8)

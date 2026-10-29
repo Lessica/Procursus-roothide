@@ -1,0 +1,11 @@
+--- a/src/ConsoleStatCalc.h
++++ b/src/ConsoleStatCalc.h
+@@ -48,1 +48,1 @@
+-class SizeFormatter : public std::unary_function<int64_t, std::string> {
++class SizeFormatter {
+--- a/src/MetalinkEntry.cc
++++ b/src/MetalinkEntry.cc
+@@ -105,2 +105,1 @@
+-class Supported
+-    : public std::unary_function<std::shared_ptr<MetalinkResource>, bool> {
++class Supported {

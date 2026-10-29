@@ -1,0 +1,33 @@
+--- a/Cargo.toml
++++ b/Cargo.toml
+@@ -104,0 +105,3 @@
++
++[patch.crates-io]
++nix = { path = "../starship-nix" }
+--- a/Cargo.lock
++++ b/Cargo.lock
+@@ -647 +647 @@
+-version = "0.2.2"
++version = "0.2.16"
+@@ -649 +649 @@
+-checksum = "c9495705279e7140bf035dde1f6e750c162df8b625267cd52cc44e0b156732c8"
++checksum = "335ff9f135e4384c8150d6f27c6daed433577f86b4750418338c01a1a2528592"
+@@ -653 +653 @@
+- "wasi 0.10.0+wasi-snapshot-preview1",
++ "wasi 0.11.1+wasi-snapshot-preview1",
+@@ -936,2 +935,0 @@
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "fa9b4819da1bc61c0ea48b63b7bc8604064dd43013e7cc325df098d49cd7c18a"
+@@ -1313 +1311 @@
+- "getrandom 0.2.2",
++ "getrandom 0.2.16",
+@@ -1382 +1380 @@
+- "getrandom 0.2.2",
++ "getrandom 0.2.16",
+@@ -1947,0 +1946,6 @@
++
++[[package]]
++name = "wasi"
++version = "0.11.1+wasi-snapshot-preview1"
++source = "registry+https://github.com/rust-lang/crates.io-index"
++checksum = "ccf3ec651a847eb01de73ccad15eb7d99f80485de043efb2f370cd654f4ea44b"

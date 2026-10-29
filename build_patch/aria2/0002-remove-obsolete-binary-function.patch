@@ -1,0 +1,11 @@
+--- a/src/a2functional.h
++++ b/src/a2functional.h
+@@ -105,2 +105,2 @@
+ template <typename T>
+-class LeastRecentAccess : public std::binary_function<T, T, bool> {
++class LeastRecentAccess {
+--- a/src/CookieStorage.cc
++++ b/src/CookieStorage.cc
+@@ -355,1 +355,1 @@
+-class OrderByPathDepthDesc : public std::binary_function<Cookie, Cookie, bool> {
++class OrderByPathDepthDesc {

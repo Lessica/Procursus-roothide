@@ -1,0 +1,67 @@
+--- a/Cargo.toml
++++ b/Cargo.toml
+@@ -94,3 +94,4 @@
+ [patch.crates-io]
+ ring = { path = "../xh-ring" }
+ openssl-src = { path = "../xh-openssl-src" }
++socket2 = { path = "../xh-socket2" }
+--- a/Cargo.lock
++++ b/Cargo.lock
+@@ -898,13 +898,13 @@
+ 
+ [[package]]
+ name = "getrandom"
+-version = "0.2.3"
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "7fcd999463524c52659517fe2cea98493cfe485d10565e7b0fb07dbba7ad2753"
++version = "0.2.16"
++source = "registry+https://github.com/rust-lang/crates.io-index"
++checksum = "335ff9f135e4384c8150d6f27c6daed433577f86b4750418338c01a1a2528592"
+ dependencies = [
+  "cfg-if",
+  "libc",
+- "wasi 0.10.2+wasi-snapshot-preview1",
++ "wasi 0.11.1+wasi-snapshot-preview1",
+ ]
+ 
+ [[package]]
+@@ -1805,7 +1805,7 @@
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+ checksum = "34cf66eb183df1c5876e2dcf6b13d57340741e8dc255b48e40a26de954d06ae7"
+ dependencies = [
+- "getrandom 0.2.3",
++ "getrandom 0.2.16",
+ ]
+ 
+ [[package]]
+@@ -1849,7 +1849,7 @@
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+ checksum = "528532f3d801c87aec9def2add9ca802fe569e44a544afe633765267840abe64"
+ dependencies = [
+- "getrandom 0.2.3",
++ "getrandom 0.2.16",
+  "redox_syscall 0.2.8",
+ ]
+ 
+@@ -2191,8 +2191,6 @@
+ [[package]]
+ name = "socket2"
+ version = "0.4.0"
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "9e3dfc207c526015c632472a77be09cf1b6e46866581aecae5cc38fb4235dea2"
+ dependencies = [
+  "libc",
+  "winapi",
+@@ -2762,9 +2760,9 @@
+ 
+ [[package]]
+ name = "wasi"
+-version = "0.10.2+wasi-snapshot-preview1"
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "fd6fbd9a79829dd1ad0cc20627bf1ed606756a7f77edff7b66b7064f9cb327c6"
++version = "0.11.1+wasi-snapshot-preview1"
++source = "registry+https://github.com/rust-lang/crates.io-index"
++checksum = "ccf3ec651a847eb01de73ccad15eb7d99f80485de043efb2f370cd654f4ea44b"
+ 
+ [[package]]
+ name = "wasm-bindgen"

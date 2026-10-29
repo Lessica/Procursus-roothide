@@ -1,0 +1,38 @@
+.\" -*- nroff -*-
+.\"*******************************************************************
+.\"
+.\" This file was generated with po4a. Translate the source file.
+.\"
+.\"*******************************************************************
+.TH WHICH 1 "29 Jun 2016" Debian 
+.SH NAZWA
+which \- lokalizuje polecenie
+.SH SKŁADNIA
+which [\-a] nazwa_pliku ...
+.SH OPIS
+\fBwhich\fP returns the pathnames of the files (or links) which would be
+executed in the current environment, had its arguments been given as
+commands in a strictly POSIX\-conformant shell.  It does this by searching
+the PATH for executable files matching the names of the arguments.  It does
+not canonicalize path names.
+.SH OPCJE
+.TP 
+\fB\-a\fP
+wypisuje wszystkie pasujące ścieżki do każdego argumentu
+.SH "KOD ZAKOŃCZENIA"
+.TP 
+\fB0\fP
+jeśli odnaleziono wszystkie podane polecenia i są to pliki wykonywalne
+.TP 
+\fB1\fP
+jeśli jedno z podanych poleceń nie istnieje lub nie jest wykonywalne
+.TP 
+\fB2\fP
+jeśli podano nieprawidłową opcję
+.SH TŁUMACZENIE
+Niniejsze tłumaczenie jest częścią pakietu debianutils.
+Strony podręcznika zawarte w pakiecie przetłumaczyli:
+Przemek Borys (PTM) <pborys@dione.ids.pl>,
+Wojtek Kotwica (PTM) <wkotwica@post.pl>,
+Michał Kułach <michal.kulach@gmail.com> oraz
+Robert Luberda <robert@debian.org>.

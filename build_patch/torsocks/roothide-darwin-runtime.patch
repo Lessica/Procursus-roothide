@@ -1,0 +1,89 @@
+--- a/src/bin/torsocks.in
++++ b/src/bin/torsocks.in
+@@ -67,6 +67,10 @@
+ LIB_NAME="libtorsocks"
+ SHLIB_EXT="@SHLIB_EXT@"
+ SHLIB="${LIBDIR}/${LIB_NAME}.${SHLIB_EXT}"
++# dyld opens the injected library before RootHide path wrappers run.
++roothide_root=$(jbroot /) || exit 1
++roothide_root=${roothide_root%/}
++SHLIB=$(jbroot "$SHLIB") || exit 1
+ 
+ # https://github.com/mkropat/sh-realpath
+ #
+@@ -161,6 +165,14 @@
+ # Set @LDPRELOAD@ variable with torsocks library path.
+ set_ld_preload ()
+ {
++	# Keep relative paths relative to the application's working directory.
++	case "${TORSOCKS_CONF_FILE-@sysconfdir@/tor/torsocks.conf}" in
++		"$roothide_root"/*|"/private$roothide_root"/*) ;;
++		/*)
++			TORSOCKS_CONF_FILE=$(jbroot "${TORSOCKS_CONF_FILE-@sysconfdir@/tor/torsocks.conf}") || exit 1
++			export TORSOCKS_CONF_FILE
++			;;
++	esac
+ 	case "$@LDPRELOAD@" in
+ 		*"${SHLIB}"*) ;;
+ 		'')
+@@ -325,7 +337,22 @@
+ 			;;
+ 		off)
+ 			check_script_sourced "$1"
+-			export @LDPRELOAD@="$(printf '%s' "$@LDPRELOAD@" | sed "s#$SHLIB *##")"
++			# Remove only this library, preserving other dyld insertions.
++			remaining=$@LDPRELOAD@
++			preload=
++			separator=
++			while :; do
++				library=${remaining%%:*}
++				if [ "$library" != "$SHLIB" ]; then
++					preload="$preload$separator$library"
++					separator=:
++				fi
++				case "$remaining" in
++					*:*) remaining=${remaining#*:} ;;
++					*) break ;;
++				esac
++			done
++			export @LDPRELOAD@="$preload"
+ 			if [ -z "$@LDPRELOAD@" ]; then
+ 				unset @LDPRELOAD@
+ 				case "$OSTYPE" in
+--- a/src/lib/syscall.c
++++ b/src/lib/syscall.c
+@@ -439,6 +439,22 @@
+ }
+ #endif /* __linux__ */
+ 
++#if defined(__APPLE__) && defined(__MACH__)
++/* Darwin libc uses syscall(SYS_sysctl, ...) for queries such as uname. */
++static LIBC_SYSCALL_RET_TYPE handle_sysctl(va_list args)
++{
++	int *name = va_arg(args, int *);
++	unsigned int namelen = va_arg(args, unsigned int);
++	void *oldp = va_arg(args, void *);
++	size_t *oldlenp = va_arg(args, size_t *);
++	void *newp = va_arg(args, void *);
++	size_t newlen = va_arg(args, size_t);
++
++	return tsocks_libc_syscall(SYS_sysctl, name, namelen, oldp,
++			oldlenp, newp, newlen);
++}
++#endif
++
+ /*
+  * Torsocks call for syscall(2)
+  */
+@@ -447,6 +463,11 @@
+ 	LIBC_SYSCALL_RET_TYPE ret;
+ 
+ 	switch (number) {
++#if defined(__APPLE__) && defined(__MACH__)
++	case SYS_sysctl:
++		ret = handle_sysctl(args);
++		break;
++#endif
+ 	case TSOCKS_NR_SOCKET:
+ 		ret = handle_socket(args);
+ 		break;

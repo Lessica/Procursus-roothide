@@ -1,0 +1,5 @@
+--- a/openssl/Configurations/15-ios.conf
++++ b/openssl/Configurations/15-ios.conf
+@@ -27 +27 @@
+-        cflags           => add("-arch arm64 -mios-version-min=7.0.0 -fno-common"),
++        cflags           => add("-arch arm64 -fno-common"),

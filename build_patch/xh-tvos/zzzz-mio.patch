@@ -1,0 +1,20 @@
+--- a/Cargo.toml
++++ b/Cargo.toml
+@@ -95,3 +95,4 @@
+ ring = { path = "../xh-ring" }
+ openssl-src = { path = "../xh-openssl-src" }
+ socket2 = { path = "../xh-socket2" }
++mio = { path = "../xh-mio" }
+--- a/Cargo.lock
++++ b/Cargo.lock
+@@ -1363,9 +1363,7 @@
+ 
+ [[package]]
+ name = "mio"
+-version = "0.7.11"
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "cf80d3e903b34e0bd7282b218398aec54e082c840d9baf8339e0080a0c542956"
++version = "0.7.13"
+ dependencies = [
+  "libc",
+  "log",

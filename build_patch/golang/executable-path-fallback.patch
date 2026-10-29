@@ -1,0 +1,72 @@
+Darwin fallback uses the existing internal/syscall/unix libc bridge.
+Go1.22.4 and current upstream both assume an executable path in the startup vector;
+the same-process physical-device control confirms dyld still returns the path.
+
+--- a/src/os/executable_darwin.go
++++ b/src/os/executable_darwin.go
+@@ -4,7 +4,7 @@
+ 
+ package os
+ 
+-import "errors"
++import "internal/syscall/unix"
+ 
+ var executablePath string // set by ../runtime/os_darwin.go
+ 
+@@ -13,7 +13,11 @@
+ func executable() (string, error) {
+ 	ep := executablePath
+ 	if len(ep) == 0 {
+-		return ep, errors.New("cannot find executable path")
++		var err error
++		ep, err = unix.ExecutablePath()
++		if err != nil {
++			return "", err
++		}
+ 	}
+ 	if ep[0] != '/' {
+ 		if initCwdErr != nil {
+--- /dev/null
++++ b/src/internal/syscall/unix/executable_darwin.go
+@@ -0,0 +1,33 @@
++package unix
++
++import (
++	"internal/abi"
++	"syscall"
++	"unsafe"
++)
++
++//go:cgo_import_dynamic libc_NSGetExecutablePath _NSGetExecutablePath "/usr/lib/libSystem.B.dylib"
++func libc_NSGetExecutablePath_trampoline()
++
++// ExecutablePath queries dyld when the process startup vector has no path.
++func ExecutablePath() (string, error) {
++	var size uint32
++	syscall_syscall(abi.FuncPCABI0(libc_NSGetExecutablePath_trampoline), 0, uintptr(unsafe.Pointer(&size)), 0)
++	if size == 0 {
++		return "", syscall.EINVAL
++	}
++	buf := make([]byte, size)
++	r, _, _ := syscall_syscall(abi.FuncPCABI0(libc_NSGetExecutablePath_trampoline), uintptr(unsafe.Pointer(&buf[0])), uintptr(unsafe.Pointer(&size)), 0)
++	if r != 0 {
++		return "", syscall.EINVAL
++	}
++	for i, c := range buf {
++		if c == 0 {
++			if i == 0 {
++				return "", syscall.EINVAL
++			}
++			return string(buf[:i]), nil
++		}
++	}
++	return "", syscall.EINVAL
++}
+--- a/src/internal/syscall/unix/asm_darwin.s
++++ b/src/internal/syscall/unix/asm_darwin.s
+@@ -21,3 +21,5 @@
+ TEXT ·libc_getgrnam_r_trampoline(SB),NOSPLIT,$0-0; JMP libc_getgrnam_r(SB)
+ TEXT ·libc_getgrgid_r_trampoline(SB),NOSPLIT,$0-0; JMP libc_getgrgid_r(SB)
+ TEXT ·libc_sysconf_trampoline(SB),NOSPLIT,$0-0; JMP libc_sysconf(SB)
++
++TEXT ·libc_NSGetExecutablePath_trampoline(SB),NOSPLIT,$0-0; JMP libc_NSGetExecutablePath(SB)

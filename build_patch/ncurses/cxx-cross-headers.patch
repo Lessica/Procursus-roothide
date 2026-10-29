@@ -1,0 +1,32 @@
+--- a/configure
++++ b/configure
+@@ -3480,8 +3480,11 @@
+ echo $ECHO_N "checking if $CXX works... $ECHO_C" >&6
+ 
+ 		save_CPPFLAGS="$CPPFLAGS"
+-		eval cf_includedir=${includedir}
+-		CPPFLAGS="$CPPFLAGS -I${cf_includedir}"
++		# An installation prefix is not a host include path when cross-compiling.
++		if test "$cross_compiling" != yes; then
++			eval cf_includedir=${includedir}
++			CPPFLAGS="$CPPFLAGS -I${cf_includedir}"
++		fi
+ 
+ cat >"conftest.$ac_ext" <<_ACEOF
+ #line 3487 "configure"
+--- a/configure.in
++++ b/configure.in
+@@ -109,8 +109,11 @@
+ 		AC_MSG_CHECKING(if $CXX works)
+ 
+ 		save_CPPFLAGS="$CPPFLAGS"
+-		eval cf_includedir=${includedir}
+-		CPPFLAGS="$CPPFLAGS -I${cf_includedir}"
++		# An installation prefix is not a host include path when cross-compiling.
++		if test "$cross_compiling" != yes; then
++			eval cf_includedir=${includedir}
++			CPPFLAGS="$CPPFLAGS -I${cf_includedir}"
++		fi
+ 		AC_TRY_COMPILE([
+ #include <stdlib.h>
+ #include <stdio.h>

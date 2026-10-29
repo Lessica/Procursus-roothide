@@ -1,0 +1,10 @@
+--- a/src/posix.rs
++++ b/src/posix.rs
+@@ -26,6 +26,7 @@
+     target_os = "illumos",
+     target_os = "ios",
+     target_os = "macos",
++    target_os = "tvos",
+     target_os = "openbsd",
+     target_os = "netbsd"
+ ))]

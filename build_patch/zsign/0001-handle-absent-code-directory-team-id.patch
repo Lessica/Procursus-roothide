@@ -1,0 +1,11 @@
+--- a/signing.cpp
++++ b/signing.cpp
+@@ -422,7 +422,7 @@
+ 	}
+ 
+ 	ZLog::PrintV("\tidentifier: \t%s\n", pSlotBase + LE(cdHeader.identOffset));
+-	if (uVersion >= 0x20200)
++	if (uVersion >= 0x20200 && LE(cdHeader.teamOffset) != 0)
+ 	{
+ 		ZLog::PrintV("\tteamid: \t%s\n", pSlotBase + LE(cdHeader.teamOffset));
+ 	}

@@ -1,0 +1,11 @@
+--- a/config.h.in
++++ b/config.h.in
+@@ -2650,7 +2650,7 @@
+ /* In C++ and C2x, this is spelled [[__maybe_unused__]].
+    GCC's syntax is __attribute__ ((__unused__)).
+    clang supports both syntaxes.  */
+-#if _GL_HAS_C_ATTRIBUTE (maybe_unused)
++#if _GL_HAS_C_ATTRIBUTE (maybe_unused) && !defined __clang__
+ # define _GL_ATTRIBUTE_MAYBE_UNUSED [[__maybe_unused__]]
+ #else
+ # define _GL_ATTRIBUTE_MAYBE_UNUSED _GL_ATTRIBUTE_UNUSED

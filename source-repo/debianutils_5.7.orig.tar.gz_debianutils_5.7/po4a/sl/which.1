@@ -1,0 +1,38 @@
+.\" -*- nroff -*-
+.\"*******************************************************************
+.\"
+.\" This file was generated with po4a. Translate the source file.
+.\"
+.\"*******************************************************************
+.TH WHICH 1 "29 Jun 2016" Debian 
+.SH IME
+which \- najdi ukaz
+.SH POVZETEK
+which [\-a] imedatoteke ...
+.SH OPIS
+\fBwhich\fP returns the pathnames of the files (or links) which would be
+executed in the current environment, had its arguments been given as
+commands in a strictly POSIX\-conformant shell.  It does this by searching
+the PATH for executable files matching the names of the arguments.  It does
+not canonicalize path names.
+.SH MOŽNOSTI
+.TP 
+\fB\-a\fP
+za vsak argument izpiše vsa ujemajoča imena poti
+.SH "IZHODNO STANJE"
+.TP 
+\fB0\fP
+če so vsi navedeni ukazi najdeni in izvedljivi
+.TP 
+\fB1\fP
+če je vsaj eden izmed navedenih ukazov neobstoječ ali neizvedljiv
+.TP 
+\fB2\fP
+Če je navedena neveljavna možnost
+.SH TRANSLATION
+This document is a translation.
+
+Regarding errors such as tihs one, contact
+.nh
+<\fIsl@li.org\fR>,
+.hy

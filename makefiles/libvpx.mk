@@ -1,0 +1,102 @@
+ifneq ($(PROCURSUS),1)
+$(error Use the main Makefile)
+endif
+
+SUBPROJECTS    += libvpx
+LIBVPX_VERSION := 1.11.0
+DEB_LIBVPX_V   ?= $(LIBVPX_VERSION)-2
+
+ifneq (,$(findstring arm64,$(MEMO_TARGET)))
+ifneq (,$(findstring darwin,$(MEMO_TARGET)))
+LIBVPX_CONFIGURE_FLAGS := --target=arm64-darwin$(DARWIN_DEPLOYMENT_VERSION)-gcc
+else
+LIBVPX_CONFIGURE_FLAGS := --target=arm64-darwin-gcc
+endif
+else
+LIBVPX_CONFIGURE_FLAGS := --target=x86_64-darwin$(DARWIN_DEPLOYMENT_VERSION)-gcc
+endif
+
+libvpx-setup: setup
+	$(call GITHUB_ARCHIVE,webmproject,libvpx,$(LIBVPX_VERSION),v$(LIBVPX_VERSION))
+	$(call EXTRACT_TAR,libvpx-$(LIBVPX_VERSION).tar.gz,libvpx-$(LIBVPX_VERSION),libvpx)
+	$(call DO_PATCH,libvpx,libvpx,-p1)
+ifneq ($(filter appletvos%,$(MEMO_TARGET)),)
+	sed -i -e 's/miphoneos-version-min/mappletvos-version-min/g' \
+		-e 's/-ios_version_min/-tvos_version_min/g' $(BUILD_WORK)/libvpx/build/make/configure.sh
+endif
+	sed -i 's/\[ "$$(show_darwin_sdk_major_version iphoneos)" -gt 8 \]/false/' $(BUILD_WORK)/libvpx/build/make/configure.sh
+
+ifneq ($(wildcard $(BUILD_WORK)/libvpx/.build_complete),)
+libvpx:
+	@echo "Using previously built libvpx."
+else
+libvpx: libvpx-setup
+	cd $(BUILD_WORK)/libvpx && VPX_DARWIN_SDK="$(TARGET_SYSROOT)" \
+		IOS_VERSION_MIN="$(IPHONEOS_DEPLOYMENT_TARGET)" AS="$(CC)" ./configure \
+		--prefix=$(MEMO_PREFIX)$(MEMO_SUB_PREFIX) \
+		--disable-dependency-tracking \
+		--enable-shared \
+		--disable-unit-tests \
+		--enable-pic \
+		--enable-postproc \
+		--enable-multi-res-encoding \
+		--enable-temporal-denoising \
+		--enable-vp9-temporal-denoising \
+		--enable-vp9-postproc \
+		--enable-vp9-highbitdepth \
+		$(LIBVPX_CONFIGURE_FLAGS)
+	+$(MAKE) -C $(BUILD_WORK)/libvpx
+	+$(MAKE) -C $(BUILD_WORK)/libvpx install \
+		DESTDIR=$(BUILD_STAGE)/libvpx
+
+	for bin in $(BUILD_STAGE)/libvpx/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/*; do \
+		$(I_N_T) -change libvpx.7.dylib $(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/libvpx.7.dylib $$bin; \
+	done
+	$(I_N_T) -id $(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/libvpx.7.dylib $(BUILD_STAGE)/libvpx/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/libvpx.7.dylib
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Keep the installed LTO runtime and original assembly objects.
+	# Preserve per-object CPU options by changing only generated base C/C++ flags.
+	for flags in $(BUILD_WORK)/libvpx/libs-*.mk; do \
+		cp -p "$$flags" "$$flags.lto"; \
+		sed -E '/^(C|CXX)FLAGS[[:space:]]*=/ { s/(^|[[:space:]])-flto(=[^[:space:]]*)?//g; s/$$/ -fno-lto/; }' "$$flags.lto" > "$$flags"; \
+		touch -r "$$flags.lto" "$$flags"; \
+	done
+	find $(BUILD_WORK)/libvpx -type f \
+		\( -name '*.c.o' -o -name '*.cc.o' -o -name '*.cpp.o' \) -delete
+	rm -f $(BUILD_WORK)/libvpx/libvpx{,_g}.a
+	+$(MAKE) -C $(BUILD_WORK)/libvpx target=libs libvpx.a
+	cp -a $(BUILD_WORK)/libvpx/libvpx.a $(BUILD_STAGE)/libvpx/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+	for flags in $(BUILD_WORK)/libvpx/libs-*.mk.lto; do mv "$$flags" "$${flags%.lto}"; done
+endif
+	$(call AFTER_BUILD,copy)
+endif
+
+libvpx-package: libvpx-stage
+	# libvpx.mk Package Structure
+	rm -rf $(BUILD_DIST)/libvpx{7,-dev} $(BUILD_DIST)/vpx-tools
+	mkdir -p $(BUILD_DIST)/libvpx{7,-dev}/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib \
+		$(BUILD_DIST)/vpx-tools/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)
+
+	# libvpx.mk Prep libvpx7
+	cp -a $(BUILD_STAGE)/libvpx/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/libvpx.7.dylib $(BUILD_DIST)/libvpx7/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib
+
+	# libvpx.mk Prep libvpx-dev
+	cp -a $(BUILD_STAGE)/libvpx/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/!(libvpx.7.dylib) $(BUILD_DIST)/libvpx-dev/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib
+	cp -a $(BUILD_STAGE)/libvpx/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include $(BUILD_DIST)/libvpx-dev/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)
+
+	# libvpx.mk Prep vpx-tools
+	cp -a $(BUILD_STAGE)/libvpx/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin $(BUILD_DIST)/vpx-tools/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)
+
+	# libvpx.mk Sign
+	$(call SIGN,libvpx7,general.xml)
+	$(call SIGN,vpx-tools,general.xml)
+
+	# libvpx.mk Make .debs
+	$(call PACK,libvpx7,DEB_LIBVPX_V)
+	$(call PACK,libvpx-dev,DEB_LIBVPX_V)
+	$(call PACK,vpx-tools,DEB_LIBVPX_V)
+
+	# libvpx.mk Build cleanup
+	rm -rf $(BUILD_DIST)/libvpx{7,-dev} $(BUILD_DIST)/vpx-tools
+
+.PHONY: libvpx libvpx-package

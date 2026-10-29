@@ -1,0 +1,12 @@
+--- a/gping/src/main.rs
++++ b/gping/src/main.rs
+@@ -346,8 +346,7 @@
+                             iter::repeat(Constraint::Length(1))
+                                 .take(app.data.len())
+                                 .chain(iter::once(Constraint::Percentage(10)))
+-                                .collect::<Vec<_>>()
+-                                .as_ref(),
++                                .collect::<Vec<Constraint>>(),
+                         )
+                         .split(f.size());
+ 

@@ -1,0 +1,19 @@
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -2353,10 +2353,12 @@
+     set_property(TARGET fastfetch APPEND PROPERTY LINK_DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/Info.plist")
+     # ld derives the ad-hoc code-signing identifier from the output file name and
+     # ignores the embedded CFBundleIdentifier, so set it explicitly.
+-    add_custom_command(TARGET fastfetch POST_BUILD
+-        COMMAND codesign --force --sign - --identifier "${FASTFETCH_BUNDLE_ID}" "$<TARGET_FILE:fastfetch>"
+-        VERBATIM
+-    )
++    if(CMAKE_HOST_APPLE)
++        add_custom_command(TARGET fastfetch POST_BUILD
++            COMMAND codesign --force --sign - --identifier "${FASTFETCH_BUNDLE_ID}" "$<TARGET_FILE:fastfetch>"
++            VERBATIM
++        )
++    endif()
+ endif()
+ 
+ if(BINARY_LINK_TYPE STREQUAL "static")

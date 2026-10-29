@@ -1,0 +1,14 @@
+--- a/ldid.cpp
++++ b/ldid.cpp
+@@ -1479,10 +1479,8 @@
+ 
+         if (symtab != NULL) {
+             auto end(mach_header.Swap(symtab->stroff) + mach_header.Swap(symtab->strsize));
+-            if (symtab->stroff != 0 || symtab->strsize != 0) {
++            if (symtab->stroff != 0 || symtab->strsize != 0)
+                 _assert(end <= size);
+-                size = end;
+-            }
+         }
+ 
+         size = (size + 15) & ~(15);

@@ -1,0 +1,11 @@
+--- a/src/lib.rs
++++ b/src/lib.rs
+@@ -11,7 +11,7 @@
+ #![cfg_attr(test, deny(warnings))]
+ #![recursion_limit = "500"]
+ #![deny(unused)]
+-#![cfg_attr(target_os = "tvos", allow(dead_code, unused_macros))]
++#![cfg_attr(target_os = "tvos", allow(dead_code, unused_macros, unused_macro_rules))]
+ #![deny(unstable_features)]
+ #![deny(missing_copy_implementations)]
+ #![deny(missing_debug_implementations)]

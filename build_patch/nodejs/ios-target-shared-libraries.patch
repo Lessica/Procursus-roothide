@@ -1,0 +1,39 @@
+--- a/configure.py
++++ b/configure.py
+@@ -1358,6 +1358,13 @@
+       stripped_flags = [flag.strip() for flag in pkg_cflags.split('-I')]
+       output['include_dirs'] += [flag for flag in stripped_flags if flag]
+ 
++    # iOS target libraries must not leak into native build-time tools.
++    library_output = output
++    if options.dest_os == 'ios' and options.cross_compiling:
++      library_output = {'libraries': []}
++      output.setdefault('target_conditions', []).append(
++          ['_toolset=="target"', library_output])
++
+     # libpath needs to be provided ahead libraries
+     if options.__dict__[shared_lib + '_libpath']:
+       if flavor == 'win':
+@@ -1366,18 +1373,18 @@
+         output['msvs_settings']['VCLinkerTool']['AdditionalOptions'] += [
+           '/LIBPATH:%s' % options.__dict__[shared_lib + '_libpath']]
+       else:
+-        output['libraries'] += [
++        library_output['libraries'] += [
+             '-L%s' % options.__dict__[shared_lib + '_libpath']]
+     elif pkg_libpath:
+-      output['libraries'] += [pkg_libpath]
++      library_output['libraries'] += [pkg_libpath]
+ 
+     default_libs = getattr(options, shared_lib + '_libname')
+     default_libs = ['-l{0}'.format(l) for l in default_libs.split(',')]
+ 
+     if default_libs:
+-      output['libraries'] += default_libs
++      library_output['libraries'] += default_libs
+     elif pkg_libs:
+-      output['libraries'] += pkg_libs.split()
++      library_output['libraries'] += pkg_libs.split()
+ 
+ 
+ def configure_v8(o):

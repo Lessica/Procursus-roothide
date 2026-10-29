@@ -1,0 +1,5 @@
+--- a/vendor/parking_lot_core/src/spinwait.rs
++++ b/vendor/parking_lot_core/src/spinwait.rs
+@@ -9,1 +9,1 @@
+-use std::sync::atomic::spin_loop_hint;
++use std::hint::spin_loop as spin_loop_hint;

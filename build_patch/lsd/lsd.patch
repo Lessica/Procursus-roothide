@@ -1,0 +1,23 @@
+--- a/Cargo.toml
++++ b/Cargo.toml
+@@ -40,7 +40,7 @@
+ url = "2.1.*"
+ 
+ [target.'cfg(unix)'.dependencies]
+-users = "0.11.*"
++users = { git = "https://github.com/ogham/rust-users", rev = "5208452ff8fe98e21c4ae65a5c44d654f5efc0c8" }
+ xattr = "0.2.*"
+ 
+ [target.'cfg(windows)'.dependencies]
+--- a/Cargo.lock
++++ b/Cargo.lock
+@@ -951,8 +951,7 @@
+ [[package]]
+ name = "users"
+ version = "0.11.0"
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "24cc0f6d6f267b73e5a2cadf007ba8f9bc39c6a6f9666f8cf25ea809a153b032"
++source = "git+https://github.com/ogham/rust-users?rev=5208452ff8fe98e21c4ae65a5c44d654f5efc0c8#5208452ff8fe98e21c4ae65a5c44d654f5efc0c8"
+ dependencies = [
+  "libc",
+  "log",

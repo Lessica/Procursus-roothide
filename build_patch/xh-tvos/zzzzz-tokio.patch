@@ -1,0 +1,18 @@
+--- a/Cargo.toml
++++ b/Cargo.toml
+@@ -96,3 +96,4 @@
+ openssl-src = { path = "../xh-openssl-src" }
+ socket2 = { path = "../xh-socket2" }
+ mio = { path = "../xh-mio" }
++tokio = { path = "../xh-tokio" }
+--- a/Cargo.lock
++++ b/Cargo.lock
+@@ -2482,8 +2482,6 @@
+ [[package]]
+ name = "tokio"
+ version = "1.6.1"
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "0a38d31d7831c6ed7aad00aa4c12d9375fd225a6dd77da1d25b707346319a975"
+ dependencies = [
+  "autocfg",
+  "bytes",

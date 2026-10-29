@@ -1,0 +1,20 @@
+--- a/src/net/unix/ucred.rs
++++ b/src/net/unix/ucred.rs
+@@ -40,7 +40,7 @@
+ #[cfg(any(target_os = "dragonfly", target_os = "freebsd"))]
+ pub(crate) use self::impl_bsd::get_peer_cred;
+ 
+-#[cfg(any(target_os = "macos", target_os = "ios"))]
++#[cfg(any(target_os = "macos", any(target_os = "ios", target_os = "tvos")))]
+ pub(crate) use self::impl_macos::get_peer_cred;
+ 
+ #[cfg(any(target_os = "solaris", target_os = "illumos"))]
+@@ -171,7 +171,7 @@
+     }
+ }
+ 
+-#[cfg(any(target_os = "macos", target_os = "ios"))]
++#[cfg(any(target_os = "macos", any(target_os = "ios", target_os = "tvos")))]
+ pub(crate) mod impl_macos {
+     use crate::net::unix::UnixStream;
+ 

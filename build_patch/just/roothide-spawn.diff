@@ -1,0 +1,62 @@
+--- a/src/command_ext.rs
++++ b/src/command_ext.rs
+@@ -4,6 +4,7 @@
+   fn export(&mut self, settings: &Settings, dotenv: &BTreeMap<String, String>, scope: &Scope);
+ 
+   fn export_scope(&mut self, settings: &Settings, scope: &Scope);
++  fn prepare_roothide_spawn(&mut self);
+ }
+ 
+ impl CommandExt for Command {
+@@ -28,4 +29,13 @@
+       }
+     }
+   }
++
++  fn prepare_roothide_spawn(&mut self) {
++    #[cfg(unix)]
++    if option_env!("JUST_ROOT_HIDE").is_some() {
++      use std::os::unix::process::CommandExt;
++      // Force fork/chdir/exec so RootHide can translate virtual cwd paths.
++      unsafe { self.pre_exec(|| Ok(())); }
++    }
++  }
+ }
+--- a/src/settings.rs
++++ b/src/settings.rs
+@@ -24,6 +24,7 @@
+     let (command, args) = self.shell(config);
+ 
+     let mut cmd = Command::new(command);
++    cmd.prepare_roothide_spawn();
+ 
+     cmd.args(args);
+ 
+--- a/src/platform.rs
++++ b/src/platform.rs
+@@ -7,10 +7,22 @@
+   fn make_shebang_command(
+     path: &Path,
+     working_directory: Option<&Path>,
+-    _shebang: Shebang,
++    shebang: Shebang,
+   ) -> Result<Command, OutputError> {
+-    // shebang scripts can be executed directly on unix
+-    let mut cmd = Command::new(path);
++    // RootHide must launch the interpreter through its path hooks instead of
++    // asking the kernel to resolve a virtual shebang interpreter.
++    let mut cmd = if option_env!("JUST_ROOT_HIDE").is_some() {
++      let mut interpreter = Command::new(shebang.interpreter);
++      if let Some(argument) = shebang.argument {
++        interpreter.arg(argument);
++      }
++      interpreter.arg(path);
++      interpreter
++    } else {
++      // shebang scripts can be executed directly on other Unix targets
++      Command::new(path)
++    };
++    cmd.prepare_roothide_spawn();
+ 
+     if let Some(working_directory) = working_directory {
+       cmd.current_dir(working_directory);

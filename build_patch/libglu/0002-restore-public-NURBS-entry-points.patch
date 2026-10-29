@@ -1,0 +1,22 @@
+--- a/include/GL/glu.h
++++ b/include/GL/glu.h
+@@ -282,6 +282,9 @@
+ typedef GLUtesselator GLUtriangulatorObj;
+ 
+ #define GLU_TESS_MAX_COORD 1.0e150
++
++GLAPI void GLAPIENTRY gluDeleteNurbsTessellatorEXT(GLUnurbsObj *r);
++GLAPI void GLAPIENTRY glu_LOD_eval_list(GLUnurbs *nurb, int level);
+ 
+ /* Internal convenience typedefs */
+ typedef void (GLAPIENTRYP _GLUfuncptr)(void);
+--- a/include/GL/glu_mangle.h
++++ b/include/GL/glu_mangle.h
+@@ -82,5 +82,7 @@
+ #define gluUnProject4 mgluUnProject4
+ #define gluNurbsCallbackData mgluNurbsCallbackData
+ #define gluNurbsCallbackDataEXT mgluNurbsCallbackDataEXT
++#define gluDeleteNurbsTessellatorEXT mgluDeleteNurbsTessellatorEXT
++#define glu_LOD_eval_list mglu_LOD_eval_list
+ 
+ #endif

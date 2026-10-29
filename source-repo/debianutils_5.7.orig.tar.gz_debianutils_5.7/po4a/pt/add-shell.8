@@ -1,0 +1,22 @@
+.\"*******************************************************************
+.\"
+.\" This file was generated with po4a. Translate the source file.
+.\"
+.\"*******************************************************************
+.TH ADD\-SHELL 8 "23 Sep 2021"  
+.SH NOME
+add\-shell \- adiciona shells à lista de shells de login válidas
+.SH SINOPSE
+\fBadd\-shell\fP \fInome_shell\fP [\fInome_shell\fP...]
+.SH DESCRIÇÃO
+\fBadd\-shell\fP copia \fI/etc/shells\fP para \fI/etc/shells.tmp\fP, adiciona as
+shells fornecidas a este ficheiro se não estiverem já presentes, e copia
+este ficheiro temporário de volta para \fI/etc/shells\fP.
+.sp 1
+As shells devem ser fornecidas com os seus nomes de caminho completos.
+.SH ENVIRONMENT
+.TP 
+\fIDPKG_ROOT\fP
+specifies the base path under which \fI/etc/shells\fP resides.
+.SH "VEJA TAMBÉM"
+\fBshells\fP(5)

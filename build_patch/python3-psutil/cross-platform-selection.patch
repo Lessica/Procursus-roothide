@@ -1,0 +1,13 @@
+--- a/setup.py
++++ b/setup.py
+@@ -47,6 +47,10 @@
+ from _compat import PY3  # NOQA
+ from _compat import which  # NOQA
+ 
++
++if os.environ.get('_PYTHON_HOST_PLATFORM') == 'darwin':
++    LINUX = False
++    MACOS = True
+ 
+ PYPY = '__pypy__' in sys.builtin_module_names
+ macros = []

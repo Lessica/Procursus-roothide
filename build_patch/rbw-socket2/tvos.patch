@@ -1,0 +1,22 @@
+--- a/src/sockaddr.rs
++++ b/src/sockaddr.rs
+@@ -224 +224 @@
+-                target_os = "ios",
++                any(target_os = "ios", target_os = "tvos"),
+@@ -273 +273 @@
+-                target_os = "ios",
++                any(target_os = "ios", target_os = "tvos"),
+--- a/src/sys/unix.rs
++++ b/src/sys/unix.rs
+@@ -50 +50 @@
+-                 target_os = "ios", target_os = "macos",
++                 any(target_os = "ios", target_os = "tvos"), target_os = "macos",
+@@ -63 +63 @@
+-    if #[cfg(any(target_os = "macos", target_os = "ios"))] {
++    if #[cfg(any(target_os = "macos", any(target_os = "ios", target_os = "tvos")))] {
+@@ -203 +203 @@
+-            #[cfg(any(target_os = "macos", target_os = "ios"))]
++            #[cfg(any(target_os = "macos", any(target_os = "ios", target_os = "tvos")))]
+@@ -218 +218 @@
+-            #[cfg(any(target_os = "macos", target_os = "ios"))]
++            #[cfg(any(target_os = "macos", any(target_os = "ios", target_os = "tvos")))]

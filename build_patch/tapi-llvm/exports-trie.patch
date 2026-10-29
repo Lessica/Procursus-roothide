@@ -1,0 +1,116 @@
+From: LLVM commit 42ad9bf95fd5cb30e2ab3e017b6718ac6efea1be
+Subject: Support exports trie in LC_DYLD_INFO and LC_DYLD_EXPORTS_TRIE
+Source: https://reviews.llvm.org/D134571
+
+Object reader changes only; ObjectYAML tooling changes are not needed by TAPI.
+
+diff --git a/llvm/include/llvm/Object/MachO.h b/llvm/include/llvm/Object/MachO.h
+index caeee6a13b341a..9da7f33f29d8b9 100644
+--- a/llvm/include/llvm/Object/MachO.h
++++ b/llvm/include/llvm/Object/MachO.h
+@@ -711,6 +711,8 @@ class MachOObjectFile : public ObjectFile {
+   ArrayRef<uint8_t> getDyldInfoBindOpcodes() const;
+   ArrayRef<uint8_t> getDyldInfoWeakBindOpcodes() const;
+   ArrayRef<uint8_t> getDyldInfoLazyBindOpcodes() const;
++  ArrayRef<uint8_t> getDyldInfoExportsTrie() const;
++
+   /// If the optional is None, no header was found, but the object was
+   /// well-formed.
+   Expected<Optional<MachO::dyld_chained_fixups_header>>
+@@ -725,8 +727,8 @@ class MachOObjectFile : public ObjectFile {
+   // a ChainedFixupsSegment for each segment that has fixups.
+   Expected<std::pair<size_t, std::vector<ChainedFixupsSegment>>>
+   getChainedFixupsSegments() const;
++  ArrayRef<uint8_t> getDyldExportsTrie() const;
+ 
+-  ArrayRef<uint8_t> getDyldInfoExportsTrie() const;
+   SmallVector<uint64_t> getFunctionStarts() const;
+   ArrayRef<uint8_t> getUuid() const;
+ 
+@@ -856,6 +858,7 @@ class MachOObjectFile : public ObjectFile {
+   const char *DyldInfoLoadCmd = nullptr;
+   const char *FuncStartsLoadCmd = nullptr;
+   const char *DyldChainedFixupsLoadCmd = nullptr;
++  const char *DyldExportsTrieLoadCmd = nullptr;
+   const char *UuidLoadCmd = nullptr;
+   bool HasPageZeroSegment = false;
+ };
+diff --git a/llvm/lib/Object/MachOObjectFile.cpp b/llvm/lib/Object/MachOObjectFile.cpp
+index 20ac343e53449e..f3ca2e9bc50278 100644
+--- a/llvm/lib/Object/MachOObjectFile.cpp
++++ b/llvm/lib/Object/MachOObjectFile.cpp
+@@ -1386,6 +1386,11 @@ MachOObjectFile::MachOObjectFile(MemoryBufferRef Object, bool IsLittleEndian,
+                *this, Load, I, &DyldChainedFixupsLoadCmd,
+                "LC_DYLD_CHAINED_FIXUPS", Elements, "chained fixups")))
+         return;
++    } else if (Load.C.cmd == MachO::LC_DYLD_EXPORTS_TRIE) {
++      if ((Err = checkLinkeditDataCommand(
++               *this, Load, I, &DyldExportsTrieLoadCmd, "LC_DYLD_EXPORTS_TRIE",
++               Elements, "exports trie")))
++        return;
+     } else if (Load.C.cmd == MachO::LC_UUID) {
+       if (Load.C.cmdsize != sizeof(MachO::uuid_command)) {
+         Err = malformedError("LC_UUID command " + Twine(I) + " has incorrect "
+@@ -3225,7 +3230,13 @@ MachOObjectFile::exports(Error &E, ArrayRef<uint8_t> Trie,
+ }
+ 
+ iterator_range<export_iterator> MachOObjectFile::exports(Error &Err) const {
+-  return exports(Err, getDyldInfoExportsTrie(), this);
++  ArrayRef<uint8_t> Trie;
++  if (DyldInfoLoadCmd)
++    Trie = getDyldInfoExportsTrie();
++  else if (DyldExportsTrieLoadCmd)
++    Trie = getDyldExportsTrie();
++
++  return exports(Err, Trie, this);
+ }
+ 
+ MachOAbstractFixupEntry::MachOAbstractFixupEntry(Error *E,
+@@ -4932,6 +4943,20 @@ ArrayRef<uint8_t> MachOObjectFile::getDyldInfoLazyBindOpcodes() const {
+   return makeArrayRef(Ptr, DyldInfo.lazy_bind_size);
+ }
+ 
++ArrayRef<uint8_t> MachOObjectFile::getDyldInfoExportsTrie() const {
++  if (!DyldInfoLoadCmd)
++    return None;
++
++  auto DyldInfoOrErr =
++      getStructOrErr<MachO::dyld_info_command>(*this, DyldInfoLoadCmd);
++  if (!DyldInfoOrErr)
++    return None;
++  MachO::dyld_info_command DyldInfo = DyldInfoOrErr.get();
++  const uint8_t *Ptr =
++      reinterpret_cast<const uint8_t *>(getPtr(*this, DyldInfo.export_off));
++  return makeArrayRef(Ptr, DyldInfo.export_size);
++}
++
+ Expected<Optional<MachO::linkedit_data_command>>
+ MachOObjectFile::getChainedFixupsLoadCommand() const {
+   // Load the dyld chained fixups load command.
+@@ -5209,18 +5234,18 @@ MachOObjectFile::getDyldChainedFixupTargets() const {
+   return std::move(Targets);
+ }
+ 
+-ArrayRef<uint8_t> MachOObjectFile::getDyldInfoExportsTrie() const {
+-  if (!DyldInfoLoadCmd)
++ArrayRef<uint8_t> MachOObjectFile::getDyldExportsTrie() const {
++  if (!DyldExportsTrieLoadCmd)
+     return None;
+ 
+-  auto DyldInfoOrErr =
+-    getStructOrErr<MachO::dyld_info_command>(*this, DyldInfoLoadCmd);
+-  if (!DyldInfoOrErr)
++  auto DyldExportsTrieOrError = getStructOrErr<MachO::linkedit_data_command>(
++      *this, DyldExportsTrieLoadCmd);
++  if (!DyldExportsTrieOrError)
+     return None;
+-  MachO::dyld_info_command DyldInfo = DyldInfoOrErr.get();
++  MachO::linkedit_data_command DyldExportsTrie = DyldExportsTrieOrError.get();
+   const uint8_t *Ptr =
+-      reinterpret_cast<const uint8_t *>(getPtr(*this, DyldInfo.export_off));
+-  return makeArrayRef(Ptr, DyldInfo.export_size);
++      reinterpret_cast<const uint8_t *>(getPtr(*this, DyldExportsTrie.dataoff));
++  return makeArrayRef(Ptr, DyldExportsTrie.datasize);
+ }
+ 
+ SmallVector<uint64_t> MachOObjectFile::getFunctionStarts() const {

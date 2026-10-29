@@ -1,0 +1,13 @@
+Package: grep
+Version: @DEB_GREP_V@
+Architecture: @DEB_ARCH@
+Essential: yes
+Maintainer: @DEB_MAINTAINER@
+Replaces: text-cmds (<< 1:0)
+Conflicts: text-cmds (<< 1:0)
+Depends: libpcre2-8-0
+Section: Utilities
+Priority: important
+Multi-Arch: foreign
+Homepage: http://www.gnu.org/software/grep/
+Description: searches files for regular expressions

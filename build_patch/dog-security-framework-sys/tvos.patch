@@ -1,0 +1,59 @@
+--- a/src/cipher_suite.rs
++++ b/src/cipher_suite.rs
+@@ -1,7 +1,7 @@
+-#[cfg(not(target_os = "ios"))]
++#[cfg(not(any(target_os = "ios", target_os = "tvos")))]
+ pub type SSLCipherSuite = u32;
+ 
+-#[cfg(target_os = "ios")]
++#[cfg(any(target_os = "ios", target_os = "tvos"))]
+ pub type SSLCipherSuite = u16;
+ 
+ pub const SSL_NULL_WITH_NULL_NULL: SSLCipherSuite = 0x0000;
+--- a/src/key.rs
++++ b/src/key.rs
+@@ -15,8 +15,8 @@
+         error: *mut CFErrorRef,
+     ) -> SecKeyRef;
+ 
+-    #[cfg(any(feature = "OSX_10_12", target_os = "ios"))]
++    #[cfg(any(feature = "OSX_10_12", any(target_os = "ios", target_os = "tvos")))]
+     pub fn SecKeyCopyExternalRepresentation(key: SecKeyRef, error: *mut CFErrorRef) -> CFDataRef;
+-    #[cfg(any(feature = "OSX_10_12", target_os = "ios"))]
++    #[cfg(any(feature = "OSX_10_12", any(target_os = "ios", target_os = "tvos")))]
+     pub fn SecKeyCopyAttributes(key: SecKeyRef) -> CFDictionaryRef;
+ }
+--- a/src/lib.rs
++++ b/src/lib.rs
+@@ -4,7 +4,7 @@
+ extern crate libc;
+ 
+ #[cfg_attr(
+-    any(target_os = "macos", target_os = "ios"),
++    any(target_os = "macos", any(target_os = "ios", target_os = "tvos")),
+     link(name = "Security", kind = "framework")
+ )]
+ extern "C" {}
+--- a/src/secure_transport.rs
++++ b/src/secure_transport.rs
+@@ -28,15 +28,15 @@
+ pub const kSSLSessionOptionBreakOnServerAuth: SSLSessionOption = 0;
+ pub const kSSLSessionOptionBreakOnCertRequested: SSLSessionOption = 1;
+ pub const kSSLSessionOptionBreakOnClientAuth: SSLSessionOption = 2;
+-#[cfg(any(feature = "OSX_10_9", target_os = "ios"))]
++#[cfg(any(feature = "OSX_10_9", any(target_os = "ios", target_os = "tvos")))]
+ pub const kSSLSessionOptionFalseStart: SSLSessionOption = 3;
+-#[cfg(any(feature = "OSX_10_9", target_os = "ios"))]
++#[cfg(any(feature = "OSX_10_9", any(target_os = "ios", target_os = "tvos")))]
+ pub const kSSLSessionOptionSendOneByteRecord: SSLSessionOption = 4;
+-#[cfg(all(feature = "OSX_10_11", not(target_os = "ios")))]
++#[cfg(all(feature = "OSX_10_11", not(any(target_os = "ios", target_os = "tvos"))))]
+ pub const kSSLSessionOptionAllowServerIdentityChange: SSLSessionOption = 5;
+-#[cfg(all(feature = "OSX_10_10", not(target_os = "ios")))]
++#[cfg(all(feature = "OSX_10_10", not(any(target_os = "ios", target_os = "tvos"))))]
+ pub const kSSLSessionOptionFallback: SSLSessionOption = 6;
+-#[cfg(all(feature = "OSX_10_11", not(target_os = "ios")))]
++#[cfg(all(feature = "OSX_10_11", not(any(target_os = "ios", target_os = "tvos"))))]
+ pub const kSSLSessionOptionBreakOnClientHello: SSLSessionOption = 7;
+ 
+ pub type SSLSessionState = c_int;

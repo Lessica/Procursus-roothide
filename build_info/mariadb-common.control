@@ -1,0 +1,9 @@
+Package: mariadb-common
+Version: @DEB_MARIADB_V@
+Architecture: all
+Maintainer: @DEB_MAINTAINER@
+Section: Data_Storage
+Priority: optional
+Homepage: https://mariadb.org/
+Description: MariaDB common configuration and documentation
+ Common configuration and upstream documentation for the MariaDB database.

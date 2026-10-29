@@ -1,0 +1,16 @@
+--- a/mkextunpack_main.c
++++ b/mkextunpack_main.c
+@@ -792,9 +792,9 @@
+-        CFErrorRef  error;
++        CFErrorRef  plistError;
+         kextPlist = CFPropertyListCreateWithData(kCFAllocatorDefault,
+                                                  kextPlistDataObject,
+                                                  kCFPropertyListImmutable,
+                                                  NULL,
+-                                                 &error);
++                                                 &plistError);
+         if (!kextPlist) {
+-            errorString = CFErrorCopyDescription(error);
+-            CFRelease(error);
++            errorString = CFErrorCopyDescription(plistError);
++            CFRelease(plistError);

@@ -1,0 +1,9 @@
+Package: libxslt-doc
+Version: @DEB_LIBXSLT_V@
+Architecture: all
+Maintainer: @DEB_MAINTAINER@
+Section: Documentation
+Priority: optional
+Homepage: https://gitlab.gnome.org/GNOME/libxslt
+Description: XSLT and EXSLT reference documentation
+ Complete upstream HTML/API reference, tutorials and examples.

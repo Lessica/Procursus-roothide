@@ -1,0 +1,28 @@
+--- a/meson.build
++++ b/meson.build
+@@ -25,11 +25,17 @@
+   input : 'compile_stubs',
+   command : [find_program('src/custom/create_header.sh'), '@INPUT@', '@OUTPUT@', 'compile_stubs'])
+ 
+-llvm = dependency('llvm', modules : ['lto'])
++llvm_include_dir = get_option('llvm-include-dir')
++if llvm_include_dir == ''
++  llvm = dependency('llvm', modules : ['lto'])
++  llvm_compile_dep = llvm.partial_dependency(includes : true, compile_args : true)
++else
++  llvm_compile_dep = declare_dependency(include_directories : include_directories(llvm_include_dir))
++endif
+ blocks = dependency('blocks')
+ 
+ libs = ['-lxar', '-ltapi']
+-deps = [llvm.partial_dependency(includes : true, compile_args : true), blocks]
++deps = [llvm_compile_dep, blocks]
+ 
+ if host_machine.system() != 'darwin'
+   openssl = dependency('openssl')
+--- a/meson_options.txt
++++ b/meson_options.txt
+@@ -1,2 +1,3 @@
+ option('program-prefix', type : 'string', description : 'Prefix for programs (ex: aarch64-apple-darwin-)')
++option('llvm-include-dir', type : 'string', value : '', description : 'LLVM header include directory for cross builds')
+ option('supported-archs', type : 'array', value : [ 'i386', 'x86_64', 'x86_64h', 'armv6', 'armv7', 'armv7s', 'armv7m', 'armv7k', 'arm64', 'arm64e', 'arm64_32'])

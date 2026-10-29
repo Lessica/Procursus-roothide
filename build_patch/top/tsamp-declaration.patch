@@ -1,0 +1,11 @@
+--- a/main.c
++++ b/main.c
+@@ -43,7 +43,7 @@
+ #include "logging.h"
+ #include "sig.h"
+ 
+-const libtop_tsamp_t *tsamp;
++extern const libtop_tsamp_t *tsamp;
+ 
+ static volatile sig_atomic_t resized = 1;
+ 

@@ -1,0 +1,9 @@
+--- a/src/util/wake.rs
++++ b/src/util/wake.rs
+@@ -1,5 +1 @@
+-    let arc_clone: ManuallyDrop<_> = arc.clone();
+-
+-    // Drop explicitly to avoid clippy warnings
+-    drop(arc);
+-    drop(arc_clone);
++    let _arc_clone: ManuallyDrop<_> = arc.clone();

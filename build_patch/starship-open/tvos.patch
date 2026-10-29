@@ -1,0 +1,11 @@
+--- a/src/lib.rs
++++ b/src/lib.rs
+@@ -58 +58 @@
+-#[cfg(target_os = "ios")]
++#[cfg(any(target_os = "ios", target_os = "tvos"))]
+@@ -80 +80 @@
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+@@ -207 +207 @@
+-#[cfg(target_os = "ios")]
++#[cfg(any(target_os = "ios", target_os = "tvos"))]

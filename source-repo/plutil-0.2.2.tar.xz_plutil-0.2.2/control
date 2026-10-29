@@ -1,0 +1,12 @@
+Package: com.bingner.plutil
+Name: plutil
+Depends: firmware (>=2.0)
+Version: 0.2.1
+Architecture: iphoneos-arm
+Description: plutil as from erica sadun
+Maintainer: Samuel Bingner
+Multi-Arch: foreign
+Conflicts: com.ericasadun.utilities
+Author: Samuel Bingner
+Section: System
+Tag: role::hacker

@@ -1,0 +1,50 @@
+ifneq ($(PROCURSUS),1)
+$(error Use the main Makefile)
+endif
+
+SUBPROJECTS            += python3-psutil
+PYTHON3-PSUTIL_VERSION := 5.8.0
+DEB_PYTHON3-PSUTIL_V   ?= $(PYTHON3-PSUTIL_VERSION)-1
+PYTHON_HOST ?= python$(PYTHON3_MAJOR_V)
+
+python3-psutil-setup: setup
+	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://github.com/giampaolo/psutil/archive/refs/tags/release-$(PYTHON3-PSUTIL_VERSION).tar.gz)
+	$(call EXTRACT_TAR,release-$(PYTHON3-PSUTIL_VERSION).tar.gz,psutil-release-$(PYTHON3-PSUTIL_VERSION),python3-psutil)
+	$(call DO_PATCH,python3-psutil,python3-psutil,-p1)
+
+ifneq ($(wildcard $(BUILD_WORK)/python3-psutil/.build_complete),)
+python3-psutil:
+	@echo "Using previously built python3-psutil."
+else
+python3-psutil: python3-psutil-setup python3
+	$(PYTHON_HOST) -c 'import sys; assert sys.version_info[:2] == tuple(map(int, "$(PYTHON3_MAJOR_V)".split("."))), "Host Python must match target major/minor"'
+	cd $(BUILD_WORK)/python3-psutil && $(DEFAULT_SETUP_PY_ENV) ARCHFLAGS="-arch $(MEMO_ARCH)" \
+		$(PYTHON_HOST) ./setup.py \
+		build \
+		--executable="$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/python3" \
+		install \
+		--prefix="$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)" \
+		--root="$(BUILD_STAGE)/python3-psutil" \
+		--install-lib="$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/python3/dist-packages"
+	find $(BUILD_STAGE)/python3-psutil -name __pycache__ -prune -exec rm -rf {} \;
+	$(call AFTER_BUILD)
+endif
+
+python3-psutil-package: python3-psutil-stage
+	# python3-psutil.mk Package Structure
+	rm -rf $(BUILD_DIST)/python3-psutil
+	mkdir -p $(BUILD_DIST)/python3-psutil/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)
+
+	# python3-psutil.mk Prep python3-psutil
+	cp -a $(BUILD_STAGE)/python3-psutil$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib $(BUILD_DIST)/python3-psutil/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)
+
+	# python3-psutil.mk Sign
+	$(call SIGN,python3-psutil,general.xml)
+
+	# python3-psutil.mk Make .debs
+	$(call PACK,python3-psutil,DEB_PYTHON3-PSUTIL_V)
+
+	# python3-psutil.mk Build cleanup
+	rm -rf $(BUILD_DIST)/python3-psutil
+
+.PHONY: python3-psutil python3-psutil-package

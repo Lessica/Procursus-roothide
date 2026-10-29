@@ -1,0 +1,31 @@
+.\" -*- nroff -*-
+.\"*******************************************************************
+.\"
+.\" This file was generated with po4a. Translate the source file.
+.\"
+.\"*******************************************************************
+.TH WHICH 1 "29 Jun 2016" Debian 
+.SH NOME
+which \- localiza um comando
+.SH SINOPSE
+which [\-a] nome_de_ficheiro ...
+.SH DESCRIÇÃO
+\fBwhich\fP retorna os nomes de caminho dos ficheiros (ou links) que podem ser
+executados no ambiente actual, tendo os seus argumentos sendo dados como
+comandos numa shell estritamente compatível com POSIX. Ele faz isto ao
+pesquisar a PATH por ficheiros executáveis que correspondem aos nomes dos
+argumentos. Não canoniza os nomes de caminho.
+.SH OPÇÕES
+.TP 
+\fB\-a\fP
+escreve todos os nomes\-de\-caminho correspondentes de cada argumento
+.SH "ESTADO AO TERMINAR"
+.TP 
+\fB0\fP
+se todos os comandos especificados foram encontrados e são executáveis
+.TP 
+\fB1\fP
+se um ou mais comandos especificados são inexistentes ou não executáveis
+.TP 
+\fB2\fP
+se for especificada uma opção inválida

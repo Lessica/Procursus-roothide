@@ -1,0 +1,20 @@
+--- a/src/hotspot/os_cpu/bsd_aarch64/pauth_bsd_aarch64.inline.hpp
++++ b/src/hotspot/os_cpu/bsd_aarch64/pauth_bsd_aarch64.inline.hpp
+@@ -25,7 +25,7 @@
+ #ifndef OS_CPU_LINUX_AARCH64_PAUTH_BSD_AARCH64_INLINE_HPP
+ #define OS_CPU_LINUX_AARCH64_PAUTH_BSD_AARCH64_INLINE_HPP
+ 
+-#ifdef __APPLE__
++#if defined(__APPLE__) && __has_include(<ptrauth.h>)
+ #include <ptrauth.h>
+ #endif
+ 
+@@ -39,7 +39,7 @@
+ #define XPACLRI "hint #0x7;"
+ 
+ inline address pauth_strip_pointer(address ptr) {
+-#ifdef __APPLE__
++#if defined(__APPLE__) && __has_include(<ptrauth.h>)
+   return ptrauth_strip(ptr, ptrauth_key_asib);
+ #else
+   register address result __asm__("x30") = ptr;

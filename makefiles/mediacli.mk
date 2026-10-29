@@ -1,0 +1,42 @@
+ifneq ($(PROCURSUS),1)
+$(error Use the main Makefile)
+endif
+
+SUBPROJECTS      += mediacli
+MEDIACLI_VERSION := 1.2
+DEB_MEDIACLI_V   ?= $(MEDIACLI_VERSION)
+
+mediacli-setup: setup
+	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://github.com/absidue/mediacli/releases/download/v$(MEDIACLI_VERSION)/mediacli-$(MEDIACLI_VERSION).tar.xz)
+	$(call EXTRACT_TAR,mediacli-$(MEDIACLI_VERSION).tar.xz,mediacli-$(MEDIACLI_VERSION),mediacli)
+	$(call DO_PATCH,mediacli,mediacli,-p1)
+
+ifneq ($(wildcard $(BUILD_WORK)/mediacli/.build_complete),)
+mediacli:
+	@echo "Using previously built MediaCLI."
+else
+mediacli: mediacli-setup
+	+$(MAKE) -C $(BUILD_WORK)/mediacli SED=sed
+	+$(MAKE) -C $(BUILD_WORK)/mediacli install SED=sed \
+		PREFIX=$(MEMO_PREFIX)$(MEMO_SUB_PREFIX) \
+		DESTDIR=$(BUILD_STAGE)/mediacli
+	$(call AFTER_BUILD)
+endif
+
+mediacli-package: mediacli-stage
+	# mediacli.mk Package Structure
+	rm -rf $(BUILD_DIST)/mediacli
+
+	# mediacli.mk Prep mediacli
+	cp -a $(BUILD_STAGE)/mediacli $(BUILD_DIST)
+
+	# mediacli.mk Sign
+	$(call SIGN,mediacli,general.xml)
+
+	# mediacli.mk Make .deb
+	$(call PACK,mediacli,DEB_MEDIACLI_V)
+
+	# mediacli.mk Build cleanup
+	rm -rf $(BUILD_DIST)/mediacli
+
+.PHONY: mediacli mediacli-package

@@ -1,0 +1,29 @@
+--- a/Cargo.toml
++++ b/Cargo.toml
+@@ -104,6 +104,8 @@
+ path = "src/main.rs"
+ 
+ [patch.crates-io]
++battery = { path = "../starship-battery" }
++mach = { path = "../starship-mach" }
+ socket2 = { path = "../starship-socket2" }
+ nix = { path = "../starship-nix" }
+ open = { path = "../starship-open" }
+--- a/Cargo.lock
++++ b/Cargo.lock
+@@ -110,7 +110,5 @@
+ name = "battery"
+ version = "0.7.8"
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "b4b624268937c0e0a3edb7c27843f9e547c320d730c610d3b8e6e8e95b2026e4"
+ dependencies = [
+  "cfg-if 1.0.0",
+  "core-foundation 0.7.0",
+@@ -900,7 +898,5 @@
+ name = "mach"
+ version = "0.3.2"
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "b823e83b2affd8f40a9ee8c29dbc56404c1e34cd2710921f2801e2cf29527afa"
+ dependencies = [
+  "libc",
+ ]

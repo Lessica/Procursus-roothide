@@ -1,0 +1,11 @@
+--- a/Cargo.toml
++++ b/Cargo.toml
+@@ -70,0 +71,3 @@
++
++[patch.crates-io]
++parking_lot_core = { path = "../tokei-parking-lot" }
+--- a/Cargo.lock
++++ b/Cargo.lock
+@@ -712,2 +711,0 @@
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "c361aa727dd08437f2f1447be8b59a33b0edd15e0fcee698f935613d9efbca9b"

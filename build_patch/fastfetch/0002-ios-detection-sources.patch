@@ -1,0 +1,226 @@
+diff --git a/src/common/apple/chip_ios.c b/src/common/apple/chip_ios.c
+new file mode 100644
+--- /dev/null
++++ b/src/common/apple/chip_ios.c
+@@ -0,0 +1,44 @@
++#include "chip_ios.h"
++#include "cf_helpers.h"
++#include "common/sysctl.h"
++#include "detection/cpu/cpu.h"
++
++#include <IOKit/IOKitLib.h>
++#include <stdio.h>
++#include <stdlib.h>
++
++// iOS reports the literal "Apple processor" as CPU brand string and gives a
++// command-line process no Metal device, so both the CPU and the GPU name come
++// from the SoC id in the device tree: chosen/chip-id holds e.g. 0x8027, the
++// same number Asahi's "apple,t8027" compatible string carries, so the shared
++// code table applies.
++const char* ffAppleChipName(FFstrbuf* result) {
++    FF_IOOBJECT_AUTO_RELEASE io_registry_entry_t chosen = IORegistryEntryFromPath(MACH_PORT_NULL, "IODeviceTree:/chosen");
++    if (!chosen) {
++        return "IORegistryEntryFromPath(IODeviceTree:/chosen) failed";
++    }
++    FF_CFTYPE_AUTO_RELEASE CFDataRef chipId = IORegistryEntryCreateCFProperty(chosen, CFSTR("chip-id"), kCFAllocatorDefault, kNilOptions);
++    if (!chipId || CFGetTypeID(chipId) != CFDataGetTypeID() || CFDataGetLength(chipId) < 4) {
++        return "chosen/chip-id is missing";
++    }
++    uint32_t code = 0;
++    CFDataGetBytes(chipId, CFRangeMake(0, 4), (uint8_t*) &code);
++
++    char decimal[16];
++    snprintf(decimal, sizeof(decimal), "%x", code);
++    const char* chipName = ffCPUAppleCodeToName((uint32_t) strtoul(decimal, nullptr, 10));
++    if (!chipName) {
++        return "unknown chip-id";
++    }
++    ffStrbufSetS(result,chipName);
++
++    if (code == 0x8027) {
++        FF_STRBUF_AUTO_DESTROY machine = ffStrbufCreate();
++        ffSysctlGetString("hw.machine", &machine);
++        // iPad8,9-12 are the 2020 iPad Pros with the A12Z; iPad8,1-8 have the A12X
++        if (ffStrbufStartsWithS(&machine, "iPad8,") && strtoul(machine.chars + strlen("iPad8,"), nullptr, 10) >= 9) {
++            ffStrbufSetS(result,"Apple A12Z Bionic");
++        }
++    }
++    return nullptr;
++}
+diff --git a/src/common/apple/chip_ios.h b/src/common/apple/chip_ios.h
+new file mode 100644
+--- /dev/null
++++ b/src/common/apple/chip_ios.h
+@@ -0,0 +1,9 @@
++#pragma once
++
++// Force-included into every iOS translation unit by scripts/build-ios.sh, with
++// <TargetConditionals.h>, so the iOS hunks in upstream files carry no #include
++// lines of their own. Keep it self-contained.
++struct FFstrbuf;
++
++// Marketing name of the SoC, e.g. "Apple A12Z Bionic". Empty if unknown.
++const char* ffAppleChipName(struct FFstrbuf* result);
+diff --git a/src/detection/displayserver/displayserver_ios.c b/src/detection/displayserver/displayserver_ios.c
+new file mode 100644
+--- /dev/null
++++ b/src/detection/displayserver/displayserver_ios.c
+@@ -0,0 +1,64 @@
++#include "displayserver.h"
++#include "common/library.h"
++
++#include <CoreFoundation/CoreFoundation.h>
++
++// Private, dlopen'd; only the prototype is needed for the symbol macros.
++CFTypeRef MGCopyAnswer(CFStringRef property);
++
++// iOS has no CoreGraphics display list. The built-in panel is described by
++// MobileGestalt, which is in the shared cache on every device; the main-screen
++// keys are not entitlement-protected.
++static bool mgGetDouble(CFTypeRef (*ffMGCopyAnswer)(CFStringRef), CFStringRef key, double* result) {
++    CFTypeRef value = ffMGCopyAnswer(key);
++    if (!value) {
++        return false;
++    }
++    bool ok = CFGetTypeID(value) == CFNumberGetTypeID() && CFNumberGetValue((CFNumberRef) value, kCFNumberDoubleType, result);
++    CFRelease(value);
++    return ok;
++}
++
++static const char* detectDisplay(FFDisplayServerResult* ds) {
++    FF_LIBRARY_LOAD(mg, "dlopen libMobileGestalt failed", "/usr/lib/libMobileGestalt.dylib", -1);
++    FF_LIBRARY_LOAD_SYMBOL_MESSAGE(mg, MGCopyAnswer);
++
++    double width = 0, height = 0, scale = 1, pitch = 0;
++    if (!mgGetDouble(ffMGCopyAnswer, CFSTR("main-screen-width"), &width) ||
++        !mgGetDouble(ffMGCopyAnswer, CFSTR("main-screen-height"), &height)) {
++        return "MGCopyAnswer(main-screen-*) failed";
++    }
++    mgGetDouble(ffMGCopyAnswer, CFSTR("main-screen-scale"), &scale);
++    mgGetDouble(ffMGCopyAnswer, CFSTR("main-screen-pitch"), &pitch); // pixels per inch
++
++    uint32_t physicalWidth = 0, physicalHeight = 0;
++    if (pitch > 0) {
++        physicalWidth = (uint32_t) (width * 25.4 / pitch + 0.5);
++        physicalHeight = (uint32_t) (height * 25.4 / pitch + 0.5);
++    }
++
++    FF_STRBUF_AUTO_DESTROY name = ffStrbufCreate();
++    ffdsAppendDisplay(ds,
++        (uint32_t) width,
++        (uint32_t) height,
++        0, // ponytail: refresh rate needs UIScreen/IOMobileFramebuffer; add if anyone asks
++        (uint32_t) (96 * scale),
++        (uint32_t) width,
++        (uint32_t) height,
++        0,
++        0,
++        &name,
++        FF_DISPLAY_TYPE_BUILTIN,
++        true,
++        0,
++        physicalWidth,
++        physicalHeight,
++        "MobileGestalt");
++    return nullptr;
++}
++
++void ffConnectDisplayServerImpl(FFDisplayServerResult* ds) {
++    ffStrbufSetStatic(&ds->wmProcessName, "SpringBoard");
++    ffStrbufSetStatic(&ds->wmPrettyName, "SpringBoard");
++    detectDisplay(ds);
++}
+diff --git a/src/detection/opengl/opengl_ios.c b/src/detection/opengl/opengl_ios.c
+new file mode 100644
+--- /dev/null
++++ b/src/detection/opengl/opengl_ios.c
+@@ -0,0 +1,5 @@
++#include "opengl.h"
++
++const char* ffDetectOpenGL([[maybe_unused]] FFOpenGLOptions* options, [[maybe_unused]] FFOpenGLResult* result) {
++    return "OpenGL is not supported on iOS";
++}
+diff --git a/src/detection/os/os_ios.m b/src/detection/os/os_ios.m
+new file mode 100644
+--- /dev/null
++++ b/src/detection/os/os_ios.m
+@@ -0,0 +1,32 @@
++#include "os.h"
++#include "common/sysctl.h"
++
++#import <Foundation/Foundation.h>
++
++void ffDetectOSImpl(FFOSResult* os)
++{
++    // SystemVersion.plist says "iPhone OS" for every device; tell iPad apart by
++    // the hardware identifier so the name matches what Apple calls it.
++    FF_STRBUF_AUTO_DESTROY machine = ffStrbufCreate();
++    ffSysctlGetString("hw.machine", &machine);
++    bool iPad = ffStrbufStartsWithS(&machine, "iPad");
++    ffStrbufSetStatic(&os->name, iPad ? "iPadOS" : "iOS");
++    ffStrbufSetStatic(&os->id, iPad ? "ipados" : "ios");
++    ffStrbufSetStatic(&os->idLike, "macos"); // picks the Apple logo
++
++    NSDictionary* dict = [NSDictionary dictionaryWithContentsOfURL:[NSURL fileURLWithPath:@"/System/Library/CoreServices/SystemVersion.plist" isDirectory:NO]
++                                                             error:nil];
++    NSString* value;
++    if ((value = dict[@"ProductVersion"]))
++        ffStrbufSetS(&os->version, value.UTF8String);
++    if ((value = dict[@"ProductBuildVersion"]))
++        ffStrbufSetS(&os->buildID, value.UTF8String);
++
++    if (os->version.length == 0)
++        ffSysctlGetString("kern.osproductversion", &os->version);
++    if (os->buildID.length == 0)
++        ffSysctlGetString("kern.osversion", &os->buildID);
++
++    ffStrbufSet(&os->versionID, &os->version);
++    ffStrbufSetF(&os->prettyName, "%s %s (%s)", os->name.chars, os->version.chars, os->buildID.chars);
++}
+diff --git a/src/detection/packages/packages_ios.c b/src/detection/packages/packages_ios.c
+new file mode 100644
+--- /dev/null
++++ b/src/detection/packages/packages_ios.c
+@@ -0,0 +1,42 @@
++#include "packages.h"
++#include "common/io.h"
++
++#include <string.h>
++
++static uint32_t countDpkgStatus(const char* path) {
++    FF_STRBUF_AUTO_DESTROY content = ffStrbufCreate();
++    if (!ffReadFileBuffer(path, &content)) {
++        return 0;
++    }
++
++    const char needle[] = "Status: install ok installed";
++    uint32_t count = 0;
++    for (const char* iter = content.chars; (iter = strstr(iter, needle)) != nullptr; iter += sizeof(needle) - 1) {
++        ++count;
++    }
++    return count;
++}
++
++void ffDetectPackagesImpl(FFPackagesResult* result, FFPackagesOptions* options) {
++    if (!FF_PACKAGES_IS_ENABLED(options, DPKG)) {
++        return;
++    }
++
++    // dpkg lives inside the bootstrap: /var/jb on rootless, a randomized jbroot
++    // on RootHide, / on rootful. This binary is installed at <bootstrap>/usr/bin,
++    // so derive the bootstrap from the executable path; the fixed candidates are
++    // for running a build that is not installed.
++    FF_STRBUF_AUTO_DESTROY path = ffStrbufCreateCopy(&instance.state.platform.exePath);
++    ffStrbufSubstrBeforeLastC(&path, '/');
++    ffStrbufSubstrBeforeLastC(&path, '/');
++    ffStrbufSubstrBeforeLastC(&path, '/');
++    ffStrbufAppendS(&path, "/var/lib/dpkg/status");
++
++    const char* candidates[] = { path.chars, "/var/jb/var/lib/dpkg/status", "/var/lib/dpkg/status" };
++    for (uint32_t i = 0; i < ARRAY_SIZE(candidates); ++i) {
++        result->dpkg = countDpkgStatus(candidates[i]);
++        if (result->dpkg > 0) {
++            break;
++        }
++    }
++}

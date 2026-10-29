@@ -1,0 +1,121 @@
+--- a/data/scripts/cal2gcal.pl
++++ b/data/scripts/cal2gcal.pl
+@@ -25,7 +25,7 @@
+ #
+ #
+ #
+-$[ = 1;			# set array base to 1
++# Array subscripts and substr offsets below use Perl's default zero base.
+ $, = ' ';		# set output field separator
+ $\ = "\n";		# set output record separator
+ 
+@@ -74,7 +74,7 @@
+     #
+     # Construct the line.
+     #
+-    if (substr($Fld[1], 3, 1) eq '/') {
++    if (substr($Fld[0], 2, 1) eq '/') {
+ 	#
+ 	# If line is completed just print it.
+ 	#
+@@ -86,17 +86,17 @@
+ 		#
+ 		#  Manage possible breaks in the text part of appointment.
+ 		#
+-		$tpart = substr($line, $dpartlen + 2, 999999);
++		$tpart = substr($line, $dpartlen + 1, 999999);
+ 		$len_tpart = length($tpart);
+ 		if ($len_tpart > $linebreak) {
+ 		    $k = 0;
+ 		    $textpart = '';
+ 		    for ($i = 1; $i <= $len_tpart; $i += ($linebreak + $k)) {
+-			$textpart = $textpart . substr($tpart, $i, $linebreak - 1);
++			$textpart = $textpart . substr($tpart, $i - 1, $linebreak - 1);
+ 			$j = 0;
+ 			$k = 0;
+-			while (substr($tpart, $linebreak + $i + $j - 1, 1) !~ /[ \t]/) {
+-			    $textpart = $textpart . substr($tpart, $linebreak + $i + $j - 1, 1);
++			while (substr($tpart, $linebreak + $i + $j - 2, 1) !~ /[ \t]/) {
++			    $textpart = $textpart . substr($tpart, $linebreak + $i + $j - 2, 1);
+ 			    $j++;
+ 			    if ($linebreak + $i + $j - 1 > $len_tpart) {
+ 				last;
+@@ -110,11 +110,11 @@
+ 		    $textpart = $tpart;
+ 		}
+ 		$i = length($textpart);
+-		if (substr($textpart, $i, 1) eq $gcalnl) {
+-		    print substr($line, 1, $dpartlen + 1) . substr($textpart, 1, $i - 1);
++		if (substr($textpart, $i - 1, 1) eq $gcalnl) {
++		    print substr($line, 0, $dpartlen + 1) . substr($textpart, 0, $i - 1);
+ 		}
+ 		else {
+-		    print substr($line, 1, $dpartlen + 1) . $textpart;
++		    print substr($line, 0, $dpartlen + 1) . $textpart;
+ 		}
+ 	    }
+ 	    $line = '';
+@@ -123,11 +123,11 @@
+ 	#
+ 	# Strip leading whitespace characters in text part of appointment.
+ 	#
+-	$i = length($Fld[1]) + 1;
+-	while (substr($_, $i, 1) =~ /[ \t]/) {
++	$i = length($Fld[0]) + 1;
++	while (substr($_, $i - 1, 1) =~ /[ \t]/) {
+ 	    $i++;
+ 	}
+-	$line = '0000' . substr($Fld[1], 1, 2) . substr($Fld[1], 4, 2) . ' ' . substr($_, $i, 999999);
++	$line = '0000' . substr($Fld[0], 0, 2) . substr($Fld[0], 3, 2) . ' ' . substr($_, $i - 1, 999999);
+     }
+     else {
+ 	#
+@@ -135,10 +135,10 @@
+ 	#   text part of appointment.
+ 	#
+ 	$i = 1;
+-	while (substr($_, $i, 1) =~ /[ \t]/) {
++	while (substr($_, $i - 1, 1) =~ /[ \t]/) {
+ 	    $i++;
+ 	}
+-	$line = $line . ' ' . substr($_, $i, 999999);
++	$line = $line . ' ' . substr($_, $i - 1, 999999);
+     }
+ }
+ 
+@@ -152,17 +152,17 @@
+     #
+     #  Manage possible breaks in the text part of appointment.
+     #
+-    $tpart = substr($line, $dpartlen + 2, 999999);
++    $tpart = substr($line, $dpartlen + 1, 999999);
+     $len_tpart = length($tpart);
+     if ($len_tpart > $linebreak) {
+ 	$k = 0;
+ 	$textpart = '';
+ 	for ($i = 1; $i <= $len_tpart; $i += ($linebreak + $k)) {
+-	    $textpart = $textpart . substr($tpart, $i, $linebreak - 1);
++	    $textpart = $textpart . substr($tpart, $i - 1, $linebreak - 1);
+ 	    $j = 0;
+ 	    $k = 0;
+-	    while (substr($tpart, $linebreak + $i + $j - 1, 1) !~ /[ \t]/) {
+-		$textpart = $textpart . substr($tpart, $linebreak + $i + $j - 1, 1);
++	    while (substr($tpart, $linebreak + $i + $j - 2, 1) !~ /[ \t]/) {
++		$textpart = $textpart . substr($tpart, $linebreak + $i + $j - 2, 1);
+ 		$j++;
+ 		if ($linebreak + $i + $j - 1 > $len_tpart) {
+ 		    last;
+@@ -176,10 +176,10 @@
+ 	$textpart = $tpart;
+     }
+     $i = length($textpart);
+-    if (substr($textpart, $i, 1) eq $gcalnl) {
+-	print substr($line, 1, $dpartlen + 1) . substr($textpart, 1, $i - 1);
++    if (substr($textpart, $i - 1, 1) eq $gcalnl) {
++	print substr($line, 0, $dpartlen + 1) . substr($textpart, 0, $i - 1);
+     }
+     else {
+-	print substr($line, 1, $dpartlen + 1) . $textpart;
++	print substr($line, 0, $dpartlen + 1) . $textpart;
+     }
+ }

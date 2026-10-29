@@ -1,0 +1,74 @@
+ifneq ($(PROCURSUS),1)
+$(error Use the main Makefile)
+endif
+
+SUBPROJECTS     += cwidget
+CWIDGET_VERSION := 0.5.18
+DEB_CWIDGET_V   ?= $(CWIDGET_VERSION)-1
+
+cwidget-setup: setup
+	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://salsa.debian.org/cwidget-team/cwidget-upstream/-/archive/$(CWIDGET_VERSION)/cwidget-upstream-$(CWIDGET_VERSION).tar.gz)
+	$(call EXTRACT_TAR,cwidget-upstream-$(CWIDGET_VERSION).tar.gz,cwidget-upstream-$(CWIDGET_VERSION),cwidget)
+	grep -q '^#include <pthread.h>$$' $(BUILD_WORK)/cwidget/src/cwidget/generic/threads/threads.h || \
+	sed -i '/#define THREADS_H/a #include <pthread.h>' $(BUILD_WORK)/cwidget/src/cwidget/generic/threads/threads.h
+
+ifneq ($(wildcard $(BUILD_WORK)/cwidget/.build_complete),)
+cwidget:
+	@echo "Using previously built cwidget."
+else
+cwidget: cwidget-setup gettext ncurses libsigcplusplus
+	rm -rf $(BUILD_WORK)/cwidget/m4/{libtool,lt*}.m4
+	sed -i '/^[g]*libtoolize --force/d' $(BUILD_WORK)/cwidget/autogen.sh
+	sed -i 's|\./configure|true|' $(BUILD_WORK)/cwidget/autogen.sh
+	cd $(BUILD_WORK)/cwidget && $(LIBTOOLIZE) --force && ./autogen.sh
+	sed -i 's/-keep_private_externs -nostdlib/-keep_private_externs $(PLATFORM_VERSION_MIN) -arch $(MEMO_ARCH) -nostdlib/g' $(BUILD_WORK)/cwidget/configure
+	cd $(BUILD_WORK)/cwidget && ./configure \
+		$(DEFAULT_CONFIGURE_FLAGS) \
+		--disable-werror \
+		CXXFLAGS="-std=c++11 $(CXXFLAGS) -I$(BUILD_BASE)$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include/sigc++-2.0 -I$(BUILD_BASE)$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/sigc++-2.0/include -DNCURSES_WIDECHAR"
+	+$(MAKE) -C $(BUILD_WORK)/cwidget \
+		LIBS="-lncursesw  -lpthread -lsigc-2.0 -liconv -lintl -Wl,-framework -Wl,CoreFoundation"
+	+$(MAKE) -C $(BUILD_WORK)/cwidget install \
+		DESTDIR="$(BUILD_STAGE)/cwidget"
+ifneq ($(filter -flto%,$(CXXFLAGS)),)
+	# Keep installed LTO dylib; include every convenience-library member.
+	find $(BUILD_WORK)/cwidget/src/cwidget -name '*.lo' -type f -delete
+	rm -f $(BUILD_WORK)/cwidget/src/cwidget/{libcwidget,config/libconf,generic/threads/libgeneric-threads,generic/util/libgeneric-util,widgets/libwidgets}.la
+	+set -e; for lib in config/libconf generic/threads/libgeneric-threads generic/util/libgeneric-util widgets/libwidgets; do \
+		dir=$${lib%/*}; target=$${lib##*/}; \
+		$(MAKE) -C $(BUILD_WORK)/cwidget/src/cwidget/$$dir $$target.la \
+			CXXFLAGS="$$(sed -n 's/^CXXFLAGS = //p' $(BUILD_WORK)/cwidget/src/cwidget/$$dir/Makefile) -fno-lto"; \
+	done
+	+$(MAKE) -C $(BUILD_WORK)/cwidget/src/cwidget libcwidget.la \
+		CXXFLAGS="$$(sed -n 's/^CXXFLAGS = //p' $(BUILD_WORK)/cwidget/src/cwidget/Makefile) -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/cwidget/src/cwidget/Makefile) -fno-lto -static"
+	cp -a $(BUILD_WORK)/cwidget/src/cwidget/.libs/libcwidget.a $(BUILD_STAGE)/cwidget/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
+	$(call AFTER_BUILD,copy)
+endif
+
+cwidget-package: cwidget-stage
+	# cwidget.mk Package Structure
+	rm -rf $(BUILD_DIST)/*cwidget*/
+	mkdir -p $(BUILD_DIST)/libcwidget4/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib \
+		$(BUILD_DIST)/libcwidget-dev/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib
+
+	# cwidget.mk Prep libcwidget4
+	cp -a $(BUILD_STAGE)/cwidget/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/lib*.4.dylib $(BUILD_DIST)/libcwidget4/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib
+	cp -a $(BUILD_STAGE)/cwidget/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share $(BUILD_DIST)/libcwidget4/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)
+
+	# cwidget.mk Prep libcwidget-dev
+	cp -a $(BUILD_STAGE)/cwidget/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include $(BUILD_DIST)/libcwidget-dev/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)
+	cp -a $(BUILD_STAGE)/cwidget/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/!(*.4.*) $(BUILD_DIST)/libcwidget-dev/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib
+
+	# cwidget.mk Sign
+	$(call SIGN,libcwidget4,general.xml)
+
+	# cwidget.mk Make .debs
+	$(call PACK,libcwidget4,DEB_CWIDGET_V)
+	$(call PACK,libcwidget-dev,DEB_CWIDGET_V)
+
+	# cwidget.mk Build cleanup
+	rm -rf $(BUILD_DIST)/*cwidget*/
+
+.PHONY: cwidget cwidget-package

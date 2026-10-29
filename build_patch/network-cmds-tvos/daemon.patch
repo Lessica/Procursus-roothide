@@ -1,0 +1,9 @@
+--- a/rtsol.tproj/rtsold.c
++++ b/rtsol.tproj/rtsold.c
+@@ -1,1 +1,3 @@
+ int main __P((int argc, char *argv[]));
++/* The jailbroken tvOS runtime exports daemon despite SDK availability. */
++extern int tvos_daemon(int, int) __asm("_daemon");
+@@ -254,1 +256,1 @@
+-		daemon(0, 0);		/* act as a daemon */
++		tvos_daemon(0, 0);		/* act as a daemon */

@@ -1,0 +1,18 @@
+--- a/src/platform/unix/mod.rs
++++ b/src/platform/unix/mod.rs
+@@ -30,6 +30,7 @@
+ #[inline]
+ #[cfg(any(
+     target_os = "ios",
++    target_os = "tvos",
+     target_os = "macos",
+     target_os = "haiku",
+     target_os = "aix"
+@@ -66,6 +67,7 @@
+ #[inline]
+ #[cfg(not(any(
+     target_os = "ios",
++    target_os = "tvos",
+     target_os = "macos",
+     target_os = "haiku",
+     target_os = "aix"

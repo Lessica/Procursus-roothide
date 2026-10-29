@@ -1,0 +1,8 @@
+Package: rust-toolchain
+Version: @DEB_RUST_V@
+Architecture: @DEB_ARCH@
+Maintainer: @DEB_MAINTAINER@
+Section: Development
+Priority: optional
+Homepage: https://www.rust-lang.org/
+Description: Rust compiler libraries and target standard library for iOS

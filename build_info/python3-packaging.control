@@ -1,0 +1,10 @@
+Package: python3-packaging
+Version: @DEB_PYTHON3_PACKAGING_V@
+Architecture: all
+Maintainer: @DEB_MAINTAINER@
+Depends: python3, python3-pyparsing (>= 2.0.2)
+Section: Python
+Priority: optional
+Homepage: https://pypi.org/project/packaging/
+Description: Core Python package version and requirement utilities
+Breaks: python3-pyparsing (= 3.0.5)

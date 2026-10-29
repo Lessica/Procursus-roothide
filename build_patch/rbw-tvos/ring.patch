@@ -1,0 +1,9 @@
+--- a/Cargo.toml
++++ b/Cargo.toml
+@@ -57,0 +58 @@
++ring = { path = "../rbw-ring" }
+--- a/Cargo.lock
++++ b/Cargo.lock
+@@ -1382,2 +1381,0 @@
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "3053cf52e236a3ed746dfc745aa9cacf1b791d846bdaf412f60a8d7d6e17c8fc"

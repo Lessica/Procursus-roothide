@@ -1,0 +1,27 @@
+--- a/Makefile
++++ b/Makefile
+@@ -146,6 +146,16 @@
+ 	$(AR) -s $@
+ 
+ 
++NATIVE_OBJ = $(OBJ:%.o=.native/%.o)
++$(NATIVE_OBJ): $(HDR)
++.native/%.o: %.c
++	mkdir -p .native
++	$(CC) -fPIC -c -o $@ $< $(CFLAGS) $(CPPFLAGS) -fno-lto
++
++libkeccak-native.a: $(NATIVE_OBJ)
++	-rm -f -- $@
++	$(AR) rc $@ $(NATIVE_OBJ)
++	$(AR) -s $@
+ test: test.o libkeccak.a
+ 	$(CC) $(FLAGS) -o $@ test.o libkeccak.a $(CFLAGS) $(LDFLAGS)
+ 
+@@ -203,6 +213,7 @@
+ clean:
+ 	-rm -f -- *.o *.su libkeccak/*.o libkeccak/*.su test benchmark benchfile
+ 	-rm -f -- *.a libkeccak.$(LIBEXT) libkeccak.$(LIBEXT).* libkeccak.*.$(LIBEXT)
++	-rm -rf -- .native
+ 
+ .SUFFIXES:
+ .SUFFIXES: .c .o

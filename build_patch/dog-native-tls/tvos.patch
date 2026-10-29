@@ -1,0 +1,155 @@
+--- a/Cargo.toml
++++ b/Cargo.toml
+@@ -23,30 +23,30 @@
+ 
+ [features]
+ vendored = ["openssl/vendored"]
+-[target."cfg(any(target_os = \"macos\", target_os = \"ios\"))".dependencies.lazy_static]
++[target."cfg(any(target_os = \"macos\", any(target_os = \"ios\", target_os = \"tvos\")))".dependencies.lazy_static]
+ version = "1.0"
+ 
+-[target."cfg(any(target_os = \"macos\", target_os = \"ios\"))".dependencies.libc]
++[target."cfg(any(target_os = \"macos\", any(target_os = \"ios\", target_os = \"tvos\")))".dependencies.libc]
+ version = "0.2"
+ 
+-[target."cfg(any(target_os = \"macos\", target_os = \"ios\"))".dependencies.security-framework]
++[target."cfg(any(target_os = \"macos\", any(target_os = \"ios\", target_os = \"tvos\")))".dependencies.security-framework]
+ version = "0.4.1"
+ 
+-[target."cfg(any(target_os = \"macos\", target_os = \"ios\"))".dependencies.security-framework-sys]
++[target."cfg(any(target_os = \"macos\", any(target_os = \"ios\", target_os = \"tvos\")))".dependencies.security-framework-sys]
+ version = "0.4.1"
+ 
+-[target."cfg(any(target_os = \"macos\", target_os = \"ios\"))".dependencies.tempfile]
++[target."cfg(any(target_os = \"macos\", any(target_os = \"ios\", target_os = \"tvos\")))".dependencies.tempfile]
+ version = "3.0"
+-[target."cfg(not(any(target_os = \"windows\", target_os = \"macos\", target_os = \"ios\")))".dependencies.log]
++[target."cfg(not(any(target_os = \"windows\", target_os = \"macos\", any(target_os = \"ios\", target_os = \"tvos\"))))".dependencies.log]
+ version = "0.4.5"
+ 
+-[target."cfg(not(any(target_os = \"windows\", target_os = \"macos\", target_os = \"ios\")))".dependencies.openssl]
++[target."cfg(not(any(target_os = \"windows\", target_os = \"macos\", any(target_os = \"ios\", target_os = \"tvos\"))))".dependencies.openssl]
+ version = "0.10.25"
+ 
+-[target."cfg(not(any(target_os = \"windows\", target_os = \"macos\", target_os = \"ios\")))".dependencies.openssl-probe]
++[target."cfg(not(any(target_os = \"windows\", target_os = \"macos\", any(target_os = \"ios\", target_os = \"tvos\"))))".dependencies.openssl-probe]
+ version = "0.1"
+ 
+-[target."cfg(not(any(target_os = \"windows\", target_os = \"macos\", target_os = \"ios\")))".dependencies.openssl-sys]
++[target."cfg(not(any(target_os = \"windows\", target_os = \"macos\", any(target_os = \"ios\", target_os = \"tvos\"))))".dependencies.openssl-sys]
+ version = "0.9.30"
+ [target."cfg(target_os = \"windows\")".dependencies.schannel]
+ version = "0.1.16"
+--- a/src/imp/security_framework.rs
++++ b/src/imp/security_framework.rs
+@@ -18,22 +18,22 @@
+ use std::sync::Mutex;
+ use std::sync::Once;
+ 
+-#[cfg(not(target_os = "ios"))]
++#[cfg(not(any(target_os = "ios", target_os = "tvos")))]
+ use self::security_framework::os::macos::certificate::{PropertyType, SecCertificateExt};
+-#[cfg(not(target_os = "ios"))]
++#[cfg(not(any(target_os = "ios", target_os = "tvos")))]
+ use self::security_framework::os::macos::certificate_oids::CertificateOid;
+-#[cfg(not(target_os = "ios"))]
++#[cfg(not(any(target_os = "ios", target_os = "tvos")))]
+ use self::security_framework::os::macos::import_export::{ImportOptions, SecItems};
+-#[cfg(not(target_os = "ios"))]
++#[cfg(not(any(target_os = "ios", target_os = "tvos")))]
+ use self::security_framework::os::macos::keychain::{self, KeychainSettings, SecKeychain};
+-#[cfg(not(target_os = "ios"))]
++#[cfg(not(any(target_os = "ios", target_os = "tvos")))]
+ use self::security_framework_sys::base::errSecParam;
+ 
+ use {Protocol, TlsAcceptorBuilder, TlsConnectorBuilder};
+ 
+ static SET_AT_EXIT: Once = Once::new();
+ 
+-#[cfg(not(target_os = "ios"))]
++#[cfg(not(any(target_os = "ios", target_os = "tvos")))]
+ lazy_static! {
+     static ref TEMP_KEYCHAIN: Mutex<Option<(SecKeychain, TempDir)>> = Mutex::new(None);
+ }
+@@ -103,7 +103,7 @@
+         })
+     }
+ 
+-    #[cfg(not(target_os = "ios"))]
++    #[cfg(not(any(target_os = "ios", target_os = "tvos")))]
+     fn import_options(buf: &[u8], pass: &str) -> Result<Vec<ImportedIdentity>, Error> {
+         SET_AT_EXIT.call_once(|| {
+             extern "C" fn atexit() {
+@@ -135,7 +135,7 @@
+         Ok(imports)
+     }
+ 
+-    #[cfg(target_os = "ios")]
++    #[cfg(any(target_os = "ios", target_os = "tvos"))]
+     fn import_options(buf: &[u8], pass: &str) -> Result<Vec<ImportedIdentity>, Error> {
+         let imports = Pkcs12ImportOptions::new().passphrase(pass).import(buf)?;
+         Ok(imports)
+@@ -151,7 +151,7 @@
+         Ok(Certificate(cert))
+     }
+ 
+-    #[cfg(not(target_os = "ios"))]
++    #[cfg(not(any(target_os = "ios", target_os = "tvos")))]
+     pub fn from_pem(buf: &[u8]) -> Result<Certificate, Error> {
+         let mut items = SecItems::default();
+         ImportOptions::new().items(&mut items).import(buf)?;
+@@ -162,7 +162,7 @@
+         }
+     }
+ 
+-    #[cfg(target_os = "ios")]
++    #[cfg(any(target_os = "ios", target_os = "tvos"))]
+     pub fn from_pem(buf: &[u8]) -> Result<Certificate, Error> {
+         panic!("Not implemented on iOS");
+     }
+@@ -385,12 +385,12 @@
+         Ok(trust.certificate_at_index(0).map(Certificate))
+     }
+ 
+-    #[cfg(target_os = "ios")]
++    #[cfg(any(target_os = "ios", target_os = "tvos"))]
+     pub fn tls_server_end_point(&self) -> Result<Option<Vec<u8>>, Error> {
+         Ok(None)
+     }
+ 
+-    #[cfg(not(target_os = "ios"))]
++    #[cfg(not(any(target_os = "ios", target_os = "tvos")))]
+     pub fn tls_server_end_point(&self) -> Result<Option<Vec<u8>>, Error> {
+         let cert = match self.cert {
+             Some(ref cert) => cert.clone(),
+--- a/src/lib.rs
++++ b/src/lib.rs
+@@ -97,7 +97,7 @@
+ #![warn(missing_docs)]
+ 
+ #[macro_use]
+-#[cfg(any(target_os = "macos", target_os = "ios"))]
++#[cfg(any(target_os = "macos", any(target_os = "ios", target_os = "tvos")))]
+ extern crate lazy_static;
+ 
+ #[cfg(test)]
+@@ -109,16 +109,16 @@
+ use std::io;
+ use std::result;
+ 
+-#[cfg(not(any(target_os = "macos", target_os = "windows", target_os = "ios")))]
++#[cfg(not(any(target_os = "macos", target_os = "windows", any(target_os = "ios", target_os = "tvos"))))]
+ #[macro_use]
+ extern crate log;
+-#[cfg(any(target_os = "macos", target_os = "ios"))]
++#[cfg(any(target_os = "macos", any(target_os = "ios", target_os = "tvos")))]
+ #[path = "imp/security_framework.rs"]
+ mod imp;
+ #[cfg(target_os = "windows")]
+ #[path = "imp/schannel.rs"]
+ mod imp;
+-#[cfg(not(any(target_os = "macos", target_os = "windows", target_os = "ios")))]
++#[cfg(not(any(target_os = "macos", target_os = "windows", any(target_os = "ios", target_os = "tvos"))))]
+ #[path = "imp/openssl.rs"]
+ mod imp;
+ 

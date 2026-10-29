@@ -1,0 +1,27 @@
+.TH ADD-SHELL 8 "23 Sep 2021"
+.SH NAME
+add-shell \- add shells to the list of valid login shells
+.SH SYNOPSIS
+.B  add-shell
+.I  shellname
+.RI [ shellname ...]
+.SH DESCRIPTION
+.B add-shell
+copies
+.I /etc/shells
+to
+.IR /etc/shells.tmp ,
+adds the given shells to this file
+if they are not already present,
+and copies this temporary file back to
+.IR /etc/shells .
+.sp 1
+The shells must be provided by their full pathnames.
+.SH "ENVIRONMENT"
+.TP
+.I DPKG_ROOT
+specifies the base path under which
+.IR /etc/shells
+resides.
+.SH SEE ALSO
+.BR shells (5)

@@ -1,0 +1,11 @@
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -269,7 +269,7 @@
+         set(EXTRA_CFLAGS "${EXTRA_CFLAGS} --target=${CMAKE_C_COMPILER_TARGET}")
+         set(EXTRA_CFLAGS "${EXTRA_CFLAGS} --sysroot=${CMAKE_SYSROOT}")
+     endif()
+-    if(UNICORN_FUZZ)
++    if(UNICORN_FUZZ OR APPLE)
+         set(EXTRA_CFLAGS "${EXTRA_CFLAGS} ${CMAKE_C_FLAGS}")
+     endif()
+     if(UNICORN_TRACER)

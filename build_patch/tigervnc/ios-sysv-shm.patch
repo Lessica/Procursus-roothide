@@ -1,0 +1,23 @@
+--- a/unix/x0vncserver/Image.cxx
++++ b/unix/x0vncserver/Image.cxx
+@@ -26,6 +26,9 @@
+ 
+ #include <sys/ipc.h>
+ #include <sys/shm.h>
++#ifdef __APPLE__
++#include <TargetConditionals.h>
++#endif
+ 
+ #include <rfb/LogWriter.h>
+ #include <x0vncserver/Image.h>
+@@ -340,6 +343,10 @@
+ ImageFactory::ImageFactory(bool allowShm)
+   : mayUseShm(allowShm)
+ {
++#if defined(__APPLE__) && TARGET_OS_IPHONE
++  // iOS raises SIGSYS for System V IPC; retain the existing Xlib image path.
++  mayUseShm = false;
++#endif
+ }
+ 
+ ImageFactory::~ImageFactory()

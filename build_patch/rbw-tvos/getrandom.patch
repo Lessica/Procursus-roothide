@@ -1,0 +1,23 @@
+--- a/Cargo.lock
++++ b/Cargo.lock
+@@ -597 +597 @@
+-version = "0.2.2"
++version = "0.2.16"
+@@ -599 +599 @@
+-checksum = "c9495705279e7140bf035dde1f6e750c162df8b625267cd52cc44e0b156732c8"
++checksum = "335ff9f135e4384c8150d6f27c6daed433577f86b4750418338c01a1a2528592"
+@@ -603 +603 @@
+- "wasi 0.10.2+wasi-snapshot-preview1",
++ "wasi 0.11.1+wasi-snapshot-preview1",
+@@ -1224 +1224 @@
+- "getrandom 0.2.2",
++ "getrandom 0.2.16",
+@@ -1917 +1917 @@
+- "getrandom 0.2.2",
++ "getrandom 0.2.16",
+@@ -1956 +1956 @@
+-version = "0.10.2+wasi-snapshot-preview1"
++version = "0.11.1+wasi-snapshot-preview1"
+@@ -1958 +1958 @@
+-checksum = "fd6fbd9a79829dd1ad0cc20627bf1ed606756a7f77edff7b66b7064f9cb327c6"
++checksum = "ccf3ec651a847eb01de73ccad15eb7d99f80485de043efb2f370cd654f4ea44b"

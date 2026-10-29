@@ -1,0 +1,20 @@
+--- a/xolint/xolint.pl
++++ b/xolint/xolint.pl
+@@ -137,7 +137,7 @@
+ 
+     local $ln, $rln, $line, $replay;
+ 
+-    for ($ln = 0; $ln < $#input; $ln++) {
++    for ($ln = 0; $ln <= $#input; $ln++) {
+ 	$line = $input[$ln];
+ 	$curln += 1;
+ 
+@@ -223,7 +223,7 @@
+ }
+ 
+ sub get_tokens {
+-    if ($ln + 1 < $#input) {
++    if ($ln + 1 <= $#input) {
+ 	$line = $input[++$ln];
+ 	$curln += 1;
+ 	$replay .= $curln . "     " . $line;

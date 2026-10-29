@@ -1,0 +1,13 @@
+--- a/src/bootstrap/native.rs
++++ b/src/bootstrap/native.rs
+@@ -400,7 +400,9 @@
+     cfg.target(&target.triple).host(&builder.config.build.triple);
+ 
+     if target != builder.config.build {
+-        if target.contains("netbsd") {
++        if target.contains("apple") {
++            cfg.define("CMAKE_SYSTEM_NAME", "Darwin");
++        } else if target.contains("netbsd") {
+             cfg.define("CMAKE_SYSTEM_NAME", "NetBSD");
+         } else if target.contains("freebsd") {
+             cfg.define("CMAKE_SYSTEM_NAME", "FreeBSD");

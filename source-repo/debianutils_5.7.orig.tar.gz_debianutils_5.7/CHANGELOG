@@ -1,0 +1,34 @@
+# 5.4
+
+ * add-shell, remove-shell, update-shells: create /etc/shells with
+   default SELinux context, by Christian Göttsche
+ * add-shell, remove-shell, update-shells: fall back to
+   busybox-compatible arguments if certain calls fail.
+ * which: directly recommend `command -v` in the deprecation warning
+
+# 5.3
+
+ * update-shells: multiple fixes, thanks to Helmut Grohne for the
+   patch and Guillem Jover and Johannes Schauer for testing.
+ * update-shells.8: FILES section from Helmut Grohne, suggested by
+   Guillem Jover.
+
+# 5.2
+
+ * savelog: use `command -v` instead of `which`, since
+   `which` is deprecated.
+
+# 5.1
+
+ * Add update-shells by Helmut Grohne.
+
+# 5.0.1
+
+ * Brown-paper-bag punctuation fix.
+
+# 5.0
+
+ * run-parts: --debug flag by Christoph Biedl, documentation by
+   Tomas Pospisek.
+ * tempfile dropped
+ * which deprecated

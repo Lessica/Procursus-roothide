@@ -1,0 +1,48 @@
+--- a/zic/zic.c
++++ b/zic/zic.c
+@@ -462,14 +462,14 @@
+ ** Memory allocation.
+ */
+ 
+-static ATTRIBUTE_NORETURN void
++ATTRIBUTE_NORETURN static void
+ memory_exhausted(const char *msg)
+ {
+ 	fprintf(stderr, _("%s: Memory exhausted: %s\n"), progname, msg);
+ 	exit(EXIT_FAILURE);
+ }
+ 
+-static ATTRIBUTE_NORETURN void
++ATTRIBUTE_NORETURN static void
+ size_overflow(void)
+ {
+   memory_exhausted(_("size overflow"));
+@@ -667,7 +667,7 @@
+   }
+ }
+ 
+-static ATTRIBUTE_NORETURN void
++ATTRIBUTE_NORETURN static void
+ usage(FILE *stream, int status)
+ {
+   fprintf(stream,
+@@ -3776,7 +3776,7 @@
+ 	return nsubs;
+ }
+ 
+-static ATTRIBUTE_NORETURN void
++ATTRIBUTE_NORETURN static void
+ time_overflow(void)
+ {
+   error(_("time overflow"));
+--- a/zdump/zdump.c
++++ b/zdump/zdump.c
+@@ -126,7 +126,7 @@
+ 	}
+ }
+ 
+-static ATTRIBUTE_NORETURN void
++ATTRIBUTE_NORETURN static void
+ size_overflow(void)
+ {
+   fprintf(stderr, _("%s: size overflow\n"), progname);

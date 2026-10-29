@@ -1,0 +1,4 @@
+--- a/src/lib.rs
++++ b/src/lib.rs
+@@ -42,0 +43 @@
++#![cfg_attr(target_os = "tvos", allow(dead_code))]

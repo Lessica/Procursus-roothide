@@ -1,0 +1,30 @@
+--- a/vendor/psm/src/arch/aarch_aapcs64.s
++++ b/vendor/psm/src/arch/aarch_aapcs64.s
+@@ -3,7 +3,7 @@
+ .text
+ 
+-#if CFG_TARGET_OS_darwin || CFG_TARGET_OS_macos || CFG_TARGET_OS_ios
++#if CFG_TARGET_OS_darwin || CFG_TARGET_OS_macos || CFG_TARGET_OS_ios || CFG_TARGET_OS_tvos
+ 
+ #define GLOBL(fnname) .globl _##fnname
+ #define TYPE(fnname)
+ #define FUNCTION(fnname) _##fnname
+--- a/Cargo.toml
++++ b/Cargo.toml
+@@ -105,4 +105,5 @@
+ [patch.crates-io]
++psm = { path = "vendor/psm" }
+ libc = { path = "vendor/libc" }
+ # See comments in `src/tools/rustc-workspace-hack/README.md` for what's going on
+ # here
+--- a/Cargo.lock
++++ b/Cargo.lock
+@@ -2600,8 +2600,6 @@
+ [[package]]
+ name = "psm"
+ version = "0.1.16"
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "cd136ff4382c4753fc061cb9e4712ab2af263376b95bbd5bd8cd50c020b78e69"
+ dependencies = [
+  "cc",
+ ]

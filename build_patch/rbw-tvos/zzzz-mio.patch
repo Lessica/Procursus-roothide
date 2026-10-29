@@ -1,0 +1,9 @@
+--- a/Cargo.toml
++++ b/Cargo.toml
+@@ -63,0 +64 @@
++mio = { path = "../rbw-mio" }
+--- a/Cargo.lock
++++ b/Cargo.lock
+@@ -879,2 +878,0 @@
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "4afd66f5b91bf2a3bc13fad0e21caedac168ca4c707504e75585648ae80e4cc4"

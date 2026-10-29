@@ -1,0 +1,21 @@
+--- a/cnf/configure_type.sh
++++ b/cnf/configure_type.sh
+@@ -40,7 +40,7 @@
+ 	try_includes $3
+ 	try_add "$2 foo;"
+ 
+-	if not try_compile; then
++	if not try_compile -fcommon; then
+ 		define $1 'undef'
+ 		result 'missing'
+ 		return
+@@ -54,6 +54,9 @@
+ 	fi
+ 
+ 	result=`grep foo try.out | sed -r -e 's/.*: [0-9]+ +//' -e 's/ .*//' -e 's/^0+//g'`
++	if [ -n "$result" ] && ! { [ "$mode" = buildmini ] && [ "$(uname -s)" = Linux ]; }; then
++		result=$((0x$result))
++	fi
+ 	if [ -z "$result" -o "$result" -le 0 ]; then
+ 		result "unknown"
+ 		die "Cannot determine sizeof($2)"

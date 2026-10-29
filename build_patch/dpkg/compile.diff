@@ -1,0 +1,16 @@
+diff --git a/lib/dpkg/i18n.c b/lib/dpkg/i18n.c
+index cec00eea9..4582bd238 100644
+--- a/lib/dpkg/i18n.c
++++ b/lib/dpkg/i18n.c
+@@ -23,6 +23,11 @@
+ 
+ #include <dpkg/i18n.h>
+ 
++#ifdef __APPLE__
++#include <string.h>
++#include <xlocale.h>
++#endif
++
+ #ifdef HAVE_USELOCALE
+ #ifdef HAVE_XLOCALE_H
+ #include <xlocale.h>

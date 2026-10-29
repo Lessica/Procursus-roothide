@@ -1,0 +1,17 @@
+Package: libgpg-error-dev
+Version: @DEB_LIBGPG-ERROR_V@
+Architecture: @DEB_ARCH@
+Depends: libgpg-error0 (= @DEB_LIBGPG-ERROR_V@)
+Maintainer: @DEB_MAINTAINER@
+Section: Development
+Priority: optional
+Description: GnuPG development runtime library (developer tools)
+ Library that defines common error values, messages, and common
+ runtime functionality for all GnuPG components.  Among these are GPG,
+ GPGSM, GPGME, GPG-Agent, libgcrypt, pinentry, SmartCard Daemon and
+ possibly more in the future.
+ .
+ It will likely be renamed "gpgrt" in the future.
+ .
+ This package contains the headers and other files needed to compile
+ against this library.

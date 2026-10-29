@@ -1,0 +1,9 @@
+Align the unconditional fallback return with the function scope.
+
+--- a/src/p_mach.cpp
++++ b/src/p_mach.cpp
+@@ -468,3 +468,3 @@
+     if (b->vmsize)             return  1;  // 'a' is last
+     // What could remain?
+-                               return  0;
++    return 0;

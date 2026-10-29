@@ -1,0 +1,11 @@
+--- a/src/Makefile
++++ b/src/Makefile
+@@ -47,7 +47,7 @@
+ 
+ CXXFLAGS+=$(CFLAGS)
+ 
+-R2_LIBEXT=$(shell r2 -H R2_LIBEXT)
++R2_LIBEXT?=$(shell r2 -H R2_LIBEXT)
+ R2G_CORE_PLUGIN=core_ghidra.$(R2_LIBEXT)
+ R2G_ASM_PLUGIN=asm_ghidra.$(R2_LIBEXT)
+ R2G_ANAL_PLUGIN=anal_ghidra.$(R2_LIBEXT)

@@ -1,0 +1,19 @@
+--- a/make/common/MakeBase.gmk
++++ b/make/common/MakeBase.gmk
+@@ -286,7 +286,15 @@
+ 	  $(CP) -fRP '$(call DecodeSpace, $<)' '$(call DecodeSpace, $@)'; \
+ 	fi
+ 	if [ -n "`$(XATTR) -ls '$(call DecodeSpace, $@)'`" ]; then \
+-	  $(XATTR) -cs '$(call DecodeSpace, $@)'; \
++	  if [ -h '$(call DecodeSpace, $@)' ]; then \
++	    $(XATTR) -cs '$(call DecodeSpace, $@)'; \
++	  else \
++	    permissions=`/usr/bin/stat -f %Lp '$(call DecodeSpace, $@)'` || exit 1; \
++	    $(CHMOD) u+w '$(call DecodeSpace, $@)' || exit 1; \
++	    $(XATTR) -cs '$(call DecodeSpace, $@)'; result=$$?; \
++	    $(CHMOD) "$$permissions" '$(call DecodeSpace, $@)' || exit 1; \
++	    test "$$result" -eq 0; \
++	  fi; \
+ 	fi
+   endef
+ else

@@ -1,0 +1,11 @@
+Package: gh
+Version: @DEB_GH_V@
+Architecture: @DEB_ARCH@
+Maintainer: @DEB_MAINTAINER@
+Section: Development
+Priority: optional
+Homepage: https://www.github.com/cli/cli
+Description: GitHub command-line tool.
+ gh is GitHub on the command line. It brings pull requests, issues, and
+ other GitHub concepts to the terminal next to where you are already working
+ with git and your code.

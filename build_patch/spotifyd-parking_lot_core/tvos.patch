@@ -1,0 +1,17 @@
+--- a/src/thread_parker/unix.rs
++++ b/src/thread_parker/unix.rs
+@@ -8 +8 @@
+-#[cfg(any(target_os = "macos", target_os = "ios"))]
++#[cfg(any(target_os = "macos", any(target_os = "ios", target_os = "tvos")))]
+@@ -132 +132 @@
+-    #[cfg(any(target_os = "macos", target_os = "ios", target_os = "android"))]
++    #[cfg(any(target_os = "macos", any(target_os = "ios", target_os = "tvos"), target_os = "android"))]
+@@ -137 +137 @@
+-    #[cfg(not(any(target_os = "macos", target_os = "ios", target_os = "android")))]
++    #[cfg(not(any(target_os = "macos", any(target_os = "ios", target_os = "tvos"), target_os = "android")))]
+@@ -196 +196 @@
+-#[cfg(any(target_os = "macos", target_os = "ios"))]
++#[cfg(any(target_os = "macos", any(target_os = "ios", target_os = "tvos")))]
+@@ -207 +207 @@
+-#[cfg(not(any(target_os = "macos", target_os = "ios")))]
++#[cfg(not(any(target_os = "macos", any(target_os = "ios", target_os = "tvos"))))]

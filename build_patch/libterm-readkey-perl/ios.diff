@@ -1,0 +1,79 @@
+--- a/ReadKey.pm.PL
++++ b/ReadKey.pm.PL
+@@ -505,22 +505,30 @@
+ !FIRSTPART
+ 
+ close OUT;
+-# preload the XS module needed for the blockoptions() expansions below
+-# does not work with miniperl
++# Native builds query the XS module. Cross builds pass the bitmask computed
++# by the target compiler so the host Perl never loads a target-architecture XS.
+ package Term::ReadKey;
+-require DynaLoader;
+-our @ISA = qw(DynaLoader);
+-
+-print "Bootstrapping the XS for blockoptions: ";
+-bootstrap Term::ReadKey or die;
+-print blockoptions()."\n";
++my $blockoptions;
++if (defined $ENV{TERM_READKEY_BLOCKOPTIONS}) {
++    $blockoptions = $ENV{TERM_READKEY_BLOCKOPTIONS};
++    die "Invalid TERM_READKEY_BLOCKOPTIONS\n"
++        unless $blockoptions =~ /\A[0-9]+\z/ && $blockoptions <= 15;
++    print "Using target blockoptions: $blockoptions\n";
++} else {
++    require DynaLoader;
++    our @ISA = qw(DynaLoader);
++    print "Bootstrapping the XS for blockoptions: ";
++    bootstrap Term::ReadKey or die;
++    $blockoptions = blockoptions();
++    print "$blockoptions\n";
++}
+ 
+ open OUT, ">>", $file or die "Can't append to $file: $!";
+ print OUT "# blockoptions: \n";
+-if ( &blockoptions() & 1 )    # Use nodelay
++if ( $blockoptions & 1 )    # Use nodelay
+ {
+     print OUT "#nodelay\n";
+-    if ( &blockoptions() & 2 )    #poll
++    if ( $blockoptions & 2 )    #poll
+     {
+         print OUT <<'!NO!SUBS!';
+ # poll
+@@ -551,7 +559,7 @@
+ !NO!SUBS!
+ 
+     }
+-    elsif ( &blockoptions() & 4 )    #select
++    elsif ( $blockoptions & 4 )    #select
+     {
+         print OUT <<'!NO!SUBS!';
+ #select
+@@ -630,7 +638,7 @@
+ else {
+     print OUT "#no nodelay\n";
+ 
+-    if ( &blockoptions() & 2 )    # Use poll
++    if ( $blockoptions & 2 )    # Use poll
+     {
+         print OUT <<'!NO!SUBS!';
+ #poll
+@@ -651,7 +659,7 @@
+ !NO!SUBS!
+ 
+     }
+-    elsif ( &blockoptions() & 4 )    # Use select
++    elsif ( $blockoptions & 4 )    # Use select
+     {
+         print OUT <<'!NO!SUBS!';
+ #select
+@@ -672,7 +680,7 @@
+ !NO!SUBS!
+ 
+     }
+-    elsif ( &blockoptions() & 8 )    # Use Win32
++    elsif ( $blockoptions & 8 )    # Use Win32
+     {
+         print OUT <<'!NO!SUBS!';
+ #Win32

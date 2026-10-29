@@ -1,0 +1,19 @@
+--- a/src/shc.c
++++ b/src/shc.c
+@@ -238,6 +238,7 @@
+ "#include <string.h>",
+ "#include <time.h>",
+ "#include <unistd.h>",
++"#include <libiosexec.h>",
+ "",
+ "/* 'Alleged RC4' */",
+ "",
+@@ -1305,7 +1306,7 @@
+ file2=strcat(file2,".x");
+ 
+ }
+-	sprintf(cmd, "%s %s %s %s.x.c -o %s", cc, cflags, ldflags, file, file2);
++	sprintf(cmd, "%s %s %s %s.x.c -o %s -liosexec", cc, cflags, ldflags, file, file2);
+ 	if (verbose) fprintf(stderr, "%s: %s\n", my_name, cmd);
+ 	if (system(cmd))
+ 		return -1;

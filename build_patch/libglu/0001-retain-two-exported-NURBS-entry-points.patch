@@ -1,0 +1,20 @@
+--- a/src/libnurbs/interface/glinterface.cc
++++ b/src/libnurbs/interface/glinterface.cc
+@@ -55,7 +55,7 @@
+ 
+ 
+ //for LOD
+-extern "C" {void glu_LOD_eval_list(GLUnurbs *nurb, int level);}
++extern "C" {__attribute__((visibility("default"))) void glu_LOD_eval_list(GLUnurbs *nurb, int level);}
+ 
+ void glu_LOD_eval_list(GLUnurbs *nurb, int level)
+ {
+@@ -80,7 +80,7 @@
+ }
+ 
+ extern "C"
+-void GLAPIENTRY
++__attribute__((visibility("default"))) void GLAPIENTRY
+ 
+ gluDeleteNurbsTessellatorEXT(GLUnurbsObj *r)
+ {

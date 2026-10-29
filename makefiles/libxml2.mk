@@ -1,0 +1,96 @@
+ifneq ($(PROCURSUS),1)
+$(error Use the main Makefile)
+endif
+
+SUBPROJECTS     += libxml2
+LIBXML2_VERSION := 2.9.12
+DEB_LIBXML2_V   ?= $(LIBXML2_VERSION)-2
+
+### Provided by macOS/iOS and only used for tools. Try not to link anything to this.
+
+libxml2-setup: setup
+	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://download.gnome.org/sources/libxml2/2.9/libxml2-$(LIBXML2_VERSION).tar.xz)
+	$(call EXTRACT_TAR,libxml2-$(LIBXML2_VERSION).tar.xz,libxml2-$(LIBXML2_VERSION),libxml2)
+	$(call DO_PATCH,libxml2,libxml2,-p1)
+
+ifneq ($(wildcard $(BUILD_WORK)/libxml2/.build_complete),)
+libxml2:
+	@echo "Using previously built libxml2."
+else
+libxml2: libxml2-setup xz ncurses readline python3
+	cd $(BUILD_WORK)/libxml2 && ./configure -C \
+		$(DEFAULT_CONFIGURE_FLAGS) \
+		--libdir=$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)$(MEMO_ALT_PREFIX)/lib \
+		--with-history \
+		--without-python
+	+$(MAKE) -C $(BUILD_WORK)/libxml2 install \
+		DESTDIR=$(BUILD_STAGE)/libxml2 \
+		RDL_LIBS="-lreadline -lhistory -lncursesw"
+	sed -i "s|includes_dir = \[|includes_dir = ['$(BUILD_STAGE)/libxml2/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include', '$(TARGET_SYSROOT)/usr/include',|" $(BUILD_WORK)/libxml2/python/setup.py
+	cd $(BUILD_WORK)/libxml2/python && $(DEFAULT_SETUP_PY_ENV) ARCHFLAGS="-arch $(MEMO_ARCH)" LDFLAGS="$(LDFLAGS) -L$(BUILD_STAGE)/libxml2/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)$(MEMO_ALT_PREFIX)/lib" python$(PYTHON3_MAJOR_V) ./setup.py \
+		build \
+		--executable="$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/python3" \
+		install \
+		--prefix="$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)" \
+		--root="$(BUILD_STAGE)/libxml2" \
+		--install-lib="$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/python3/dist-packages"
+	find $(BUILD_STAGE)/libxml2 -name __pycache__ -prune -exec rm -rf {} \;
+	# Configure's private static link flags contain the build sysroot.
+	# Installed development interfaces must resolve libraries on the target.
+	sed -i -e 's|$(BUILD_BASE)||g' \
+		-e 's|-L$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib -llzma|-L$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)$(MEMO_ALT_PREFIX)/lib -llzma|g' \
+		$(BUILD_STAGE)/libxml2/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/xml2-config \
+		$(BUILD_STAGE)/libxml2/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)$(MEMO_ALT_PREFIX)/lib/pkgconfig/libxml-2.0.pc \
+		$(BUILD_STAGE)/libxml2/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)$(MEMO_ALT_PREFIX)/lib/xml2Conf.sh
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Python bindings and tools above retain their normal LTO runtime.
+	find $(BUILD_WORK)/libxml2 -maxdepth 1 -name '*.lo' -type f -delete
+	rm -f $(BUILD_WORK)/libxml2/libxml2.la
+	+$(MAKE) -C $(BUILD_WORK)/libxml2 libxml2.la \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/libxml2/Makefile) -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/libxml2/Makefile) -fno-lto -static"
+	cp -a $(BUILD_WORK)/libxml2/.libs/libxml2.a $(BUILD_STAGE)/libxml2/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)$(MEMO_ALT_PREFIX)/lib/
+endif
+	$(call AFTER_BUILD)
+endif
+
+libxml2-package: libxml2-stage
+	# libxml2.mk Package Structure
+	rm -rf $(BUILD_DIST)/{python3-,}libxml2{,-dev,-utils}
+	mkdir -p $(BUILD_DIST)/libxml2/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)$(MEMO_ALT_PREFIX)/lib \
+		$(BUILD_DIST)/libxml2-dev/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/{bin,$(MEMO_ALT_PREFIX)/lib,share/man/man1} \
+		$(BUILD_DIST)/libxml2-utils/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/{bin,share/man/man1} \
+		$(BUILD_DIST)/python3-libxml2/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib
+
+	# libxml2.mk Prep libxml2
+	cp -a $(BUILD_STAGE)/libxml2/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)$(MEMO_ALT_PREFIX)/lib/libxml2.2.dylib $(BUILD_DIST)/libxml2/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)$(MEMO_ALT_PREFIX)/lib
+
+	# libxml2.mk Prep libxml2-utils
+	cp -a $(BUILD_STAGE)/libxml2/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/!(xml2-config) $(BUILD_DIST)/libxml2-utils/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin
+	cp -a $(BUILD_STAGE)/libxml2/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share/man/man1/!(xml2-config.1$(MEMO_MANPAGE_SUFFIX)) $(BUILD_DIST)/libxml2-utils/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share/man/man1
+
+	# libxml2.mk Prep libxml2-dev
+	cp -a $(BUILD_STAGE)/libxml2/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include $(BUILD_DIST)/libxml2-dev/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)
+	cp -a $(BUILD_STAGE)/libxml2/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)$(MEMO_ALT_PREFIX)/lib/!(libxml2.2.dylib) $(BUILD_DIST)/libxml2-dev/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)$(MEMO_ALT_PREFIX)/lib
+	cp -a $(BUILD_STAGE)/libxml2/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/xml2-config $(BUILD_DIST)/libxml2-dev/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin
+	cp -a $(BUILD_STAGE)/libxml2/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share/man/man1/xml2-config.1$(MEMO_MANPAGE_SUFFIX) $(BUILD_DIST)/libxml2-dev/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share/man/man1
+	cp -a $(BUILD_STAGE)/libxml2/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share/man/man3 $(BUILD_DIST)/libxml2-dev/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share/man
+
+	# libxml2.mk Prep python3-libxml2
+	cp -a $(BUILD_STAGE)/libxml2/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/python3 $(BUILD_DIST)/python3-libxml2/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib
+
+	# libxml2.mk Sign
+	$(call SIGN,libxml2,general.xml)
+	$(call SIGN,libxml2-utils,general.xml)
+	$(call SIGN,python3-libxml2,general.xml)
+
+	# libxml2.mk Make .debs
+	$(call PACK,libxml2,DEB_LIBXML2_V)
+	$(call PACK,libxml2-utils,DEB_LIBXML2_V)
+	$(call PACK,libxml2-dev,DEB_LIBXML2_V)
+	$(call PACK,python3-libxml2,DEB_LIBXML2_V)
+
+	# libxml2.mk Build cleanup
+	rm -rf $(BUILD_DIST)/{python3-,}libxml2{,-dev,-utils}
+
+.PHONY: libxml2 libxml2-package

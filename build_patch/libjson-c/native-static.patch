@@ -1,0 +1,20 @@
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -420,6 +420,9 @@
+     VERSION 5.1.0
+     SOVERSION 5)
+ list(APPEND CMAKE_TARGETS ${PROJECT_NAME})
++if (NOT BUILD_SHARED_LIBS)
++    target_compile_options(${PROJECT_NAME} PRIVATE -fno-lto)
++endif ()
+ # If json-c is used as subroject it set to target correct interface -I flags and allow
+ # to build external target without extra include_directories(...)
+ target_include_directories(${PROJECT_NAME}
+@@ -442,6 +445,7 @@
+         OUTPUT_NAME ${PROJECT_NAME}
+     )
+     endif()
++    target_compile_options(${STATIC_LIB} PRIVATE -fno-lto)
+     list(APPEND CMAKE_TARGETS ${STATIC_LIB})
+ endif ()
+ 

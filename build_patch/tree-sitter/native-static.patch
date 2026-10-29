@@ -1,0 +1,19 @@
+--- a/Makefile
++++ b/Makefile
+@@ -43,7 +43,15 @@
+ 
+ all: libtree-sitter.a libtree-sitter.$(SOEXTVER)
+ 
+-libtree-sitter.a: $(OBJ)
++NATIVEOBJ := $(SRC:%.c=native/%.o)
++
++native/%.o: %.c
++	@mkdir -p $(@D)
++	$(CC) $(CFLAGS) -fno-lto -MMD -MP -c $< -o $@
++
++-include $(NATIVEOBJ:.o=.d)
++
++libtree-sitter.a: $(NATIVEOBJ)
+ 	$(AR) rcs $@ $^
+ 
+ libtree-sitter.$(SOEXTVER): $(OBJ)

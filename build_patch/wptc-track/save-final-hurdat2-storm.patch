@@ -1,0 +1,12 @@
+--- a/tracks/hurdat2.c
++++ b/tracks/hurdat2.c
+@@ -235,6 +235,9 @@
+ 
+         free(linecopy);
+     }
++    if (points > 0) {
++        save_storm(args, storms, &storm);
++    }
+     fclose(file);
+     
+ #if 0

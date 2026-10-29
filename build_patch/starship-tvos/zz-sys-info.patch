@@ -1,0 +1,9 @@
+--- a/Cargo.toml
++++ b/Cargo.toml
+@@ -50 +50 @@
+-sys-info = { git = "https://github.com/FillZpp/sys-info-rs", rev = "70a7aed786347bb2e5f7c6eb26efc52ff3328437" }
++sys-info = { path = "../starship-sys-info" }
+--- a/Cargo.lock
++++ b/Cargo.lock
+@@ -1726 +1725,0 @@
+-source = "git+https://github.com/FillZpp/sys-info-rs?rev=70a7aed786347bb2e5f7c6eb26efc52ff3328437#70a7aed786347bb2e5f7c6eb26efc52ff3328437"

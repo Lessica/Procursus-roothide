@@ -1,0 +1,17 @@
+--- a/Cargo.toml
++++ b/Cargo.toml
+@@ -58,0 +59,3 @@
++net2 = { path = "../rbw-net2" }
++socket2 = { path = "../rbw-socket2" }
++region = { path = "../rbw-region" }
+--- a/Cargo.lock
++++ b/Cargo.lock
+@@ -963,2 +962,0 @@
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "391630d12b68002ae1e25e8f974306474966550ad82dac6886fb8910c19568ae"
+@@ -1325,2 +1322,0 @@
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "877e54ea2adcd70d80e9179344c97f93ef0dffd6b03e1f4529e6e83ab2fa9ae0"
+@@ -1589,2 +1584,0 @@
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "122e570113d28d773067fab24266b66753f6ea915758651696b6e35e49f88d6e"

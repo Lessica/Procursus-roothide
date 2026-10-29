@@ -1,0 +1,11 @@
+--- a/libwget/thread.c
++++ b/libwget/thread.c
+@@ -289,7 +289,7 @@
+  */
+ wget_thread_id wget_thread_self(void)
+ {
+-	return gl_thread_self();
++	return (wget_thread_id) (uintptr_t) gl_thread_self();
+ }
+ 
+ /**

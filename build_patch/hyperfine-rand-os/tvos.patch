@@ -1,0 +1,8 @@
+--- a/src/lib.rs
++++ b/src/lib.rs
+@@ -307 +307 @@
+-mod_use!(cfg(target_os = "ios"), macos);
++mod_use!(cfg(any(target_os = "ios", target_os = "tvos")), macos);
+@@ -373 +373 @@
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),

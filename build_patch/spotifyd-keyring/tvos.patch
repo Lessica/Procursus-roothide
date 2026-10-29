@@ -1,0 +1,10 @@
+--- a/src/lib.rs
++++ b/src/lib.rs
+@@ -78 +78 @@
+-#[cfg_attr(target_os = "ios", path = "ios.rs")]
++#[cfg_attr(any(target_os = "ios", target_os = "tvos"), path = "ios.rs")]
+--- a/Cargo.toml
++++ b/Cargo.toml
+@@ -58 +58 @@
+-[target."cfg(target_os = \"ios\")".dependencies.security-framework]
++[target."cfg(any(target_os = \"ios\", target_os = \"tvos\"))".dependencies.security-framework]

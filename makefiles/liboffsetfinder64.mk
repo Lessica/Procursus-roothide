@@ -1,0 +1,64 @@
+ifneq ($(PROCURSUS),1)
+$(error Use the main Makefile)
+endif
+
+SUBPROJECTS               += liboffsetfinder64
+LIBOFFSETFINDER64_VERSION := 132
+LIBOFFSETFINDER64_COMMIT  := 35d3411bf675a83bdb768bc0ec26fe2344be16f3
+DEB_LIBOFFSETFINDER64_V   ?= $(LIBOFFSETFINDER64_VERSION)-2
+
+liboffsetfinder64-setup: setup
+	$(call GITHUB_ARCHIVE,tihmstar,libpatchfinder,$(LIBOFFSETFINDER64_COMMIT),$(LIBOFFSETFINDER64_COMMIT),liboffsetfinder64)
+	$(call EXTRACT_TAR,liboffsetfinder64-$(LIBOFFSETFINDER64_COMMIT).tar.gz,libpatchfinder-$(LIBOFFSETFINDER64_COMMIT),liboffsetfinder64)
+
+	sed -i 's/git rev\-list \-\-count HEAD/printf ${LIBOFFSETFINDER64_VERSION}/g' $(BUILD_WORK)/liboffsetfinder64/configure.ac
+	sed -i 's/git rev\-parse HEAD/printf ${LIBOFFSETFINDER64_COMMIT}/g' $(BUILD_WORK)/liboffsetfinder64/configure.ac
+
+ifneq ($(wildcard $(BUILD_WORK)/liboffsetfinder64/.build_complete),)
+liboffsetfinder64:
+	@echo "Using previously built liboffsetfinder64."
+else
+liboffsetfinder64: liboffsetfinder64-setup libgeneral libinsn img4tool openssl libplist
+	cd $(BUILD_WORK)/liboffsetfinder64 && $(LIBTOOLIZE) --force --copy
+	cd $(BUILD_WORK)/liboffsetfinder64 && ./autogen.sh \
+		$(DEFAULT_CONFIGURE_FLAGS)
+	+$(MAKE) -C $(BUILD_WORK)/liboffsetfinder64
+	+$(MAKE) -C $(BUILD_WORK)/liboffsetfinder64 install \
+		DESTDIR="$(BUILD_STAGE)/liboffsetfinder64"
+ifneq ($(filter -flto%,$(CXXFLAGS)),)
+	# Keep normal installed LTO runtime; rebuild only the public archive.
+	find $(BUILD_WORK)/liboffsetfinder64/liboffsetfinder64 -name '*.lo' -type f -delete
+	rm -f $(BUILD_WORK)/liboffsetfinder64/liboffsetfinder64/liboffsetfinder64.la
+	+$(MAKE) -C $(BUILD_WORK)/liboffsetfinder64/liboffsetfinder64 liboffsetfinder64.la \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/liboffsetfinder64/liboffsetfinder64/Makefile) -fno-lto" \
+		CXXFLAGS="$$(sed -n 's/^CXXFLAGS = //p' $(BUILD_WORK)/liboffsetfinder64/liboffsetfinder64/Makefile) -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/liboffsetfinder64/liboffsetfinder64/Makefile) -fno-lto -static"
+	cp -a $(BUILD_WORK)/liboffsetfinder64/liboffsetfinder64/.libs/liboffsetfinder64.a \
+		$(BUILD_STAGE)/liboffsetfinder64/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
+	$(call AFTER_BUILD,copy)
+endif
+
+liboffsetfinder64-package: liboffsetfinder64-stage
+	# liboffsetfinder64.mk Package Structure
+	rm -rf $(BUILD_DIST)/liboffsetfinder64-{0,dev}
+	mkdir -p $(BUILD_DIST)/liboffsetfinder64-{0,dev}/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib
+
+	# liboffsetfinder64.mk Prep liboffsetfinder64-0
+	cp -a $(BUILD_STAGE)/liboffsetfinder64/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/liboffsetfinder64.0.dylib $(BUILD_DIST)/liboffsetfinder64-0/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib
+
+	# liboffsetfinder64.mk Prep liboffsetfinder64-dev
+	cp -a $(BUILD_STAGE)/liboffsetfinder64/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/!(liboffsetfinder64.0.dylib) $(BUILD_DIST)/liboffsetfinder64-dev/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib
+	cp -a $(BUILD_STAGE)/liboffsetfinder64/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include $(BUILD_DIST)/liboffsetfinder64-dev/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)
+
+	# liboffsetfinder64.mk Sign
+	$(call SIGN,liboffsetfinder64-0,general.xml)
+
+	# liboffsetfinder64.mk Make .debs
+	$(call PACK,liboffsetfinder64-0,DEB_LIBOFFSETFINDER64_V)
+	$(call PACK,liboffsetfinder64-dev,DEB_LIBOFFSETFINDER64_V)
+
+	# liboffsetfinder64.mk Build cleanup
+	rm -rf $(BUILD_DIST)/liboffsetfinder64-{0,dev}
+
+.PHONY: liboffsetfinder64 liboffsetfinder64-package

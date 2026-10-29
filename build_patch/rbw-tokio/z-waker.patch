@@ -1,0 +1,15 @@
+--- a/src/util/wake.rs
++++ b/src/util/wake.rs
+@@ -54,11 +54,8 @@
+     let arc = ManuallyDrop::new(Arc::<T>::from_raw(data as *const T));
+ 
+     // Now increase refcount, but don't drop new refcount either
+-    let arc_clone: ManuallyDrop<_> = arc.clone();
++    let _arc_clone: ManuallyDrop<_> = arc.clone();
+ 
+-    // Drop explicitly to avoid clippy warnings
+-    drop(arc);
+-    drop(arc_clone);
+ }
+ 
+ unsafe fn clone_arc_raw<T: Wake>(data: *const ()) -> RawWaker {

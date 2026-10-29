@@ -1,0 +1,9 @@
+Package: python3-defusedxml
+Version: @DEB_PYTHON3_DEFUSEDXML_V@
+Architecture: all
+Maintainer: @DEB_MAINTAINER@
+Depends: python3
+Section: Python
+Priority: optional
+Homepage: https://pypi.org/project/defusedxml/
+Description: XML protection for Python standard library parsers

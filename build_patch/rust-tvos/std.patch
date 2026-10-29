@@ -1,0 +1,435 @@
+--- a/library/std/src/os/mod.rs
++++ b/library/std/src/os/mod.rs
+@@ -90,7 +90,7 @@
+     pub mod haiku;
+     #[cfg(target_os = "illumos")]
+     pub mod illumos;
+-    #[cfg(target_os = "ios")]
++    #[cfg(any(target_os = "ios", target_os = "tvos"))]
+     pub mod ios;
+     #[cfg(target_os = "l4re")]
+     pub mod linux;
+--- a/library/std/src/os/unix/mod.rs
++++ b/library/std/src/os/unix/mod.rs
+@@ -50,7 +50,7 @@
+     pub use crate::os::haiku::*;
+     #[cfg(target_os = "illumos")]
+     pub use crate::os::illumos::*;
+-    #[cfg(target_os = "ios")]
++    #[cfg(any(target_os = "ios", target_os = "tvos"))]
+     pub use crate::os::ios::*;
+     #[cfg(any(target_os = "linux", target_os = "l4re"))]
+     pub use crate::os::linux::*;
+@@ -82,7 +82,7 @@
+     target_os = "linux",
+     target_os = "dragonfly",
+     target_os = "freebsd",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "netbsd",
+     target_os = "openbsd"
+--- a/library/std/src/os/unix/net/stream.rs
++++ b/library/std/src/os/unix/net/stream.rs
+@@ -19,7 +19,7 @@
+     target_os = "linux",
+     target_os = "dragonfly",
+     target_os = "freebsd",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "netbsd",
+     target_os = "openbsd"
+@@ -37,7 +37,7 @@
+     target_os = "linux",
+     target_os = "dragonfly",
+     target_os = "freebsd",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "netbsd",
+     target_os = "openbsd"
+@@ -208,7 +208,7 @@
+         target_os = "linux",
+         target_os = "dragonfly",
+         target_os = "freebsd",
+-        target_os = "ios",
++        any(target_os = "ios", target_os = "tvos"),
+         target_os = "macos",
+         target_os = "netbsd",
+         target_os = "openbsd"
+--- a/library/std/src/os/unix/ucred.rs
++++ b/library/std/src/os/unix/ucred.rs
+@@ -36,7 +36,7 @@
+ ))]
+ pub use self::impl_bsd::peer_cred;
+ 
+-#[cfg(any(target_os = "macos", target_os = "ios",))]
++#[cfg(any(target_os = "macos", any(target_os = "ios", target_os = "tvos"),))]
+ pub use self::impl_mac::peer_cred;
+ 
+ #[cfg(any(target_os = "linux", target_os = "android"))]
+@@ -97,7 +97,7 @@
+     }
+ }
+ 
+-#[cfg(any(target_os = "macos", target_os = "ios",))]
++#[cfg(any(target_os = "macos", any(target_os = "ios", target_os = "tvos"),))]
+ pub mod impl_mac {
+     use super::UCred;
+     use crate::os::unix::io::AsRawFd;
+--- a/library/std/src/sys/unix/args.rs
++++ b/library/std/src/sys/unix/args.rs
+@@ -150,7 +150,7 @@
+     }
+ }
+ 
+-#[cfg(any(target_os = "macos", target_os = "ios"))]
++#[cfg(any(target_os = "macos", any(target_os = "ios", target_os = "tvos")))]
+ mod imp {
+     use super::Args;
+     use crate::ffi::CStr;
+@@ -191,7 +191,7 @@
+     // for i in (0..[args count])
+     //      res.push([args objectAtIndex:i])
+     // res
+-    #[cfg(target_os = "ios")]
++    #[cfg(any(target_os = "ios", target_os = "tvos"))]
+     pub fn args() -> Args {
+         use crate::ffi::OsString;
+         use crate::mem;
+--- a/library/std/src/sys/unix/condvar.rs
++++ b/library/std/src/sys/unix/condvar.rs
+@@ -27,7 +27,7 @@
+ 
+     #[cfg(any(
+         target_os = "macos",
+-        target_os = "ios",
++        any(target_os = "ios", target_os = "tvos"),
+         target_os = "l4re",
+         target_os = "android",
+         target_os = "redox"
+@@ -46,7 +46,7 @@
+ 
+     #[cfg(not(any(
+         target_os = "macos",
+-        target_os = "ios",
++        any(target_os = "ios", target_os = "tvos"),
+         target_os = "l4re",
+         target_os = "android",
+         target_os = "redox",
+@@ -89,7 +89,7 @@
+     // from changes made to the system time.
+     #[cfg(not(any(
+         target_os = "macos",
+-        target_os = "ios",
++        any(target_os = "ios", target_os = "tvos"),
+         target_os = "android",
+         target_os = "espidf"
+     )))]
+@@ -121,7 +121,7 @@
+     // https://github.com/llvm-mirror/libcxx/blob/release_35/include/__mutex_base#L367
+     #[cfg(any(
+         target_os = "macos",
+-        target_os = "ios",
++        any(target_os = "ios", target_os = "tvos"),
+         target_os = "android",
+         target_os = "espidf"
+     ))]
+--- a/library/std/src/sys/unix/env.rs
++++ b/library/std/src/sys/unix/env.rs
+@@ -20,10 +20,10 @@
+     pub const EXE_EXTENSION: &str = "";
+ }
+ 
+-#[cfg(target_os = "ios")]
++#[cfg(any(target_os = "ios", target_os = "tvos"))]
+ pub mod os {
+     pub const FAMILY: &str = "unix";
+-    pub const OS: &str = "ios";
++    pub const OS: &str = if cfg!(target_os = "tvos") { "tvos" } else { "ios" };
+     pub const DLL_PREFIX: &str = "lib";
+     pub const DLL_SUFFIX: &str = ".dylib";
+     pub const DLL_EXTENSION: &str = "dylib";
+--- a/library/std/src/sys/unix/fd.rs
++++ b/library/std/src/sys/unix/fd.rs
+@@ -30,7 +30,7 @@
+ #[cfg(any(
+     target_os = "dragonfly",
+     target_os = "freebsd",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "macos",
+     target_os = "netbsd",
+     target_os = "openbsd",
+@@ -49,7 +49,7 @@
+     target_os = "dragonfly",
+     target_os = "emscripten",
+     target_os = "freebsd",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     target_os = "linux",
+     target_os = "macos",
+     target_os = "netbsd",
+--- a/library/std/src/sys/unix/fs.rs
++++ b/library/std/src/sys/unix/fs.rs
+@@ -16,7 +16,7 @@
+ #[cfg(any(
+     all(target_os = "linux", target_env = "gnu"),
+     target_os = "macos",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+ ))]
+ use crate::sys::weak::syscall;
+ #[cfg(target_os = "macos")]
+@@ -26,7 +26,7 @@
+ 
+ #[cfg(any(
+     target_os = "macos",
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+     all(target_os = "linux", target_env = "gnu")
+ ))]
+ use libc::c_char;
+@@ -349,7 +349,7 @@
+         target_os = "freebsd",
+         target_os = "openbsd",
+         target_os = "macos",
+-        target_os = "ios"
++        any(target_os = "ios", target_os = "tvos")
+     ))]
+     pub fn created(&self) -> io::Result<SystemTime> {
+         Ok(SystemTime::from(libc::timespec {
+@@ -362,7 +362,7 @@
+         target_os = "freebsd",
+         target_os = "openbsd",
+         target_os = "macos",
+-        target_os = "ios"
++        any(target_os = "ios", target_os = "tvos")
+     )))]
+     pub fn created(&self) -> io::Result<SystemTime> {
+         cfg_has_statx! {
+@@ -601,7 +601,7 @@
+ 
+     #[cfg(any(
+         target_os = "macos",
+-        target_os = "ios",
++        any(target_os = "ios", target_os = "tvos"),
+         target_os = "linux",
+         target_os = "emscripten",
+         target_os = "android",
+@@ -630,7 +630,7 @@
+ 
+     #[cfg(any(
+         target_os = "macos",
+-        target_os = "ios",
++        any(target_os = "ios", target_os = "tvos"),
+         target_os = "netbsd",
+         target_os = "openbsd",
+         target_os = "freebsd",
+@@ -792,11 +792,11 @@
+         cvt_r(|| unsafe { os_fsync(self.as_raw_fd()) })?;
+         return Ok(());
+ 
+-        #[cfg(any(target_os = "macos", target_os = "ios"))]
++        #[cfg(any(target_os = "macos", any(target_os = "ios", target_os = "tvos")))]
+         unsafe fn os_fsync(fd: c_int) -> c_int {
+             libc::fcntl(fd, libc::F_FULLFSYNC)
+         }
+-        #[cfg(not(any(target_os = "macos", target_os = "ios")))]
++        #[cfg(not(any(target_os = "macos", any(target_os = "ios", target_os = "tvos"))))]
+         unsafe fn os_fsync(fd: c_int) -> c_int {
+             libc::fsync(fd)
+         }
+@@ -806,7 +806,7 @@
+         cvt_r(|| unsafe { os_datasync(self.as_raw_fd()) })?;
+         return Ok(());
+ 
+-        #[cfg(any(target_os = "macos", target_os = "ios"))]
++        #[cfg(any(target_os = "macos", any(target_os = "ios", target_os = "tvos")))]
+         unsafe fn os_datasync(fd: c_int) -> c_int {
+             libc::fcntl(fd, libc::F_FULLFSYNC)
+         }
+@@ -823,7 +823,7 @@
+         #[cfg(not(any(
+             target_os = "android",
+             target_os = "freebsd",
+-            target_os = "ios",
++            any(target_os = "ios", target_os = "tvos"),
+             target_os = "linux",
+             target_os = "macos",
+             target_os = "netbsd",
+@@ -1278,7 +1278,7 @@
+     target_os = "linux",
+     target_os = "android",
+     target_os = "macos",
+-    target_os = "ios"
++    any(target_os = "ios", target_os = "tvos")
+ )))]
+ pub fn copy(from: &Path, to: &Path) -> io::Result<u64> {
+     let (mut reader, reader_metadata) = open_from(from)?;
+@@ -1305,7 +1305,7 @@
+     }
+ }
+ 
+-#[cfg(any(target_os = "macos", target_os = "ios"))]
++#[cfg(any(target_os = "macos", any(target_os = "ios", target_os = "tvos")))]
+ pub fn copy(from: &Path, to: &Path) -> io::Result<u64> {
+     use crate::sync::atomic::{AtomicBool, Ordering};
+ 
+--- a/library/std/src/sys/unix/mod.rs
++++ b/library/std/src/sys/unix/mod.rs
+@@ -78,7 +78,7 @@
+                 target_os = "vxworks",
+                 // The poll on Darwin doesn't set POLLNVAL for closed fds.
+                 target_os = "macos",
+-                target_os = "ios",
++                any(target_os = "ios", target_os = "tvos"),
+                 target_os = "redox",
+             )))] {
+                 use crate::sys::os::errno;
+@@ -105,7 +105,7 @@
+                         libc::abort();
+                     }
+                 }
+-            } else if #[cfg(any(target_os = "macos", target_os = "ios", target_os = "redox"))] {
++            } else if #[cfg(any(target_os = "macos", any(target_os = "ios", target_os = "tvos"), target_os = "redox"))] {
+                 use crate::sys::os::errno;
+                 for fd in 0..3 {
+                     if libc::fcntl(fd, libc::F_GETFD) == -1 && errno() == libc::EBADF {
+@@ -296,7 +296,7 @@
+         // See #41582 and https://blog.achernya.com/2013/03/os-x-has-silly-libsystem.html
+         #[link(name = "resolv")]
+         extern "C" {}
+-    } else if #[cfg(target_os = "ios")] {
++    } else if #[cfg(any(target_os = "ios", target_os = "tvos"))] {
+         #[link(name = "System")]
+         #[link(name = "objc")]
+         #[link(name = "Security", kind = "framework")]
+--- a/library/std/src/sys/unix/os.rs
++++ b/library/std/src/sys/unix/os.rs
+@@ -61,7 +61,7 @@
+     )]
+     #[cfg_attr(any(target_os = "solaris", target_os = "illumos"), link_name = "___errno")]
+     #[cfg_attr(
+-        any(target_os = "macos", target_os = "ios", target_os = "freebsd"),
++        any(target_os = "macos", any(target_os = "ios", target_os = "tvos"), target_os = "freebsd"),
+         link_name = "__error"
+     )]
+     #[cfg_attr(target_os = "haiku", link_name = "_errnop")]
+@@ -360,7 +360,7 @@
+     }
+ }
+ 
+-#[cfg(any(target_os = "macos", target_os = "ios"))]
++#[cfg(any(target_os = "macos", any(target_os = "ios", target_os = "tvos")))]
+ pub fn current_exe() -> io::Result<PathBuf> {
+     unsafe {
+         let mut sz: u32 = 0;
+@@ -578,7 +578,7 @@
+ 
+     #[cfg(any(
+         target_os = "android",
+-        target_os = "ios",
++        any(target_os = "ios", target_os = "tvos"),
+         target_os = "emscripten",
+         target_os = "redox",
+         target_os = "vxworks",
+@@ -589,7 +589,7 @@
+     }
+     #[cfg(not(any(
+         target_os = "android",
+-        target_os = "ios",
++        any(target_os = "ios", target_os = "tvos"),
+         target_os = "emscripten",
+         target_os = "redox",
+         target_os = "vxworks",
+--- a/library/std/src/sys/unix/rand.rs
++++ b/library/std/src/sys/unix/rand.rs
+@@ -13,7 +13,7 @@
+ #[cfg(all(
+     unix,
+     not(target_os = "macos"),
+-    not(target_os = "ios"),
++    not(any(target_os = "ios", target_os = "tvos")),
+     not(target_os = "openbsd"),
+     not(target_os = "freebsd"),
+     not(target_os = "netbsd"),
+@@ -170,7 +170,7 @@
+ // once per thread in `hashmap_random_keys`. Therefore `SecRandomCopyBytes` is
+ // only used on iOS where direct access to `/dev/urandom` is blocked by the
+ // sandbox.
+-#[cfg(target_os = "ios")]
++#[cfg(any(target_os = "ios", target_os = "tvos"))]
+ mod imp {
+     use crate::io;
+     use crate::ptr;
+--- a/library/std/src/sys/unix/thread.rs
++++ b/library/std/src/sys/unix/thread.rs
+@@ -131,7 +131,7 @@
+         }
+     }
+ 
+-    #[cfg(any(target_os = "macos", target_os = "ios"))]
++    #[cfg(any(target_os = "macos", any(target_os = "ios", target_os = "tvos")))]
+     pub fn set_name(name: &CStr) {
+         unsafe {
+             libc::pthread_setname_np(name.as_ptr());
+@@ -269,7 +269,7 @@
+             target_os = "android",
+             target_os = "emscripten",
+             target_os = "fuchsia",
+-            target_os = "ios",
++            any(target_os = "ios", target_os = "tvos"),
+             target_os = "linux",
+             target_os = "macos",
+             target_os = "solaris",
+--- a/library/std/src/sys/unix/time.rs
++++ b/library/std/src/sys/unix/time.rs
+@@ -114,7 +114,7 @@
+     }
+ }
+ 
+-#[cfg(any(target_os = "macos", target_os = "ios"))]
++#[cfg(any(target_os = "macos", any(target_os = "ios", target_os = "tvos")))]
+ mod inner {
+     use crate::fmt;
+     use crate::sync::atomic::{AtomicU64, Ordering};
+@@ -271,7 +271,7 @@
+     }
+ }
+ 
+-#[cfg(not(any(target_os = "macos", target_os = "ios")))]
++#[cfg(not(any(target_os = "macos", any(target_os = "ios", target_os = "tvos"))))]
+ mod inner {
+     use crate::fmt;
+     use crate::sys::cvt;
+--- a/library/std/src/sys_common/net.rs
++++ b/library/std/src/sys_common/net.rs
+@@ -19,7 +19,7 @@
+ cfg_if::cfg_if! {
+     if #[cfg(any(
+         target_os = "dragonfly", target_os = "freebsd",
+-        target_os = "ios", target_os = "macos",
++        any(target_os = "ios", target_os = "tvos"), target_os = "macos",
+         target_os = "openbsd", target_os = "netbsd", target_os = "illumos",
+         target_os = "solaris", target_os = "haiku", target_os = "l4re"))] {
+         use crate::sys::net::netc::IPV6_JOIN_GROUP as IPV6_ADD_MEMBERSHIP;
+--- a/library/std/build.rs
++++ b/library/std/build.rs
+@@ -15,6 +15,7 @@
+         || target.contains("illumos")
+         || target.contains("apple-darwin")
+         || target.contains("apple-ios")
++        || target.contains("apple-tvos")
+         || target.contains("uwp")
+         || target.contains("windows")
+         || target.contains("fuchsia")
+@@ -37,7 +38,6 @@
+         // - mipsel-sony-psp
+         // - nvptx64-nvidia-cuda
+         // - arch=avr
+-        // - tvos (aarch64-apple-tvos, x86_64-apple-tvos)
+         // - uefi (x86_64-unknown-uefi, i686-unknown-uefi)
+         // - JSON targets
+         // - Any new targets that have not been explicitly added above.

@@ -1,0 +1,10 @@
+Package: mariadb-plugin-connect
+Version: @DEB_MARIADB_V@
+Architecture: @DEB_ARCH@
+Maintainer: @DEB_MAINTAINER@
+Depends: mariadb-server-core-10.5 (= @DEB_MARIADB_V@)
+Section: Data_Storage
+Priority: optional
+Homepage: https://mariadb.org/
+Description: MariaDB CONNECT storage engine
+ The CONNECT storage engine plugin and its installed support files.

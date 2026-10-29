@@ -1,0 +1,11 @@
+--- a/Cargo.toml
++++ b/Cargo.toml
+@@ -66,0 +67,3 @@
++
++[patch.crates-io]
++getrandom = { path = "../dog-getrandom" }
+--- a/Cargo.lock
++++ b/Cargo.lock
+@@ -230,2 +229,0 @@
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "fc587bc0ec293155d5bfa6b9891ec18a1e330c234f896ea47fbada4cadbe47e6"

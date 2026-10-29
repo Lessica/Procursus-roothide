@@ -1,0 +1,11 @@
+--- a/configure
++++ b/configure
+@@ -6182,7 +6182,7 @@
+      ELF_CFLAGS="\$(CFLAGS) -fno-common"
+      ELF_LINK="\$(CC) \$(LDFLAGS) -dynamiclib -install_name \$(install_lib_dir)/\$(ELFLIB_MAJOR) -compatibility_version \$(ELF_MAJOR_VERSION) -current_version \$(ELF_MAJOR_VERSION).\$(ELF_MINOR_VERSION)"
+      ELF_DEP_LIBS="\$(LDFLAGS) \$(DL_LIB)"
+-     CC_SHARED_FLAGS="-bundle -flat_namespace -undefined suppress -fno-common"
++     CC_SHARED_FLAGS="-bundle -twolevel_namespace -undefined dynamic_lookup -fno-common"
+      CC_SHARED="\$(CC) $CC_SHARED_FLAGS \$(CFLAGS)"
+      ELFLIB="lib\$(THIS_LIB).dylib"
+      ELFLIB_MAJOR="lib\$(THIS_LIB).\$(ELF_MAJOR_VERSION).dylib"

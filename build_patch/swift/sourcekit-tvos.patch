@@ -1,0 +1,17 @@
+--- a/tools/SourceKit/CMakeLists.txt
++++ b/tools/SourceKit/CMakeLists.txt
+@@ -71,6 +71,14 @@
+     set(version_min_os "ios-simulator")
+     set(triple_os "ios")
+     set(SOURCEKIT_DEFAULT_TARGET_SDK "IOS_SIMULATOR")
++  elseif (SOURCEKIT_DEPLOYMENT_OS MATCHES "^appletvsimulator")
++    set(version_min_os "tvos-simulator")
++    set(triple_os "tvos")
++    set(SOURCEKIT_DEFAULT_TARGET_SDK "TVOS_SIMULATOR")
++  elseif (SOURCEKIT_DEPLOYMENT_OS MATCHES "^appletvos")
++    set(version_min_os "tvos")
++    set(triple_os "tvos")
++    set(SOURCEKIT_DEFAULT_TARGET_SDK "TVOS")
+   elseif (SOURCEKIT_DEPLOYMENT_OS MATCHES "^macosx")
+     set(version_min_os "macosx")
+     set(triple_os "macosx")

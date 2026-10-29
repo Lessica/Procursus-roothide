@@ -1,0 +1,14 @@
+--- a/make/autoconf/flags-ldflags.m4
++++ b/make/autoconf/flags-ldflags.m4
+@@ -204,9 +204,10 @@
+   # Export variables according to old definitions, prefix with $2 if present.
+   LDFLAGS_JDK_COMMON="$BASIC_LDFLAGS $BASIC_LDFLAGS_JDK_ONLY \
+       $OS_LDFLAGS $DEBUGLEVEL_LDFLAGS_JDK_ONLY ${$2EXTRA_LDFLAGS}"
+-  $2LDFLAGS_JDKLIB="$LDFLAGS_JDK_COMMON $BASIC_LDFLAGS_JDK_LIB_ONLY \
+-      ${$1_LDFLAGS_JDK_LIBPATH} $SHARED_LIBRARY_FLAGS \
++  # Prefer JDK libraries to same-named libraries in the dependency sysroot.
++  $2LDFLAGS_JDKLIB="${$1_LDFLAGS_JDK_LIBPATH} $LDFLAGS_JDK_COMMON \
++      $BASIC_LDFLAGS_JDK_LIB_ONLY $SHARED_LIBRARY_FLAGS \
+       $REPRODUCIBLE_LDFLAGS $FILE_MACRO_LDFLAGS"
+   $2LDFLAGS_JDKEXE="$LDFLAGS_JDK_COMMON $EXECUTABLE_LDFLAGS \
+       ${$1_CPU_EXECUTABLE_LDFLAGS} $REPRODUCIBLE_LDFLAGS $FILE_MACRO_LDFLAGS"

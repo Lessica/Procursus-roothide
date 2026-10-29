@@ -1,0 +1,11 @@
+Package: libmariadbd-dev
+Version: @DEB_MARIADB_V@
+Architecture: @DEB_ARCH@
+Maintainer: @DEB_MAINTAINER@
+Depends: libmariadb-dev (= @DEB_MARIADB_V@), libmariadbd19 (= @DEB_MARIADB_V@), liblz4-dev, liblzo2-dev, liblzma-dev, libsnappy-dev
+Provides: libmysqld-dev
+Section: Development
+Priority: optional
+Homepage: https://mariadb.org/
+Description: MariaDB embedded database development files
+ Server headers, static embedded library and compatibility links.

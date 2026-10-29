@@ -1,0 +1,31 @@
+.\" -*- nroff -*-
+.\"*******************************************************************
+.\"
+.\" This file was generated with po4a. Translate the source file.
+.\"
+.\"*******************************************************************
+.TH WHICH 1 "29 Jun 2016" Debian 
+.SH NOMBRE
+which \- Busca una orden
+.SH SINOPSIS
+which [\-a] nombre\-de\-fichero ...
+.SH DESCRIPCIÓN
+\fBwhich\fP returns the pathnames of the files (or links) which would be
+executed in the current environment, had its arguments been given as
+commands in a strictly POSIX\-conformant shell.  It does this by searching
+the PATH for executable files matching the names of the arguments.  It does
+not canonicalize path names.
+.SH OPCIONES
+.TP 
+\fB\-a\fP
+Muestra todos los nombres de ruta que coincidan con cada argumento.
+.SH "ESTADO DE SALIDA"
+.TP 
+\fB0\fP
+Se han encontrado las órdenes definidas, y son ejecutables.
+.TP 
+\fB1\fP
+Una o más órdenes no existen, o no son ejecutables.
+.TP 
+\fB2\fP
+La opción definida no es válida.

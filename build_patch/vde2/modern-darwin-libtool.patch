@@ -1,0 +1,22 @@
+--- a/configure
++++ b/configure
+@@ -8887,7 +8887,7 @@
+ 	  _lt_dar_allow_undefined='${wl}-undefined ${wl}dynamic_lookup' ;;
+ 	10.[012]*)
+ 	  _lt_dar_allow_undefined='${wl}-flat_namespace ${wl}-undefined ${wl}suppress' ;;
+-	10.*)
++	*)
+ 	  _lt_dar_allow_undefined='${wl}-undefined ${wl}dynamic_lookup' ;;
+       esac
+     ;;
+--- a/m4/libtool.m4
++++ b/m4/libtool.m4
+@@ -1054,7 +1054,7 @@
+ 	  _lt_dar_allow_undefined='${wl}-undefined ${wl}dynamic_lookup' ;;
+ 	10.[[012]]*)
+ 	  _lt_dar_allow_undefined='${wl}-flat_namespace ${wl}-undefined ${wl}suppress' ;;
+-	10.*)
++	*)
+ 	  _lt_dar_allow_undefined='${wl}-undefined ${wl}dynamic_lookup' ;;
+       esac
+     ;;

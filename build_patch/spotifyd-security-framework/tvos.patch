@@ -1,0 +1,154 @@
+--- a/src/certificate.rs
++++ b/src/certificate.rs
+@@ -9 +9 @@
+-#[cfg(target_os = "ios")]
++#[cfg(any(target_os = "ios", target_os = "tvos"))]
+@@ -17 +17 @@
+-#[cfg(any(feature = "OSX_10_12", target_os = "ios"))]
++#[cfg(any(feature = "OSX_10_12", any(target_os = "ios", target_os = "tvos")))]
+@@ -19 +19 @@
+-#[cfg(any(feature = "OSX_10_12", target_os = "ios"))]
++#[cfg(any(feature = "OSX_10_12", any(target_os = "ios", target_os = "tvos")))]
+@@ -21 +21 @@
+-#[cfg(any(feature = "OSX_10_13", target_os = "ios"))]
++#[cfg(any(feature = "OSX_10_13", any(target_os = "ios", target_os = "tvos")))]
+@@ -23 +23 @@
+-#[cfg(any(feature = "OSX_10_12", target_os = "ios"))]
++#[cfg(any(feature = "OSX_10_12", any(target_os = "ios", target_os = "tvos")))]
+@@ -27 +27 @@
+-#[cfg(any(feature = "OSX_10_12", target_os = "ios"))]
++#[cfg(any(feature = "OSX_10_12", any(target_os = "ios", target_os = "tvos")))]
+@@ -29 +29 @@
+-#[cfg(any(feature = "OSX_10_12", target_os = "ios"))]
++#[cfg(any(feature = "OSX_10_12", any(target_os = "ios", target_os = "tvos")))]
+@@ -97 +97 @@
+-    #[cfg(any(feature = "OSX_10_12", target_os = "ios"))]
++    #[cfg(any(feature = "OSX_10_12", any(target_os = "ios", target_os = "tvos")))]
+@@ -107 +107 @@
+-    #[cfg(any(feature = "OSX_10_12", target_os = "ios"))]
++    #[cfg(any(feature = "OSX_10_12", any(target_os = "ios", target_os = "tvos")))]
+@@ -117 +117 @@
+-    #[cfg(any(feature = "OSX_10_13", target_os = "ios"))]
++    #[cfg(any(feature = "OSX_10_13", any(target_os = "ios", target_os = "tvos")))]
+@@ -138 +138 @@
+-    #[cfg(any(feature = "OSX_10_12", target_os = "ios"))]
++    #[cfg(any(feature = "OSX_10_12", any(target_os = "ios", target_os = "tvos")))]
+@@ -148 +148 @@
+-    #[cfg(any(feature = "OSX_10_12", target_os = "ios"))]
++    #[cfg(any(feature = "OSX_10_12", any(target_os = "ios", target_os = "tvos")))]
+@@ -169 +169 @@
+-    #[cfg(any(feature = "OSX_10_12", target_os = "ios"))]
++    #[cfg(any(feature = "OSX_10_12", any(target_os = "ios", target_os = "tvos")))]
+@@ -178 +178 @@
+-        #[cfg(not(target_os = "ios"))]
++        #[cfg(not(any(target_os = "ios", target_os = "tvos")))]
+@@ -180 +180 @@
+-        #[cfg(target_os = "ios")]
++        #[cfg(any(target_os = "ios", target_os = "tvos"))]
+@@ -189 +189 @@
+-#[cfg(any(feature = "OSX_10_12", target_os = "ios"))]
++#[cfg(any(feature = "OSX_10_12", any(target_os = "ios", target_os = "tvos")))]
+@@ -210 +210 @@
+-#[cfg(any(feature = "OSX_10_12", target_os = "ios"))]
++#[cfg(any(feature = "OSX_10_12", any(target_os = "ios", target_os = "tvos")))]
+@@ -216 +216 @@
+-#[cfg(any(feature = "OSX_10_12", target_os = "ios"))]
++#[cfg(any(feature = "OSX_10_12", any(target_os = "ios", target_os = "tvos")))]
+@@ -222 +222 @@
+-#[cfg(any(feature = "OSX_10_12", target_os = "ios"))]
++#[cfg(any(feature = "OSX_10_12", any(target_os = "ios", target_os = "tvos")))]
+@@ -228 +228 @@
+-#[cfg(any(feature = "OSX_10_12", target_os = "ios"))]
++#[cfg(any(feature = "OSX_10_12", any(target_os = "ios", target_os = "tvos")))]
+@@ -239 +239 @@
+-    #[cfg(any(feature = "OSX_10_12", target_os = "ios"))]
++    #[cfg(any(feature = "OSX_10_12", any(target_os = "ios", target_os = "tvos")))]
+@@ -255 +255 @@
+-    #[cfg(any(feature = "OSX_10_12", target_os = "ios"))]
++    #[cfg(any(feature = "OSX_10_12", any(target_os = "ios", target_os = "tvos")))]
+@@ -268 +268 @@
+-    #[cfg(any(feature = "OSX_10_12", target_os = "ios"))]
++    #[cfg(any(feature = "OSX_10_12", any(target_os = "ios", target_os = "tvos")))]
+--- a/src/key.rs
++++ b/src/key.rs
+@@ -4 +4 @@
+-#[cfg(any(feature = "OSX_10_12", target_os = "ios"))]
++#[cfg(any(feature = "OSX_10_12", any(target_os = "ios", target_os = "tvos")))]
+@@ -6 +6 @@
+-#[cfg(any(feature = "OSX_10_12", target_os = "ios"))]
++#[cfg(any(feature = "OSX_10_12", any(target_os = "ios", target_os = "tvos")))]
+@@ -8 +8 @@
+-#[cfg(any(feature = "OSX_10_12", target_os = "ios"))]
++#[cfg(any(feature = "OSX_10_12", any(target_os = "ios", target_os = "tvos")))]
+@@ -10 +10 @@
+-#[cfg(any(feature = "OSX_10_12", target_os = "ios"))]
++#[cfg(any(feature = "OSX_10_12", any(target_os = "ios", target_os = "tvos")))]
+@@ -13 +13 @@
+-#[cfg(any(feature = "OSX_10_12", target_os = "ios"))]
++#[cfg(any(feature = "OSX_10_12", any(target_os = "ios", target_os = "tvos")))]
+@@ -16 +16 @@
+-#[cfg(any(feature = "OSX_10_12", target_os = "ios"))]
++#[cfg(any(feature = "OSX_10_12", any(target_os = "ios", target_os = "tvos")))]
+@@ -32 +32 @@
+-    #[cfg(any(feature = "OSX_10_12", target_os = "ios"))]
++    #[cfg(any(feature = "OSX_10_12", any(target_os = "ios", target_os = "tvos")))]
+@@ -39 +39 @@
+-    #[cfg(any(feature = "OSX_10_12", target_os = "ios"))]
++    #[cfg(any(feature = "OSX_10_12", any(target_os = "ios", target_os = "tvos")))]
+@@ -50 +50 @@
+-    #[cfg(any(feature = "OSX_10_12", target_os = "ios"))]
++    #[cfg(any(feature = "OSX_10_12", any(target_os = "ios", target_os = "tvos")))]
+--- a/src/policy.rs
++++ b/src/policy.rs
+@@ -3 +3 @@
+-#[cfg(any(feature = "OSX_10_9", target_os = "ios"))]
++#[cfg(any(feature = "OSX_10_9", any(target_os = "ios", target_os = "tvos")))]
+@@ -7 +7 @@
+-#[cfg(any(feature = "OSX_10_9", target_os = "ios"))]
++#[cfg(any(feature = "OSX_10_9", any(target_os = "ios", target_os = "tvos")))]
+@@ -13 +13 @@
+-#[cfg(any(feature = "OSX_10_9", target_os = "ios"))]
++#[cfg(any(feature = "OSX_10_9", any(target_os = "ios", target_os = "tvos")))]
+@@ -33 +33 @@
+-#[cfg(any(feature = "OSX_10_9", target_os = "ios"))]
++#[cfg(any(feature = "OSX_10_9", any(target_os = "ios", target_os = "tvos")))]
+@@ -70 +70 @@
+-    #[cfg(any(feature = "OSX_10_9", target_os = "ios"))]
++    #[cfg(any(feature = "OSX_10_9", any(target_os = "ios", target_os = "tvos")))]
+--- a/src/secure_transport.rs
++++ b/src/secure_transport.rs
+@@ -1681 +1681 @@
+-    #[cfg_attr(target_os = "ios", ignore)] // FIXME what's going on with ios?
++    #[cfg_attr(any(target_os = "ios", target_os = "tvos"), ignore)] // FIXME what's going on with ios?
+@@ -1717 +1717 @@
+-    #[cfg_attr(target_os = "ios", ignore)] // FIXME same issue as cipher_configuration
++    #[cfg_attr(any(target_os = "ios", target_os = "tvos"), ignore)] // FIXME same issue as cipher_configuration
+--- a/src/trust.rs
++++ b/src/trust.rs
+@@ -7 +7 @@
+-#[cfg(any(feature = "OSX_10_9", target_os = "ios"))]
++#[cfg(any(feature = "OSX_10_9", any(target_os = "ios", target_os = "tvos")))]
+@@ -166 +166 @@
+-    #[cfg(any(feature = "OSX_10_9", target_os = "ios"))]
++    #[cfg(any(feature = "OSX_10_9", any(target_os = "ios", target_os = "tvos")))]
+@@ -177 +177 @@
+-    #[cfg(any(feature = "OSX_10_9", target_os = "ios"))]
++    #[cfg(any(feature = "OSX_10_9", any(target_os = "ios", target_os = "tvos")))]
+@@ -185 +185 @@
+-    #[cfg(any(feature = "OSX_10_9", target_os = "ios"))]
++    #[cfg(any(feature = "OSX_10_9", any(target_os = "ios", target_os = "tvos")))]
+@@ -201 +201 @@
+-    #[cfg(any(feature = "OSX_10_14", target_os = "ios"))]
++    #[cfg(any(feature = "OSX_10_14", any(target_os = "ios", target_os = "tvos")))]
+@@ -239 +239 @@
+-        #[cfg(any(feature = "OSX_10_14", target_os = "ios"))]
++        #[cfg(any(feature = "OSX_10_14", any(target_os = "ios", target_os = "tvos")))]
+@@ -249 +249 @@
+-        #[cfg(not(any(feature = "OSX_10_14", target_os = "ios")))]
++        #[cfg(not(any(feature = "OSX_10_14", any(target_os = "ios", target_os = "tvos"))))]
+@@ -290 +290 @@
+-#[cfg(not(any(feature = "OSX_10_14", target_os = "ios")))]
++#[cfg(not(any(feature = "OSX_10_14", any(target_os = "ios", target_os = "tvos"))))]
+@@ -295 +295 @@
+-#[cfg(not(any(feature = "OSX_10_14", target_os = "ios")))]
++#[cfg(not(any(feature = "OSX_10_14", any(target_os = "ios", target_os = "tvos"))))]

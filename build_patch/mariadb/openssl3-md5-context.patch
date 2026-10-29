@@ -1,0 +1,21 @@
+From: Vladislav Vaintroub <wlad@mariadb.com>
+Subject: [PATCH] Backport OpenSSL 3 MD5 context buffer sizing
+
+Upstream: https://github.com/MariaDB/server/commit/1b238e343506b43825092941d4cd294d9b866bef
+
+Only backport the digest-context size hunk from MDEV-25785, also retained
+in MariaDB 10.5.17. The old 48-byte buffer lets OpenSSL 3 overwrite the
+stack in my_md5 during system-table initialization. This does not backport
+the upstream cipher or TLS changes or assert complete OpenSSL 3 support.
+
+--- a/include/ssl_compat.h
++++ b/include/ssl_compat.h
+@@ -24,7 +24,7 @@
+ #define SSL_LIBRARY OpenSSL_version(OPENSSL_VERSION)
+ #define ERR_remove_state(X) ERR_clear_error()
+ #define EVP_CIPHER_CTX_SIZE 176
+-#define EVP_MD_CTX_SIZE 48
++#define EVP_MD_CTX_SIZE 72
+ #undef EVP_MD_CTX_init
+ #define EVP_MD_CTX_init(X) do { memset((X), 0, EVP_MD_CTX_SIZE); EVP_MD_CTX_reset(X); } while(0)
+ #undef EVP_CIPHER_CTX_init

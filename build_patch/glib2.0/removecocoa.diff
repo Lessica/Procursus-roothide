@@ -1,0 +1,64 @@
+--- a/meson.build
++++ b/meson.build
+@@ -923,11 +923 @@
+-  # Mac OS X Cocoa support
+-  glib_have_cocoa = objcc.compiles('''#include <Cocoa/Cocoa.h>
+-                                      #ifdef GNUSTEP_BASE_VERSION
+-                                      #error "Detected GNUstep, not Cocoa"
+-                                      #endif''',
+-                                   name : 'Mac OS X Cocoa support')
+-
+-  if glib_have_cocoa
+-    glib_conf.set('HAVE_COCOA', true)
+-    osx_ldflags += ['-Wl,-framework,Foundation', '-Wl,-framework,AppKit']
+-  endif
++
+--- a/gio/meson.build
++++ b/gio/meson.build
+@@ -392,29 +392,17 @@
+-  if glib_have_cocoa
+-    settings_sources += files('gnextstepsettingsbackend.m')
+-    contenttype_sources += files('gosxcontenttype.m')
+-    appinfo_sources += files('gosxappinfo.m')
+-    framework_dep = dependency('appleframeworks', modules : ['Foundation', 'CoreFoundation', 'AppKit'])
+-    platform_deps += [framework_dep]
+-    if glib_have_os_x_9_or_later
+-      unix_sources += files('gcocoanotificationbackend.m')
+-    endif
+-    application_headers += files('gosxappinfo.h')
+-  else
+-    contenttype_sources += files('gcontenttype.c')
+-    appinfo_sources += files('gdesktopappinfo.c')
+-    gio_unix_include_headers += files('gdesktopappinfo.h')
+-    launch_desktop_sources = files('gio-launch-desktop.c')
+-
+-    if host_system == 'linux'
+-      launch_desktop_sources += files('../glib/gjournal-private.c')
+-    endif
+-
+-    gio_launch_desktop = executable('gio-launch-desktop', launch_desktop_sources,
+-      include_directories : glibinc,
+-      install : true,
+-      install_dir : multiarch_libexecdir,
+-      install_tag : 'bin',
+-      c_args : gio_c_args,
+-      # intl.lib is not compatible with SAFESEH
+-      link_args : noseh_link_args)
+-  endif
++  contenttype_sources += files('gcontenttype.c')
++  appinfo_sources += files('gdesktopappinfo.c')
++  gio_unix_include_headers += files('gdesktopappinfo.h')
++  launch_desktop_sources = files('gio-launch-desktop.c')
++
++  if host_system == 'linux'
++    launch_desktop_sources += files('../glib/gjournal-private.c')
++  endif
++
++  gio_launch_desktop = executable('gio-launch-desktop', launch_desktop_sources,
++    include_directories : glibinc,
++    install : true,
++    install_dir : multiarch_libexecdir,
++    install_tag : 'bin',
++    c_args : gio_c_args,
++    # intl.lib is not compatible with SAFESEH
++    link_args : noseh_link_args)

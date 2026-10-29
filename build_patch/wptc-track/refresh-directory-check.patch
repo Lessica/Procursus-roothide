@@ -1,0 +1,14 @@
+--- a/tracks/refresh-nhc
++++ b/tracks/refresh-nhc
+@@ -6,9 +6,9 @@
+ echo $WORK_DIR
+ 
+ mkdir -p ../data/2020/btk
+-cd ../data/2020/btk
++cd ../data/2020/btk || exit
+ 
+ rm -r *
+ wget ftp://ftp.nhc.noaa.gov/atcf/btk/*
+ 
+-cd $WORK_DIR
++cd "$WORK_DIR"

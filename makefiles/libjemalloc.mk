@@ -1,0 +1,67 @@
+ifneq ($(PROCURSUS),1)
+$(error Use the main Makefile)
+endif
+
+SUBPROJECTS         += libjemalloc
+LIBJEMALLOC_VERSION := 5.3.0
+DEB_LIBJEMALLOC_V   ?= $(LIBJEMALLOC_VERSION)-1
+
+libjemalloc-setup: setup
+	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://github.com/jemalloc/jemalloc/releases/download/$(LIBJEMALLOC_VERSION)/jemalloc-$(LIBJEMALLOC_VERSION).tar.bz2)
+	$(call EXTRACT_TAR,jemalloc-$(LIBJEMALLOC_VERSION).tar.bz2,jemalloc-$(LIBJEMALLOC_VERSION),libjemalloc)
+	$(call DO_PATCH,jemalloc,libjemalloc,-p1)
+
+ifneq ($(wildcard $(BUILD_WORK)/libjemalloc/.build_complete),)
+libjemalloc:
+	@echo "Using previously built libjemalloc."
+else
+libjemalloc: libjemalloc-setup
+	rm -f $(BUILD_WORK)/libjemalloc/VERSION
+	cd $(BUILD_WORK)/libjemalloc && ./autogen.sh \
+		$(DEFAULT_CONFIGURE_FLAGS) \
+		--with-lg-page=14 \
+		--with-jemalloc-prefix= \
+		--with-version=$(LIBJEMALLOC_VERSION)-0-g54eaed1d8b56b1aa528be3bdd1877e59c56fa90c
+		# The above system page size is specified because
+		# iOS arm64 devices have a 16KB page size.
+	+$(MAKE) -C $(BUILD_WORK)/libjemalloc
+	+$(MAKE) -C $(BUILD_WORK)/libjemalloc install \
+		DESTDIR=$(BUILD_STAGE)/libjemalloc
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Preserve installed LTO runtime and generated namespace headers; rebuild two static forms only.
+	+$(MAKE) -C $(BUILD_WORK)/libjemalloc native-static-clean
+	+$(MAKE) -C $(BUILD_WORK)/libjemalloc build_lib_static \
+		EXTRA_CFLAGS="$$(sed -n 's/^EXTRA_CFLAGS := //p' $(BUILD_WORK)/libjemalloc/Makefile) -fno-lto" \
+		EXTRA_CXXFLAGS="$$(sed -n 's/^EXTRA_CXXFLAGS := //p' $(BUILD_WORK)/libjemalloc/Makefile) -fno-lto"
+	cp -a $(BUILD_WORK)/libjemalloc/lib/libjemalloc{,_pic}.a \
+		$(BUILD_STAGE)/libjemalloc/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
+	$(call AFTER_BUILD,copy)
+endif
+
+libjemalloc-package: libjemalloc-stage
+	# libjemalloc.mk Package Structure
+	rm -rf $(BUILD_DIST)/libjemalloc{2,-dev}
+	mkdir -p \
+		$(BUILD_DIST)/libjemalloc2/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib \
+		$(BUILD_DIST)/libjemalloc-dev/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib
+
+	# libjemalloc.mk Prep libjemalloc2
+	cp -a $(BUILD_STAGE)/libjemalloc/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/libjemalloc.2.dylib $(BUILD_DIST)/libjemalloc2/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+
+	# libjemalloc.mk Prep libjemalloc-dev
+	cp -a $(BUILD_STAGE)/libjemalloc/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/{pkgconfig,libjemalloc{_pic.a,.a,.dylib}} $(BUILD_DIST)/libjemalloc-dev/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib
+	cp -a $(BUILD_STAGE)/libjemalloc/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/{bin,include,share} $(BUILD_DIST)/libjemalloc-dev/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)
+
+
+	# libjemalloc.mk Sign
+	$(call SIGN,libjemalloc2,general.xml)
+
+	# libjemalloc.mk Make .debs
+	$(call PACK,libjemalloc2,DEB_LIBJEMALLOC_V)
+	$(call PACK,libjemalloc-dev,DEB_LIBJEMALLOC_V)
+
+	# libjemalloc.mk Build cleanup
+	rm -rf $(BUILD_DIST)/libjemalloc{2,-dev}
+
+.PHONY: libjemalloc libjemalloc-package

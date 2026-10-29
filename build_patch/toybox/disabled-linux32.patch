@@ -1,0 +1,17 @@
+Do not retain the Linux personality reference when linux32 is disabled.
+The current upstream separates this applet from uname; keep the frozen version.
+
+--- a/toys/posix/uname.c
++++ b/toys/posix/uname.c
+@@ -64,6 +64,7 @@
+   uname_main();
+ }
+ 
++#if CFG_LINUX32
+ void linux32_main(void)
+ {
+   personality(PER_LINUX32);
+@@ -70,2 +71,3 @@
+   xexec(toys.optc ? toys.optargs : (char *[]){"/bin/sh", 0});
+ }
++#endif

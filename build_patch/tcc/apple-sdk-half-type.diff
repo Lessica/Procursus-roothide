@@ -1,0 +1,10 @@
+--- a/include/tccdefs.h
++++ b/include/tccdefs.h
+@@ -124,6 +124,7 @@
+     /* avoids usage of GCC/clang specific builtins in libc-headerfiles: */
+     #define __FINITE_MATH_ONLY__ 1
+     #define _FORTIFY_SOURCE 0
++    #define _Float16 short unsigned int
+     #define __has_builtin(x) 0
+     #define __has_feature(x) 0
+     #define __has_attribute(x) 0

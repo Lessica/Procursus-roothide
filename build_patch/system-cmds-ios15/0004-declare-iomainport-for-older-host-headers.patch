@@ -1,0 +1,13 @@
+--- a/iostat/iostat.c
++++ b/iostat/iostat.c
+@@ -127,6 +127,10 @@
+ 
+ #include <CoreFoundation/CoreFoundation.h>
+ #include <IOKit/IOKitLib.h>
++/* The Linux build imports IOKit headers from macOS 11.3, before this
++ * declaration was added. The target iOS 15+ IOKit exports the function.
++ * Keep Apple's signature and the upstream call unchanged. */
++extern kern_return_t IOMainPort(mach_port_t bootstrapPort, mach_port_t *mainPort);
+ #include <IOKit/storage/IOBlockStorageDriver.h>
+ #include <IOKit/storage/IOMedia.h>
+ #include <IOKit/IOBSD.h>

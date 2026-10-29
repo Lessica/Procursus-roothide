@@ -1,0 +1,4 @@
+--- a/build.rs
++++ b/build.rs
+@@ -221,0 +222 @@
++    ("aarch64", Some("tvos"), Some("ios64")),

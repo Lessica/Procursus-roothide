@@ -1,0 +1,18 @@
+--- a/lsmp/task_details.c
++++ b/lsmp/task_details.c
+@@ -31,6 +31,15 @@
+ #include <libproc.h>
+ #include <assert.h>
+ 
++#include <TargetConditionals.h>
++#if TARGET_OS_TV
++/* libSystem exports this MIG routine on tvOS, but the SDK excludes it
++ * from the public API. lsmp is a privileged system diagnostic tool. */
++extern kern_return_t lsmp_thread_get_mach_voucher(thread_read_t,
++    mach_voucher_selector_t, ipc_voucher_t *) __asm("_thread_get_mach_voucher");
++#define thread_get_mach_voucher lsmp_thread_get_mach_voucher
++#endif
++
+ #include "common.h"
+ 
+ #pragma mark kobject to name hash table implementation

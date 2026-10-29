@@ -1,0 +1,70 @@
+--- a/tp/Texinfo/XS/Makefile.am
++++ b/tp/Texinfo/XS/Makefile.am
+@@ -71,7 +71,7 @@
+ EXTRA_DIST += MiscXS.xs
+ 
+ 
+-AM_CFLAGS = $(PERL_CONF_ccflags) $(PERL_CONF_optimize)
++AM_CFLAGS =
+ AM_CFLAGS += -DVERSION=\"$(VERSION)\" -DXS_VERSION=\"$(VERSION)\"
+ AM_CFLAGS += -I$(PERL_INC)
+ 
+--- a/tp/Texinfo/XS/Makefile.in
++++ b/tp/Texinfo/XS/Makefile.in
+@@ -902,13 +902,13 @@
+ 
+ TestXS_la_SOURCES = TestXS.c ppport.h
+ MiscXS_la_SOURCES = MiscXS.c misc.c miscxs.h ppport.h
+-AM_CFLAGS = $(PERL_CONF_ccflags) $(PERL_CONF_optimize) \
++AM_CFLAGS = \
+ 	-DVERSION=\"$(VERSION)\" -DXS_VERSION=\"$(VERSION)\" \
+ 	-I$(PERL_INC)
+ @HOST_NEEDS_NO_UNDEFINED_FALSE@PLATFORM_LDFLAGS = 
+ @HOST_NEEDS_NO_UNDEFINED_TRUE@PLATFORM_LDFLAGS = -no-undefined -L$(PERL_INC) $(PERL_CONF_libperl)
+ AM_LDFLAGS = -avoid-version -module $(PERL_CONF_ccdlflags) \
+ 	$(PLATFORM_LDFLAGS)
+ XSParagraph_la_LIBADD = $(builddir)/gnulib/lib/libgnu.la
+ XSParagraph_la_LDFLAGS = $(AM_LDFLAGS) $(LTLIBINTL) $(LTLIBICONV)
+ 
+--- a/tp/Texinfo/XS/TestXS.xs
++++ b/tp/Texinfo/XS/TestXS.xs
+@@ -14,7 +14,7 @@
+ PROTOTYPES: ENABLE
+ 
+ int
+-xspara_init (int, char *)
++xspara_init (int unused_int, char *unused_string)
+     CODE:
+         puts ("message from XS module\n");
+         RETVAL = 1;
+--- a/tp/Texinfo/XSLoader.pm
++++ b/tp/Texinfo/XSLoader.pm
+@@ -120,19 +120,24 @@
+  }
+  
+  my ($libtool_dir, $libtool_archive);
++ my $dlname = undef;
++ my $dlpath = undef;
+  if ($TEXINFO_XS ne 'standalone') {
+    ($libtool_dir, $libtool_archive) = _find_file("$module_name.la");
+    if (!$libtool_archive) {
++     _debug "$module_name: couldn't find Libtool archive file";
++     my ($so_dir, $so_path) = _find_file("$module_name.so");
++     if ($so_path) {
++       $dlname = "$module_name.so";
++       $dlpath = $so_path;
++       goto LOAD;
++     }
+      if ($TEXINFO_XS eq 'libtool') {
+        _fatal "$module_name: couldn't find Libtool archive file";
+        goto FALLBACK;
+      }
+-     _debug "$module_name: couldn't find Libtool archive file";
+    }
+  }
+- 
+- my $dlname = undef;
+- my $dlpath = undef;
+  
+  # Try perl paths
+  if (!$libtool_archive) {

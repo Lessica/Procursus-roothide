@@ -1,0 +1,15 @@
+--- a/pinger/src/lib.rs
++++ b/pinger/src/lib.rs
+@@ -179,6 +179,12 @@
+             p.set_interval(interval);
+             p.start::<macos::MacOSParser>(addr)
+         }
++        #[cfg(target_os = "ios")]
++        Type::Unknown => {
++            let mut p = macos::MacOSPinger::default();
++            p.set_interval(interval);
++            p.start::<macos::MacOSParser>(addr)
++        }
+         _ => Err(PingError::UnsupportedOS(os_type.to_string()).into()),
+     }
+ }

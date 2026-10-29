@@ -1,0 +1,4 @@
+--- a/src/lib.rs
++++ b/src/lib.rs
+@@ -13,0 +14 @@
++#![cfg_attr(target_os = "tvos", allow(dead_code, unused_macros))]

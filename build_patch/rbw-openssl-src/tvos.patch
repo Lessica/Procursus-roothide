@@ -1,0 +1,8 @@
+--- a/src/lib.rs
++++ b/src/lib.rs
+@@ -304 +304 @@
+-            "aarch64-apple-ios" => "ios64-cross",
++            "aarch64-apple-ios" | "aarch64-apple-tvos" => "ios64-cross",
+@@ -368 +368 @@
+-                if target.contains("apple-ios") {
++                if target.contains("apple-ios") || target.contains("apple-tvos") {

@@ -1,0 +1,13 @@
+--- a/sql/CMakeLists.txt
++++ b/sql/CMakeLists.txt
+@@ -282,6 +282,10 @@
+ IF(NOT WITHOUT_DYNAMIC_PLUGINS)
+   IF(NOT MSVC)
+     SET_TARGET_PROPERTIES(mariadbd PROPERTIES ENABLE_EXPORTS TRUE)
++    IF(APPLE)
++      # Keep plugin API globals when the server is linked with LTO.
++      SET_PROPERTY(TARGET mariadbd APPEND_STRING PROPERTY LINK_FLAGS " -Wl,-export_dynamic")
++    ENDIF()
+   ENDIF()
+   GET_TARGET_PROPERTY(mysqld_link_flags mariadbd LINK_FLAGS)
+   IF(NOT mysqld_link_flags)

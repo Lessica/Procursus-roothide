@@ -1,0 +1,11 @@
+--- a/Cargo.toml
++++ b/Cargo.toml
+@@ -54,0 +55,3 @@
++
++[patch.crates-io]
++openssl-src = { path = "../rbw-openssl-src" }
+--- a/Cargo.lock
++++ b/Cargo.lock
+@@ -1053,2 +1052,0 @@
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "bb1830e20a48a975ca898ca8c1d036a36c3c6c5cb7dabc1c216706587857920f"

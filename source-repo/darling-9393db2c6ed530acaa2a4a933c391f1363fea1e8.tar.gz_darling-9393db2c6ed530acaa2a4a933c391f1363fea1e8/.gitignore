@@ -1,0 +1,51 @@
+# Compiled source #
+###################
+*.com
+*.class
+*.dll
+*.exe
+*.o
+*.so
+*.ko
+*.pyc
+
+# Logs and databases #
+######################
+*.log
+
+# OS generated files #
+######################
+.DS_Store*
+ehthumbs.db
+Icon?
+Thumbs.db
+
+.kdev_include_paths
+*~
+Makefile
+CMakeFiles
+cmake_install.cmake
+CMakeCache.txt
+*.cmd
+Module.symvers
+
+# Directories where too much temp stuff may lay around
+tests
+
+# The suggested build folder
+build
+
+rpm/SOURCES
+rpm/RPMS
+rpm/SRPMS
+
+debbuild
+debian/changelog
+debian/.debhelper
+debian/files
+debian/darling-dkms.substvars
+debian/darling-dkms/
+debian/darling.substvars
+debian/darling/
+debian/debhelper-build-stamp
+debian/tmp/

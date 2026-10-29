@@ -1,0 +1,21 @@
+--- a/Cargo.toml
++++ b/Cargo.toml
+@@ -69,6 +69,7 @@
+ ]
+ 
+ [patch.crates-io]
++tokio = { path = "../spotifyd-tokio" }
+ socket2 = { path = "../spotifyd-socket2" }
+ keyring = { path = "../spotifyd-keyring" }
+ security-framework = { path = "../spotifyd-security-framework" }
+--- a/Cargo.lock
++++ b/Cargo.lock
+@@ -3016,8 +3016,6 @@
+ [[package]]
+ name = "tokio"
+ version = "1.21.1"
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "0020c875007ad96677dcc890298f4b942882c5d4eb7cc8f439fc3bf813dc9c95"
+ dependencies = [
+  "autocfg",
+  "bytes 1.2.1",

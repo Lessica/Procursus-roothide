@@ -1,0 +1,9 @@
+--- a/Cargo.toml
++++ b/Cargo.toml
+@@ -58,0 +59 @@
++nix = { path = "../rbw-nix" }
+--- a/Cargo.lock
++++ b/Cargo.lock
+@@ -974,2 +973,0 @@
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "b2ccba0cfe4fdf15982d1674c69b1fd80bad427d293849982668dfe454bd61f2"

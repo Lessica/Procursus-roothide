@@ -1,0 +1,107 @@
+--- a/Cargo.toml
++++ b/Cargo.toml
+@@ -103,6 +103,9 @@
+ rustfmt-nightly = { path = "src/tools/rustfmt" }
+ 
+ [patch.crates-io]
++getrandom = { path = "vendor/getrandom" }
++getrandom_01 = { package = "getrandom", path = "vendor/getrandom-0.1.14" }
++parking_lot_core = { path = "vendor/parking_lot_core" }
+ psm = { path = "vendor/psm" }
+ libc = { path = "vendor/libc" }
+ # See comments in `src/tools/rustc-workspace-hack/README.md` for what's going on
+--- a/Cargo.lock
++++ b/Cargo.lock
+@@ -1385,8 +1385,6 @@
+ [[package]]
+ name = "getrandom"
+ version = "0.1.14"
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "7abc8dd8451921606d809ba32e95b6111925cd2906060d2dcc29c070220503eb"
+ dependencies = [
+  "cfg-if 0.1.10",
+  "libc",
+@@ -1396,8 +1394,6 @@
+ [[package]]
+ name = "getrandom"
+ version = "0.2.0"
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "ee8025cf36f917e6a52cce185b7c7177689b838b7ec138364e50cc2277a56cf4"
+ dependencies = [
+  "cfg-if 0.1.10",
+  "libc",
+@@ -2465,8 +2461,6 @@
+ [[package]]
+ name = "parking_lot_core"
+ version = "0.8.3"
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "fa7a782938e745763fe6907fc6ba86946d72f49fe7e21de074e08128a99fb018"
+ dependencies = [
+  "cfg-if 1.0.0",
+  "instant",
+--- a/vendor/getrandom/src/lib.rs
++++ b/vendor/getrandom/src/lib.rs
+@@ -190,7 +190,7 @@
+         #[path = "cloudabi.rs"] mod imp;
+     } else if #[cfg(target_os = "fuchsia")] {
+         #[path = "fuchsia.rs"] mod imp;
+-    } else if #[cfg(target_os = "ios")] {
++    } else if #[cfg(any(target_os = "ios", target_os = "tvos"))] {
+         #[path = "ios.rs"] mod imp;
+     } else if #[cfg(target_os = "macos")] {
+         mod util_libc;
+--- a/vendor/getrandom-0.1.14/src/lib.rs
++++ b/vendor/getrandom-0.1.14/src/lib.rs
+@@ -210,7 +210,7 @@
+         #[path = "use_file.rs"] mod imp;
+     } else if #[cfg(target_os = "illumos")] {
+         #[path = "solaris_illumos.rs"] mod imp;
+-    } else if #[cfg(target_os = "ios")] {
++    } else if #[cfg(any(target_os = "ios", target_os = "tvos"))] {
+         #[path = "ios.rs"] mod imp;
+     } else if #[cfg(target_os = "linux")] {
+         #[path = "linux_android.rs"] mod imp;
+--- a/vendor/parking_lot_core/src/thread_parker/unix.rs
++++ b/vendor/parking_lot_core/src/thread_parker/unix.rs
+@@ -5,7 +5,7 @@
+ // http://opensource.org/licenses/MIT>, at your option. This file may not be
+ // copied, modified, or distributed except according to those terms.
+ 
+-#[cfg(any(target_os = "macos", target_os = "ios"))]
++#[cfg(any(target_os = "macos", any(target_os = "ios", target_os = "tvos")))]
+ use core::ptr;
+ use core::{
+     cell::{Cell, UnsafeCell},
+@@ -127,12 +127,12 @@
+ 
+ impl ThreadParker {
+     /// Initializes the condvar to use CLOCK_MONOTONIC instead of CLOCK_REALTIME.
+-    #[cfg(any(target_os = "macos", target_os = "ios", target_os = "android"))]
++    #[cfg(any(target_os = "macos", any(target_os = "ios", target_os = "tvos"), target_os = "android"))]
+     #[inline]
+     unsafe fn init(&self) {}
+ 
+     /// Initializes the condvar to use CLOCK_MONOTONIC instead of CLOCK_REALTIME.
+-    #[cfg(not(any(target_os = "macos", target_os = "ios", target_os = "android")))]
++    #[cfg(not(any(target_os = "macos", any(target_os = "ios", target_os = "tvos"), target_os = "android")))]
+     #[inline]
+     unsafe fn init(&self) {
+         let mut attr = MaybeUninit::<libc::pthread_condattr_t>::uninit();
+@@ -183,7 +183,7 @@
+ }
+ 
+ // Returns the current time on the clock used by pthread_cond_t as a timespec.
+-#[cfg(any(target_os = "macos", target_os = "ios"))]
++#[cfg(any(target_os = "macos", any(target_os = "ios", target_os = "tvos")))]
+ #[inline]
+ fn timespec_now() -> libc::timespec {
+     let mut now = MaybeUninit::<libc::timeval>::uninit();
+@@ -196,7 +196,7 @@
+         tv_nsec: now.tv_usec as tv_nsec_t * 1000,
+     }
+ }
+-#[cfg(not(any(target_os = "macos", target_os = "ios")))]
++#[cfg(not(any(target_os = "macos", any(target_os = "ios", target_os = "tvos"))))]
+ #[inline]
+ fn timespec_now() -> libc::timespec {
+     let mut now = MaybeUninit::<libc::timespec>::uninit();

@@ -1,0 +1,79 @@
+--- a/vendor/libc/src/unix/bsd/mod.rs
++++ b/vendor/libc/src/unix/bsd/mod.rs
+@@ -36,7 +36,7 @@
+         pub pw_expire: ::time_t,
+ 
+         #[cfg(not(any(target_os = "macos",
+-                      target_os = "ios",
++                      any(target_os = "ios", target_os = "tvos"),
+                       target_os = "netbsd",
+                       target_os = "openbsd")))]
+         pub pw_fields: ::c_int,
+@@ -867,7 +867,7 @@
+ }
+ 
+ cfg_if! {
+-    if #[cfg(any(target_os = "macos", target_os = "ios"))] {
++    if #[cfg(any(target_os = "macos", any(target_os = "ios", target_os = "tvos")))] {
+         mod apple;
+         pub use self::apple::*;
+     } else if #[cfg(any(target_os = "openbsd", target_os = "netbsd"))] {
+--- a/vendor/libc/src/unix/mod.rs
++++ b/vendor/libc/src/unix/mod.rs
+@@ -347,7 +347,7 @@
+         #[link(name = "m")]
+         extern {}
+     } else if #[cfg(any(target_os = "macos",
+-                        target_os = "ios",
++                        any(target_os = "ios", target_os = "tvos"),
+                         target_os = "android",
+                         target_os = "openbsd"))] {
+         #[link(name = "c")]
+@@ -1016,7 +1016,7 @@
+     pub fn getrusage(resource: ::c_int, usage: *mut rusage) -> ::c_int;
+ 
+     #[cfg_attr(
+-        any(target_os = "macos", target_os = "ios"),
++        any(target_os = "macos", any(target_os = "ios", target_os = "tvos")),
+         link_name = "realpath$DARWIN_EXTSN"
+     )]
+     pub fn realpath(pathname: *const ::c_char, resolved: *mut ::c_char) -> *mut ::c_char;
+@@ -1182,7 +1182,7 @@
+         ),
+         link_name = "__res_init"
+     )]
+-    #[cfg_attr(any(target_os = "macos", target_os = "ios"), link_name = "res_9_init")]
++    #[cfg_attr(any(target_os = "macos", any(target_os = "ios", target_os = "tvos")), link_name = "res_9_init")]
+     pub fn res_init() -> ::c_int;
+ 
+     #[cfg_attr(target_os = "netbsd", link_name = "__gmtime_r50")]
+@@ -1454,7 +1454,7 @@
+         mod linux_like;
+         pub use self::linux_like::*;
+     } else if #[cfg(any(target_os = "macos",
+-                        target_os = "ios",
++                        any(target_os = "ios", target_os = "tvos"),
+                         target_os = "freebsd",
+                         target_os = "dragonfly",
+                         target_os = "openbsd",
+--- a/Cargo.toml
++++ b/Cargo.toml
+@@ -103,6 +103,7 @@
+ rustfmt-nightly = { path = "src/tools/rustfmt" }
+ 
+ [patch.crates-io]
++libc = { path = "vendor/libc" }
+ # See comments in `src/tools/rustc-workspace-hack/README.md` for what's going on
+ # here
+ libgit2-sys = { path = "vendor/libgit2-sys" }
+--- a/Cargo.lock
++++ b/Cargo.lock
+@@ -1881,8 +1881,6 @@
+ [[package]]
+ name = "libc"
+ version = "0.2.99"
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "a7f823d141fe0a24df1e23b4af4e3c7ba9e5966ec514ea068c93024aa7deb765"
+ dependencies = [
+  "rustc-std-workspace-core",
+ ]

@@ -1,0 +1,29 @@
+.\"*******************************************************************
+.\"
+.\" This file was generated with po4a. Translate the source file.
+.\"
+.\"*******************************************************************
+.TH INSTALLKERNEL 8 "7 jan 2001" "Debian Linux" 
+.SH IME
+installkernel \- namesti nov odtis jedra
+.SH POVZETEK
+\fBinstallkernel \fP\fIversion zImage System.map [mapa]\fP
+.SH OPIS
+\fBinstallkernel\fP iz Linux drevesa virov v sistem namesti nov odtis jedra.
+Klican je s strani datotek make Linux jedra, ko je klican \fBmake install\fP.
+.P
+Novo jedro je nameščeno v \fI{directory}/vmlinuz\-{version}\fP.  Če simbolna
+povezava \fI{directory}/vmlinuz\fP že obstaja, je osvežena tako, da se ustvari
+povezava iz \fI{directory}/vmlinuz\fP do novega jedra. Predhodno nameščeno
+jedro je na voljo kot \fI{directory}/vmlinuz.old\fP.
+.SH HROŠČI
+\fBinstallkernel\fP resides in /sbin only because the Linux kernel makefiles
+call it from there.  It should really be in /usr/sbin.  It isn't needed to
+boot a system.
+.SH TRANSLATION
+This document is a translation.
+
+Regarding errors such as tihs one, contact
+.nh
+<\fIsl@li.org\fR>,
+.hy

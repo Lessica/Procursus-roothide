@@ -1,0 +1,11 @@
+--- a/src/icons.cpp
++++ b/src/icons.cpp
+@@ -54,7 +54,7 @@
+     // Set icon path if it exists, otherwise set icon path to default
+     FXString iconpath = app->reg().readStringEntry("SETTINGS", "iconpath", DEFAULTICONPATH);   
+     
+-    if ( !existFile(iconpath) )
++    if ( FXPath::search(iconpath, ".").empty() )
+     {
+         iconpath = DEFAULTICONPATH;
+         *iconpathfound = false;

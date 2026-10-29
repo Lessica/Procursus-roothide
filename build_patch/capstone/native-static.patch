@@ -1,0 +1,41 @@
+--- a/Makefile
++++ b/Makefile
+@@ -614,3 +614,15 @@
+ 	echo 'Cflags: -I$${includedir}' >> $(PKGCFGF)
+ 	echo 'archs=${CAPSTONE_ARCHS}' >> $(PKGCFGF)
+ endef
++
++# Keep original archive for LTO program links; install native archive separately.
++NATIVEOBJ = $(patsubst $(OBJDIR)/%,$(OBJDIR)/native/%,$(LIBOBJ))
++$(BLDIR)/libcapstone-native.a: $(NATIVEOBJ)
++	rm -f $@
++	$(AR) $(AR_FLAGS) $@ $(NATIVEOBJ)
++	$(RANLIB) $@
++$(OBJDIR)/native/%.o: %.c config.mk
++	@mkdir -p $(@D)
++	$(CC) $(CFLAGS) -fno-lto -MM -MP -MT $@ -MT $(@:.o=.d) $< > $(@:.o=.d)
++	$(CC) $(CFLAGS) -fno-lto -c $< -o $@
++-include $(NATIVEOBJ:.o=.d)
+--- a/cstool/Makefile
++++ b/cstool/Makefile
+@@ -7,7 +7,7 @@
+ LIBNAME = capstone
+ 
+ CFLAGS += -I../include -I.
+-LDFLAGS += -O3 -Wall -L.. -l$(LIBNAME)
++LDFLAGS += -O3 -Wall
+ 
+ TARGET = cstool
+ SOURCES := $(wildcard *.c)
+@@ -30,9 +30,9 @@
+ $(TARGET): ../$(LIBCAPSTONE) $(OBJECTS)
+ ifeq ($(V), 0)
+ 	$(call log,LINK,$@)
+-	@${CC} $(OBJECTS) $(LDFLAGS) -o $@
++	@${CC} $(OBJECTS) ../$(LIBCAPSTONE) $(LDFLAGS) -o $@
+ else
+-	${CC} $(OBJECTS) $(LDFLAGS) -o $@
++	${CC} $(OBJECTS) ../$(LIBCAPSTONE) $(LDFLAGS) -o $@
+ endif
+ 
+ clean:

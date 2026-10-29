@@ -1,0 +1,11 @@
+--- a/external/iBoot32Patcher/patchers.c
++++ b/external/iBoot32Patcher/patchers.c
+@@ -317,7 +317,7 @@
+ 
+ 
+     /* find 3rd xref */
+-    uint32_t *str_pointer_iboot = (uint32_t)GET_IBOOT_ADDR(iboot_in,str_pointer);
++    uint32_t str_pointer_iboot = (uint32_t)GET_IBOOT_ADDR(iboot_in,str_pointer);
+     char *iboot_str_3_xref = iboot_in->buf;
+     for (int i=0; i<3; i++) {
+         if (!(iboot_str_3_xref = MEMMEM_RELATIVE(iboot_in, iboot_str_3_xref+1, pointer(str_pointer_iboot), 4))){

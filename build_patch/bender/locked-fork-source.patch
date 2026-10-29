@@ -1,0 +1,20 @@
+--- a/Cargo.lock
++++ b/Cargo.lock
+@@ -934,7 +934,7 @@
+ [[package]]
+ name = "xpc-connection"
+ version = "0.2.3"
+-source = "git+https://github.com/aspenluxxxy/xpc-connection-rs?rev=d7642ac4e9d94a173942c7c02cdd7d43cc149750#d7642ac4e9d94a173942c7c02cdd7d43cc149750"
++source = "git+https://github.com/dfrankland/xpc-connection-rs?rev=d7642ac4e9d94a173942c7c02cdd7d43cc149750#d7642ac4e9d94a173942c7c02cdd7d43cc149750"
+ dependencies = [
+  "block",
+  "futures",
+@@ -945,7 +945,7 @@
+ [[package]]
+ name = "xpc-connection-sys"
+ version = "0.1.1"
+-source = "git+https://github.com/aspenluxxxy/xpc-connection-rs?rev=d7642ac4e9d94a173942c7c02cdd7d43cc149750#d7642ac4e9d94a173942c7c02cdd7d43cc149750"
++source = "git+https://github.com/dfrankland/xpc-connection-rs?rev=d7642ac4e9d94a173942c7c02cdd7d43cc149750#d7642ac4e9d94a173942c7c02cdd7d43cc149750"
+ dependencies = [
+  "bindgen",
+ ]

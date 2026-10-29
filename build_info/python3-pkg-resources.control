@@ -1,0 +1,10 @@
+Package: python3-pkg-resources
+Version: @DEB_PYTHON3_SETUPTOOLS_V@
+Architecture: all
+Maintainer: @DEB_MAINTAINER@
+Depends: python3
+Section: Python
+Priority: optional
+Homepage: https://pypi.org/project/setuptools/
+Description: Python distribution metadata and resource access
+ pkg_resources and its vendored compatibility dependencies.

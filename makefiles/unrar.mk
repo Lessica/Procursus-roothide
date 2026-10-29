@@ -1,0 +1,78 @@
+ifneq ($(PROCURSUS),1)
+$(error Use the main Makefile)
+endif
+
+SUBPROJECTS   += unrar
+UNRAR_VERSION := 7.0.7
+DEB_UNRAR_V   ?= $(UNRAR_VERSION)-1
+
+unrar-setup: setup
+	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://www.rarlab.com/rar/unrarsrc-$(UNRAR_VERSION).tar.gz)
+	$(call EXTRACT_TAR,unrarsrc-$(UNRAR_VERSION).tar.gz,n/a,unrar)
+	$(call DO_PATCH,unrar,unrar,-p1)
+	sed -i 's/#define USE_NEON_CRC32//g' $(BUILD_WORK)/unrar/os.hpp
+	sed -i 's/-march=native//g' $(BUILD_WORK)/unrar/makefile
+
+ifneq ($(wildcard $(BUILD_WORK)/unrar/.build_complete),)
+unrar:
+	@echo "Using previously built unrar."
+else
+unrar: unrar-setup
+	+$(MAKE) -C $(BUILD_WORK)/unrar \
+		CXX="$(CXX) -std=c++11 $(CXXFLAGS)" \
+		STRIP=$(STRIP) \
+		LDFLAGS="$(LDFLAGS)"
+	mkdir -p $(BUILD_STAGE)/unrar/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/{bin,lib,include,share/man/man1}
+	cp -af $(BUILD_WORK)/unrar/unrar $(BUILD_STAGE)/unrar/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin
+	+$(MAKE) -C $(BUILD_WORK)/unrar clean
+	+$(MAKE) -C $(BUILD_WORK)/unrar lib \
+		CXX="$(CXX) -std=c++11 $(CXXFLAGS)" \
+		AR="$(AR)" \
+		STRIP=$(STRIP) \
+		LDFLAGS="$(LDFLAGS)"
+	cp -af $(BUILD_WORK)/unrar/libunrar*.dylib $(BUILD_STAGE)/unrar/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib
+	cp -af $(BUILD_WORK)/unrar/libunrar.a $(BUILD_STAGE)/unrar/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib
+ifneq ($(filter -flto%,$(CXXFLAGS)),)
+	# Preserve staged LTO program/dylib; rebuild only the public RARDLL archive.
+	+$(MAKE) -C $(BUILD_WORK)/unrar clean
+	+$(MAKE) -C $(BUILD_WORK)/unrar lib-static \
+		CXX="$(CXX) -std=c++11 $(CXXFLAGS) -fno-lto" \
+		AR="$(AR)"
+	cp -af $(BUILD_WORK)/unrar/libunrar.a $(BUILD_STAGE)/unrar/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib
+endif
+	cp -af $(BUILD_WORK)/unrar/*.hpp $(BUILD_STAGE)/unrar/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include
+	cp -a $(BUILD_MISC)/unrar.1 $(BUILD_STAGE)/unrar/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share/man/man1/unrar-nonfree.1
+	mv $(BUILD_STAGE)/unrar/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/unrar{,-nonfree}
+	$(call AFTER_BUILD)
+endif
+
+unrar-package: unrar-stage
+	# unrar.mk Package Structure
+	rm -rf $(BUILD_DIST)/unrar $(BUILD_DIST)/libunrar{5,-dev}
+	mkdir -p $(BUILD_DIST)/unrar/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX) \
+		$(BUILD_DIST)/libunrar5/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib \
+		$(BUILD_DIST)/libunrar-dev/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/{include,lib}
+
+	# unrar.mk Prep unrar
+	cp -a $(BUILD_STAGE)/unrar/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/{bin,share} $(BUILD_DIST)/unrar/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)
+
+	# unrar.mk Prep libunrar5
+	cp -a $(BUILD_STAGE)/unrar/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/libunrar.5*.dylib $(BUILD_DIST)/libunrar5/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib
+
+	# unrar.mk Prep libunrar-dev
+	cp -a $(BUILD_STAGE)/unrar/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/libunrar.{a,dylib} $(BUILD_DIST)/libunrar-dev/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib
+	$(INSTALL) -m644 $(BUILD_STAGE)/unrar/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include/*.hpp $(BUILD_DIST)/libunrar-dev/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include
+
+	# unrar.mk Sign
+	$(call SIGN,unrar,general.xml)
+	$(call SIGN,libunrar5,general.xml)
+
+	# unrar.mk Make .debs
+	$(call PACK,unrar,DEB_UNRAR_V)
+	$(call PACK,libunrar5,DEB_UNRAR_V)
+	$(call PACK,libunrar-dev,DEB_UNRAR_V)
+
+	# unrar.mk Build cleanup
+	rm -rf $(BUILD_DIST)/unrar $(BUILD_DIST)/libunrar{5,-dev}
+
+.PHONY: unrar unrar-package

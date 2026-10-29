@@ -1,0 +1,23 @@
+.\"*******************************************************************
+.\"
+.\" This file was generated with po4a. Translate the source file.
+.\"
+.\"*******************************************************************
+.TH INSTALLKERNEL 8 "7 Jan 2001" "Debian Linux" 
+.SH NOME
+installkernel \- instala uma nova imagem de kernel
+.SH SINOPSE
+\fBinstallkernel \fP\fIversão zImage System.map [directório]\fP
+.SH DESCRIÇÃO
+\fBinstallkernel\fP instala uma nova imagem de kernel no sistema a partir da
+árvore fonte do Linux. É chamado pelo makefiles do kernel Linux quando o
+\fBmake install\fP é invocado lá.
+.P
+O novo kernel é instalado para \fI{directório}/vmlinuz\-{versão}\fP. Se um link
+simbólico \fI{directório}/vmlinuz\fP já existir, este é refrescado ao fazer um
+link de \fI{directório}/vmlinuz\fP para o novo kernel, e o kernel instalado
+anteriormente fica disponível como \fI{directório}/vmlinuz.old\fP.
+.SH BUGS
+\fBinstallkernel\fP reside apenas em /sbin porque a chamada makefiles do kernel
+Linux é feita a partir de lá. Deveria realmente estar em /usr/sbin. Não é
+necessário para arrancar o sistema.

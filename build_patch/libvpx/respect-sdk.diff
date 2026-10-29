@@ -1,0 +1,27 @@
+--- a/build/make/configure.sh
++++ b/build/make/configure.sh
+@@ -703,6 +703,11 @@
+ # Reliably find the newest available Darwin SDKs. (Older versions of
+ # xcrun don't support --show-sdk-path.)
+ show_darwin_sdk_path() {
++  # Let cross builds select the same SDK as their compiler flags.
++  if [ -n "${VPX_DARWIN_SDK}" ]; then
++    echo "${VPX_DARWIN_SDK}"
++    return
++  fi
+   xcrun --sdk $1 --show-sdk-path 2>/dev/null ||
+     xcodebuild -sdk $1 -version Path 2>/dev/null
+ }
+@@ -843,10 +848,10 @@
+   # Shared library framework builds are only possible on iOS 8 and later.
+   if enabled shared; then
+     IOS_VERSION_OPTIONS="--enable-shared"
+-    IOS_VERSION_MIN="8.0"
++    IOS_VERSION_MIN="${IOS_VERSION_MIN:-8.0}"
+   else
+     IOS_VERSION_OPTIONS=""
+-    IOS_VERSION_MIN="7.0"
++    IOS_VERSION_MIN="${IOS_VERSION_MIN:-7.0}"
+   fi
+ 
+   # Handle darwin variants. Newer SDKs allow targeting older

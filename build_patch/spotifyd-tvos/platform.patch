@@ -1,0 +1,19 @@
+--- a/Cargo.toml
++++ b/Cargo.toml
+@@ -69,0 +70,5 @@
++
++[patch.crates-io]
++keyring = { path = "../spotifyd-keyring" }
++security-framework = { path = "../spotifyd-security-framework" }
++security-framework-sys = { path = "../spotifyd-security-framework-sys" }
+--- a/Cargo.lock
++++ b/Cargo.lock
+@@ -1282,2 +1281,0 @@
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "ba264b266563c1363dcce004776cbf198d7422a4262f77f4ca285bf26ae30955"
+@@ -2563,2 +2560,0 @@
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "2bc1bb97804af6631813c55739f771071e0f2ed33ee20b68c86ec505d906356c"
+@@ -2576,2 +2571,0 @@
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "0160a13a177a45bfb43ce71c01580998474f556ad854dcbca936dd2841a5c556"

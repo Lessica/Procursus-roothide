@@ -1,0 +1,34 @@
+--- a/src/portable.cpp
++++ b/src/portable.cpp
+@@ -37,6 +37,13 @@
+ 
+ static double  g_sysElapsedTime;
+ static std::chrono::steady_clock::time_point g_startTime;
++
++#if defined(system)
++#undef system
++#define DOXYGEN_SYSTEM_FUNCTION ie_system
++#else
++#define DOXYGEN_SYSTEM_FUNCTION system
++#endif
+ 
+ 
+ int Portable::system(const QCString &command,const QCString &args,bool commandHasConsole)
+@@ -132,7 +139,7 @@
+ #else // Win32 specific
+   if (commandHasConsole)
+   {
+-    return ::system(fullCmd.data());
++    return ::DOXYGEN_SYSTEM_FUNCTION(fullCmd.data());
+   }
+   else
+   {
+@@ -200,6 +207,8 @@
+ 
+ }
+ 
++#undef DOXYGEN_SYSTEM_FUNCTION
++
+ unsigned int Portable::pid()
+ {
+   unsigned int pid;

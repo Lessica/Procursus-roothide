@@ -1,0 +1,20 @@
+--- a/Cargo.toml
++++ b/Cargo.toml
+@@ -104,5 +104,6 @@
+ path = "src/main.rs"
+ 
+ [patch.crates-io]
++socket2 = { path = "../starship-socket2" }
+ nix = { path = "../starship-nix" }
+ open = { path = "../starship-open" }
+--- a/Cargo.lock
++++ b/Cargo.lock
+@@ -1587,8 +1587,6 @@
+ [[package]]
+ name = "socket2"
+ version = "0.4.10"
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "9f7916fc008ca5542385b89a3d3ce689953c143e9304a9bf8beec1de48994c0d"
+ dependencies = [
+  "libc",
+  "winapi",

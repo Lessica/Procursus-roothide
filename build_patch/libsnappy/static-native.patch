@@ -1,0 +1,7 @@
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -221,1 +221,3 @@
+-SET_TARGET_PROPERTIES(snappy-static PROPERTIES OUTPUT_NAME snappy)
++SET_TARGET_PROPERTIES(snappy-static PROPERTIES OUTPUT_NAME snappy
++  INTERPROCEDURAL_OPTIMIZATION FALSE)
++target_compile_options(snappy-static PRIVATE -fno-lto)

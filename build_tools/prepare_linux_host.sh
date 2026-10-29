@@ -1,0 +1,278 @@
+#!/usr/bin/env bash
+# Linux preparation entry point: system dependencies and Darwin cross tools/SDKs.
+# Delegate native build tools and host-env.sh to prepare_native_tools.sh.
+set -euo pipefail
+umask 022
+PROJDIR=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)
+HOST_TOOL_ROOT=${HOST_TOOL_ROOT:-"$PROJDIR/build_work/host-tools"}
+export MEMO_TARGET=${MEMO_TARGET:-iphoneos-arm64-roothide}
+[[ $MEMO_TARGET != appletvos-arm64e ]] || MEMO_TARGET=appletvos-arm64-roothide
+case $MEMO_TARGET in
+ appletvos-*) target_platform=appletvos; runtime_platform=tvos; simulator_platform=appletvsimulator; availability_platform=tvOS ;;
+ *) target_platform=iphoneos; runtime_platform=ios; simulator_platform=iphonesimulator; availability_platform=iOS ;;
+esac
+case ${1:-} in
+ --help) printf '%s\n' 'Usage: bash build_tools/prepare_linux_host.sh [--skip-system-deps|--deps-only]' 'Linux preparation entry point (Ubuntu 24.04 / Debian-compatible Linux).' 'Installs system dependencies and prepares Darwin cross tools, SDKs, runtime and MIG.' 'Calls build_tools/prepare_native_tools.sh for native tools and host-env.sh.' '--deps-only installs system dependencies only; --skip-system-deps skips installation.' 'Does not build target packages; source host-env.sh, then use the main Makefile.' 'HOST_TOOL_ROOT may be a dedicated directory outside the checkout; HOME is preserved.' 'MEMO_TARGET selects the target; tvOS requires an imported AppleTVOS.sdk or TARGET_SYSROOT.' 'Set TARGET_SYSROOT and MACOSX_SYSROOT to use explicitly supplied SDKs.' 'Docker containers must use --init to reap fakeroot helper processes.'; exit 0;;
+ ''|--skip-system-deps|--deps-only) ;;
+ *) echo 'Unknown option; use --help' >&2;exit 2;;
+esac
+[[ $(uname -s) == Linux ]] || { echo 'Use build_tools/prepare_native_tools.sh on macOS or iOS.' >&2;exit 1; }
+HOST_TOOL_ROOT=$(realpath -m -- "$HOST_TOOL_ROOT")
+case "$PROJDIR/" in "$HOST_TOOL_ROOT/"*) echo 'HOST_TOOL_ROOT must not contain the checkout' >&2;exit 1;; esac
+[[ $HOST_TOOL_ROOT != / && $HOST_TOOL_ROOT != "$(realpath -m -- "$HOME")" ]] || { echo 'HOST_TOOL_ROOT must be a dedicated directory, not / or HOME' >&2;exit 1; }
+mkdir -p "$HOST_TOOL_ROOT"
+if [[ ${1:-} != --skip-system-deps ]]; then
+ SUDO=(); [[ $(id -u) == 0 ]] || SUDO=(sudo)
+ "${SUDO[@]}" apt-get update
+ # This entry point owns all Linux system dependency installation.
+ # Incompatible bootstrap tools are prepared separately by the helper.
+ mapfile -t linux_packages < "$PROJDIR/build_misc/host-tools/linux-packages.txt"
+ "${SUDO[@]}" env DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+  "${linux_packages[@]}"
+fi
+[[ ${1:-} != --deps-only ]] || exit 0
+mkdir -p "$HOST_TOOL_ROOT"/{downloads,toolchain,SDK,bin}
+fetch() {
+ local url=$1 dst=$2
+ if [[ ! -s $dst ]]; then
+  curl --fail --location --retry 3 --connect-timeout 30 --output "$dst.part" "$url"
+  mv "$dst.part" "$dst"
+ fi
+}
+case $(uname -m) in aarch64|arm64) arch=aarch64;; x86_64) arch=x86_64;; *) echo 'Unsupported Linux architecture' >&2;exit 1;; esac
+# The release used by the upstream Theos installer, pinned instead of /latest.
+release=test-210562a
+archive="$HOST_TOOL_ROOT/downloads/iOSToolchain-$arch.tar.xz"
+fetch "https://github.com/L1ghtmann/llvm-project/releases/download/$release/iOSToolchain-$arch.tar.xz" "$archive"
+if [[ $arch == aarch64 ]]; then
+ echo "9051e9d531de5e511f0fab40d925d625bc6efe7ed9dce821d179c09de9bc690b  $archive" | sha256sum -c -
+fi
+tar -xf "$archive" -C "$HOST_TOOL_ROOT/toolchain"
+toolbin="$HOST_TOOL_ROOT/toolchain/linux/iphone/bin"
+# The upstream archiver invokes this configured ranlib name internally.
+ln -sf ranlib "$toolbin/aarch64-apple-darwin14-ranlib"
+# Use the distribution's Clang 18 with the pinned Darwin binutils. The
+# bundled clang11 cannot parse all modern SDK headers. No host/iOS library mix.
+for name in ld strings strip install_name_tool nm lipo otool libtool; do
+ test -x "$toolbin/$name"
+ ln -sf "$toolbin/$name" "$HOST_TOOL_ROOT/bin/aarch64-apple-darwin-$name"
+done
+# Meson Darwin installation fixups discover these tools by their native names.
+for name in otool install_name_tool; do
+ ln -sf "$toolbin/$name" "$HOST_TOOL_ROOT/bin/$name"
+done
+# LLVM bitcode archives need an index produced by the matching LLVM version.
+rm -f "$HOST_TOOL_ROOT/bin/aarch64-apple-darwin-ar"
+printf '#!/usr/bin/env bash\nexec %q --format=darwin "$@"\n' "$(command -v llvm-ar-18)" > "$HOST_TOOL_ROOT/bin/aarch64-apple-darwin-ar"
+chmod +x "$HOST_TOOL_ROOT/bin/aarch64-apple-darwin-ar"
+ln -sfn "$(command -v llvm-ranlib-18)" "$HOST_TOOL_ROOT/bin/aarch64-apple-darwin-ranlib"
+resource_dir="$HOST_TOOL_ROOT/clang-resource"
+mkdir -p "$resource_dir"
+ln -sfn "$(clang-18 -print-resource-dir)/include" "$resource_dir/include"
+for name in clang clang++; do
+ compiler=$(command -v "$name-18")
+ # C compilations reject the unused C++ library option when using -Werror.
+ stdlib_flag=
+ [[ $name != clang++ ]] || stdlib_flag=-stdlib=libc++
+ printf '#!/usr/bin/env bash\nexec %q --target=aarch64-apple-darwin -B%q -resource-dir=%q %s "$@"\n' "$compiler" "$toolbin" "$resource_dir" "$stdlib_flag" > "$HOST_TOOL_ROOT/bin/aarch64-apple-darwin-$name"
+ chmod +x "$HOST_TOOL_ROOT/bin/aarch64-apple-darwin-$name"
+done
+for name in tapi vtool; do
+ test -x "$toolbin/$name"
+ ln -sf "$toolbin/$name" "$HOST_TOOL_ROOT/bin/$name"
+done
+# LLVM's Darwin runtimes also require an iPhoneOS SDK when targeting tvOS.
+# Reuse the same pinned SDK as the default iOS host preparation.
+if [[ $target_platform == appletvos || -z ${TARGET_SYSROOT:-} ]]; then
+ archive="$HOST_TOOL_ROOT/downloads/iPhoneOS16.5.sdk.tar.xz"
+ fetch 'https://github.com/theos/sdks/releases/download/master-146e41f/iPhoneOS16.5.sdk.tar.xz' "$archive"
+ [[ -d "$HOST_TOOL_ROOT/SDK/iPhoneOS16.5.sdk" ]] || tar -xf "$archive" -C "$HOST_TOOL_ROOT/SDK"
+fi
+if [[ $target_platform == appletvos ]]; then
+ TARGET_SYSROOT=${TARGET_SYSROOT:-"$HOST_TOOL_ROOT/SDK/AppleTVOS.sdk"}
+ [[ -f $TARGET_SYSROOT/SDKSettings.json ]] || { echo "Import AppleTVOS.sdk into $HOST_TOOL_ROOT/SDK or set TARGET_SYSROOT before preparing tvOS." >&2; exit 1; }
+elif [[ -z ${TARGET_SYSROOT:-} ]]; then
+ TARGET_SYSROOT="$HOST_TOOL_ROOT/SDK/iPhoneOS16.5.sdk"
+fi
+if [[ -z ${MACOSX_SYSROOT:-} ]]; then
+ archive="$HOST_TOOL_ROOT/downloads/MacOSX11.3.sdk.tar.xz"
+ fetch 'https://github.com/phracker/MacOSX-SDKs/releases/download/11.3/MacOSX11.3.sdk.tar.xz' "$archive"
+ [[ -d "$HOST_TOOL_ROOT/SDK/MacOSX11.3.sdk" ]] || tar -xf "$archive" -C "$HOST_TOOL_ROOT/SDK"
+ MACOSX_SYSROOT="$HOST_TOOL_ROOT/SDK/MacOSX11.3.sdk"
+fi
+# AppleDouble metadata is not SDK source and breaks Clang umbrella modules.
+find -H "$HOST_TOOL_ROOT/SDK" "$TARGET_SYSROOT" "$MACOSX_SYSROOT" -type f -name '._*' -delete
+python3 - "$TARGET_SYSROOT/SDKSettings.json" "$target_platform" <<'PY'
+import json, sys
+data = json.load(open(sys.argv[1]))
+if not data.get('CanonicalName', '').startswith(sys.argv[2]):
+    sys.exit(f"SDK {sys.argv[1]} does not match {sys.argv[2]}; select the correct TARGET_SYSROOT")
+PY
+test -f "$TARGET_SYSROOT/usr/include/stdio.h"
+test -d "$MACOSX_SYSROOT/System/Library/Frameworks/CoreServices.framework"
+# Rust and compiler-rt query SDKs through xcrun even with explicit compilers.
+{
+ printf '#!/usr/bin/env bash\nset -euo pipefail\ntarget_platform=%q\ntarget_sdk=%q\nmacosx_sdk=%q\nsdk_root=%q\n' "$target_platform" "$TARGET_SYSROOT" "$MACOSX_SYSROOT" "$HOST_TOOL_ROOT/SDK"
+ cat <<'EOF'
+sdk= operation=
+while (( $# )); do
+ case $1 in
+  --sdk|-sdk) [[ $# -ge 2 ]] || exit 2; sdk=$2; shift 2 ;;
+  --show-sdk-path|-show-sdk-path) operation=path; shift ;;
+  --show-sdk-version|-show-sdk-version) operation=version; shift ;;
+  *) echo "Unsupported Linux xcrun argument: $1" >&2; exit 2 ;;
+ esac
+done
+[[ -n $operation ]] || { echo 'Linux xcrun supports SDK path/version queries only' >&2; exit 2; }
+case $sdk in
+ "$target_platform") sdk_path=$target_sdk ;;
+ macosx) sdk_path=$macosx_sdk ;;
+ iphoneos|iphonesimulator|appletvos|appletvsimulator|watchos|watchsimulator)
+  sdk_path=$(python3 - "$sdk_root" "$sdk" <<'PY'
+import json, pathlib, sys
+matches = []
+for path in pathlib.Path(sys.argv[1]).glob('*.sdk'):
+    metadata = path / 'SDKSettings.json'
+    if metadata.is_file():
+        data = json.loads(metadata.read_text())
+        if data.get('CanonicalName') == sys.argv[2] + data.get('Version', ''):
+            matches.append(path.resolve())
+matches = sorted(set(matches))
+if len(matches) != 1:
+    sys.exit(f'Expected one {sys.argv[2]} SDK in {sys.argv[1]}, found {len(matches)}')
+print(matches[0])
+PY
+  ) ;;
+ *) echo "Unsupported Linux xcrun SDK: $sdk" >&2; exit 2 ;;
+esac
+if [[ $operation == path ]]; then
+ printf '%s\n' "$sdk_path"
+else
+ python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["Version"])' "$sdk_path/SDKSettings.json"
+fi
+EOF
+} > "$HOST_TOOL_ROOT/bin/xcrun"
+chmod +x "$HOST_TOOL_ROOT/bin/xcrun"
+# The distributed ld64-609 lacks LTO support. Build the same linker series
+# against the host LLVM used by the cross compiler, retaining bundled TAPI.
+ld64_commit=df82634ce7c3eddba9722e881433fbe357396e16
+archive="$HOST_TOOL_ROOT/downloads/cctools-ld64-$ld64_commit.tar.gz"
+fetch "https://github.com/tpoechtrager/cctools-port/archive/$ld64_commit.tar.gz" "$archive"
+echo "f137bf519be7f08303923b28bdc0fdfd87ca0533e15ad9050eedda2f6d59b420  $archive" | sha256sum -c -
+ld64_src="$HOST_TOOL_ROOT/src/cctools-port-$ld64_commit"
+mkdir -p "$HOST_TOOL_ROOT/src"
+[[ -d $ld64_src ]] || tar -xf "$archive" -C "$HOST_TOOL_ROOT/src"
+timestamp_patch="$PROJDIR/build_patch/host-cctools/archive-timestamps.patch"
+if patch -d "$ld64_src" -p1 --forward --dry-run < "$timestamp_patch" >/dev/null 2>&1; then
+ patch -d "$ld64_src" -p1 < "$timestamp_patch"
+else
+ patch -d "$ld64_src" -p1 --reverse --dry-run < "$timestamp_patch" >/dev/null
+fi
+(
+ unset CC CXX CPP CFLAGS CXXFLAGS CPPFLAGS LDFLAGS LD AR RANLIB NM SDKROOT MACOSX_DEPLOYMENT_TARGET
+ cd "$ld64_src/cctools"
+ ./autogen.sh
+ CC=clang-18 CXX=clang++-18 ./configure --target=aarch64-apple-darwin \
+  --prefix="$HOST_TOOL_ROOT/ld64-lto" --with-libtapi="$HOST_TOOL_ROOT/toolchain/linux/iphone" \
+  --with-llvm-config="$(command -v llvm-config-18)"
+ make -C ld64 -j"${HOST_JOBS:-4}"
+ make -C libmacho -j"${HOST_JOBS:-4}"
+ make -C libstuff -j"${HOST_JOBS:-4}"
+ make -C misc -j"${HOST_JOBS:-4}" strip lipo
+)
+install -m755 "$ld64_src/cctools/ld64/src/ld/ld" "$toolbin/ld"
+install -m755 "$ld64_src/cctools/misc/strip" "$toolbin/strip"
+install -m755 "$ld64_src/cctools/misc/lipo" "$toolbin/lipo"
+# lipo must inspect bitcode with the producing host compiler's libLTO.
+rm -f "$HOST_TOOL_ROOT/bin/aarch64-apple-darwin-lipo"
+printf '#!/usr/bin/env bash\nexport LIBLTO_PATH=%q\nexec %q "$@"\n' "$(llvm-config-18 --libdir)/libLTO.so" "$toolbin/lipo" > "$HOST_TOOL_ROOT/bin/aarch64-apple-darwin-lipo"
+chmod +x "$HOST_TOOL_ROOT/bin/aarch64-apple-darwin-lipo"
+# Bundled strip invokes its configured target-prefixed linker for Mach-O objects.
+ln -sfn ld "$toolbin/aarch64-apple-darwin14-ld"
+ln -sfn ld "$toolbin/aarch64-apple-darwin-ld"
+# Build the matching compiler-rt builtins with upstream's Darwin source selection,
+# including os_version_check. This is the selected arm64 cross-link runtime, not a
+# target LLVM/Swift package build or an arm64e ABI substitute.
+runtime_version=18.1.3
+runtime_src="$HOST_TOOL_ROOT/src/llvm-runtime-$runtime_version"
+mkdir -p "$runtime_src"
+for project in compiler-rt cmake; do
+ archive="$HOST_TOOL_ROOT/downloads/$project-$runtime_version.src.tar.xz"
+ fetch "https://github.com/llvm/llvm-project/releases/download/llvmorg-$runtime_version/$project-$runtime_version.src.tar.xz" "$archive"
+ case $project in
+  compiler-rt) checksum=9a7df9300413696b0c4f7ff1e2729cb82aca375f35c05d698c44f26a4edf1c27 ;;
+  cmake) checksum=acfecb615d41c5b1a0a31e15324994ca06f7a3f37d8958d719b20de0d217b71b ;;
+ esac
+ echo "$checksum  $archive" | sha256sum -c -
+ mkdir -p "$runtime_src/$project"
+ tar -xf "$archive" --strip-components=1 -C "$runtime_src/$project"
+done
+runtime_build="$runtime_src/build"
+runtime_options=(-DCOMPILER_RT_ENABLE_IOS=ON -DCOMPILER_RT_ENABLE_TVOS=OFF)
+if [[ $runtime_platform == tvos ]]; then
+ runtime_build="$runtime_src/build-tvos"
+ runtime_options=(-DCOMPILER_RT_ENABLE_IOS=OFF -DCOMPILER_RT_ENABLE_TVOS=ON)
+fi
+macos_sdk_version=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["Version"])' "$MACOSX_SYSROOT/SDKSettings.json")
+cmake -S "$runtime_src/compiler-rt/lib/builtins" -B "$runtime_build" -G Ninja \
+ -DLLVM_DIR="$(llvm-config-18 --cmakedir)" \
+ -DCMAKE_SYSTEM_NAME=Darwin -DCMAKE_BUILD_TYPE=Release \
+ -DCMAKE_C_COMPILER="$(command -v clang-18)" -DCMAKE_ASM_COMPILER="$(command -v clang-18)" \
+ -DCMAKE_C_COMPILER_TARGET=arm64-apple-darwin -DCMAKE_ASM_COMPILER_TARGET=arm64-apple-darwin \
+ -DCMAKE_OSX_SYSROOT="$TARGET_SYSROOT" -DCMAKE_OSX_ARCHITECTURES=arm64 \
+ -DCMAKE_LINKER="$toolbin/ld" -DCMAKE_LIBTOOL="$toolbin/libtool" -DCMAKE_LIPO="$toolbin/lipo" \
+ "${runtime_options[@]}" -DCOMPILER_RT_ENABLE_WATCHOS=OFF \
+ -DDARWIN_${target_platform}_CACHED_SYSROOT="$TARGET_SYSROOT" -DDARWIN_macosx_CACHED_SYSROOT="$MACOSX_SYSROOT" \
+ -DDARWIN_macosx_OVERRIDE_SDK_VERSION="$macos_sdk_version" \
+ -DDARWIN_${simulator_platform}_OVERRIDE_SDK_VERSION=0.0 \
+ -DDARWIN_${runtime_platform}_BUILTIN_ARCHS=arm64 -DDARWIN_osx_BUILTIN_ARCHS=arm64 \
+ -DDARWIN_${runtime_platform}_SKIP_CC_KEXT=ON -DCOMPILER_RT_INCLUDE_TESTS=OFF \
+ -DCMAKE_INSTALL_PREFIX="$resource_dir"
+# Only the selected device library is needed; no simulator, macOS, or sanitizer build.
+cmake --build "$runtime_build" --target clang_rt.$runtime_platform -j"${HOST_JOBS:-4}"
+cmake --install "$runtime_build" --component clang_rt.$runtime_platform
+test -s "$resource_dir/lib/darwin/libclang_rt.$runtime_platform.a"
+# Fail during preparation, rather than much later in a package link.
+printf '%s\n' "int main(void) { return __builtin_available($availability_platform 18.0, *) ? 0 : 1; }" > "$runtime_build/availability.c"
+"$HOST_TOOL_ROOT/bin/aarch64-apple-darwin-clang" --target=arm64-apple-${runtime_platform}16.0 \
+ -isysroot "$TARGET_SYSROOT" "$runtime_build/availability.c" -o "$runtime_build/availability"
+# Exercise both LTO modes through the same driver used by target recipes.
+printf '%s\n' 'int procursus_lto_probe(void) { return 0; }' > "$runtime_build/archive-probe.c"
+printf '%s\n' 'int procursus_lto_probe(void); int main(void) { return procursus_lto_probe(); }' > "$runtime_build/archive-main.c"
+"$HOST_TOOL_ROOT/bin/aarch64-apple-darwin-clang" --target=arm64-apple-${runtime_platform}16.0 \
+ -isysroot "$TARGET_SYSROOT" -c "$runtime_build/archive-probe.c" \
+ -o "$runtime_build/strip-probe.o"
+"$HOST_TOOL_ROOT/bin/aarch64-apple-darwin-strip" -x "$runtime_build/strip-probe.o"
+for lto_mode in full thin; do
+ "$HOST_TOOL_ROOT/bin/aarch64-apple-darwin-clang" --target=arm64-apple-${runtime_platform}16.0 \
+  -isysroot "$TARGET_SYSROOT" -flto="$lto_mode" "$runtime_build/availability.c" \
+  -o "$runtime_build/availability-$lto_mode"
+ "$HOST_TOOL_ROOT/bin/aarch64-apple-darwin-clang" --target=arm64-apple-${runtime_platform}16.0 \
+  -isysroot "$TARGET_SYSROOT" -flto="$lto_mode" -c "$runtime_build/archive-probe.c" \
+  -o "$runtime_build/archive-$lto_mode.o"
+ "$HOST_TOOL_ROOT/bin/aarch64-apple-darwin-ar" rcs "$runtime_build/archive-$lto_mode.a" "$runtime_build/archive-$lto_mode.o"
+ "$HOST_TOOL_ROOT/bin/aarch64-apple-darwin-ranlib" "$runtime_build/archive-$lto_mode.a"
+ "$HOST_TOOL_ROOT/bin/aarch64-apple-darwin-clang" --target=arm64-apple-${runtime_platform}16.0 \
+  -isysroot "$TARGET_SYSROOT" -flto="$lto_mode" "$runtime_build/archive-main.c" \
+  "$runtime_build/archive-$lto_mode.a" -o "$runtime_build/archive-$lto_mode"
+done
+export HOST_TOOL_ROOT TARGET_SYSROOT MACOSX_SYSROOT
+export HOST_CC=${HOST_CC:-clang}
+export HOST_CXX=${HOST_CXX:-clang++}
+# Apple's Mach interface generator is required by the main setup target.
+mig_commit=f337e600741638896fb6056ce87c6479f74b89a3
+archive="$HOST_TOOL_ROOT/downloads/bootstrap_cmds-$mig_commit.tar.gz"
+fetch "https://github.com/markmentovai/bootstrap_cmds/archive/$mig_commit.tar.gz" "$archive"
+mig_src="$HOST_TOOL_ROOT/src/bootstrap_cmds-$mig_commit"
+[[ -d $mig_src ]] || tar -xf "$archive" -C "$HOST_TOOL_ROOT/src"
+(
+ cd "$mig_src"
+ autoreconf -fi
+ CC="$HOST_CC" ./configure --prefix="$HOST_TOOL_ROOT"
+ make -j"${HOST_JOBS:-4}"
+ make install
+)
+# Write the environment only after the cross tools and MIG have been prepared.
+HOST_PLATFORM=linux bash "$PROJDIR/build_tools/prepare_native_tools.sh"
+sha256sum "$HOST_TOOL_ROOT"/downloads/* > "$HOST_TOOL_ROOT/downloads.sha256"
+printf 'Ready. Run: source %q\n' "$HOST_TOOL_ROOT/host-env.sh"

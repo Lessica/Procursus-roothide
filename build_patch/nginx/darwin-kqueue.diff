@@ -1,0 +1,16 @@
+--- auto/os/darwin.orig
++++ auto/os/darwin
+@@ -63,7 +63,12 @@
+ ngx_feature="Darwin 64-bit kqueue millisecond timeout bug"
+ ngx_feature_name=NGX_DARWIN_KEVENT_BUG
+ ngx_feature_run=bug
+-ngx_feature_incs="#include <sys/event.h>
++# The workaround only applies to 64-bit big-endian PowerPC. A cross-built
++# probe cannot run on the build host and must not enable it on other targets.
++ngx_feature_incs="#if !defined(__ppc64__) || !defined(__BIG_ENDIAN__)
++                  #error This timeout workaround is PowerPC64-specific
++                  #endif
++                  #include <sys/event.h>
+                   #include <sys/time.h>"
+ ngx_feature_path=
+ ngx_feature_libs=

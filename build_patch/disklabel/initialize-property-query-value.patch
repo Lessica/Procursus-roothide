@@ -1,0 +1,11 @@
+--- a/props.c
++++ b/props.c
+@@ -132,7 +132,7 @@
+ 
+ 	for (i = 0; args[i]; i++) {
+ 		char *arg = args[i];
+-		CFTypeRef v;
++		CFTypeRef v = nil;
+ 		CFStringRef k;
+ 
+ 		if (parseProperty(arg, &k, &v) > 0) {

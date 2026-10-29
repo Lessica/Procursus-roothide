@@ -1,0 +1,45 @@
+--- a/vendor/libgit2-sys/build.rs
++++ b/vendor/libgit2-sys/build.rs
+@@ -8,9 +8,13 @@
+     let https = env::var("CARGO_FEATURE_HTTPS").is_ok();
+     let ssh = env::var("CARGO_FEATURE_SSH").is_ok();
+     let zlib_ng_compat = env::var("CARGO_FEATURE_ZLIB_NG_COMPAT").is_ok();
++    let target = env::var("TARGET").unwrap_or_default();
++    // A host libgit2 found by pkg-config is not valid for an iOS or tvOS cross target.
++    // Build the crate's bundled libgit2 sources for these targets instead.
++    let cross_compiling_to_ios = target.ends_with("-apple-ios") || target.ends_with("-apple-tvos");
+ 
+     // To use zlib-ng in zlib-compat mode, we have to build libgit2 ourselves.
+-    if !zlib_ng_compat {
++    if !zlib_ng_compat && !cross_compiling_to_ios {
+         let mut cfg = pkg_config::Config::new();
+         if let Ok(lib) = cfg.atleast_version("1.1.0").probe("libgit2") {
+             for include in &lib.include_paths {
+@@ -26,7 +30,6 @@
+         return;
+     }
+ 
+-    let target = env::var("TARGET").unwrap();
+     let windows = target.contains("windows");
+     let dst = PathBuf::from(env::var_os("OUT_DIR").unwrap());
+     let include = dst.join("include");
+--- a/Cargo.toml
++++ b/Cargo.toml
+@@ -105,6 +105,7 @@
+ [patch.crates-io]
+ # See comments in `src/tools/rustc-workspace-hack/README.md` for what's going on
+ # here
++libgit2-sys = { path = "vendor/libgit2-sys" }
+ rustc-workspace-hack = { path = 'src/tools/rustc-workspace-hack' }
+ 
+ # See comments in `library/rustc-std-workspace-core/README.md` for what's going on
+--- a/Cargo.lock
++++ b/Cargo.lock
+@@ -1891,8 +1891,6 @@
+ [[package]]
+ name = "libgit2-sys"
+ version = "0.12.18+1.1.0"
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "3da6a42da88fc37ee1ecda212ffa254c25713532980005d5f7c0b0fbe7e6e885"
+ dependencies = [
+  "cc",

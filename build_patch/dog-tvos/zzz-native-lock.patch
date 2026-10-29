@@ -1,0 +1,29 @@
+--- a/Cargo.lock
++++ b/Cargo.lock
+@@ -345,8 +345,6 @@
+ [[package]]
+ name = "native-tls"
+ version = "0.2.4"
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "2b0d88c06fe90d5ee94048ba40409ef1d9315d86f6f38c2efdaad4fb50c58b2d"
+ dependencies = [
+  "lazy_static",
+  "libc",
+@@ -552,8 +550,6 @@
+ [[package]]
+ name = "security-framework"
+ version = "0.4.4"
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "64808902d7d99f78eaddd2b4e2509713babc3dc3c85ad6f4c447680f3c01e535"
+ dependencies = [
+  "bitflags",
+  "core-foundation",
+@@ -565,8 +561,6 @@
+ [[package]]
+ name = "security-framework-sys"
+ version = "0.4.3"
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "17bf11d99252f512695eb468de5516e5cf75455521e69dfe343f3b74e4748405"
+ dependencies = [
+  "core-foundation-sys",
+  "libc",

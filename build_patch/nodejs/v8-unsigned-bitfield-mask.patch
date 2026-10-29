@@ -1,0 +1,205 @@
+--- a/deps/v8/src/base/bit-field.h
++++ b/deps/v8/src/base/bit-field.h
+@@ -40,14 +40,14 @@
+   static constexpr U kNumValues = U{1} << kSize;
+ 
+   // Value for the field with all bits set.
+-  static constexpr T kMax = static_cast<T>(kNumValues - 1);
++  static constexpr U kMax = kNumValues - 1;
+ 
+   template <class T2, int size2>
+   using Next = BitField<T2, kShift + kSize, size2, U>;
+ 
+   // Tells whether the provided value fits into the bit field.
+   static constexpr bool is_valid(T value) {
+-    return (static_cast<U>(value) & ~static_cast<U>(kMax)) == 0;
++    return (static_cast<U>(value) & ~kMax) == 0;
+   }
+ 
+   // Returns a type U with the bit field value encoded.
+--- a/deps/v8/src/objects/feedback-vector.h
++++ b/deps/v8/src/objects/feedback-vector.h
+@@ -193,9 +193,9 @@
+  public:
+   NEVER_READ_ONLY_SPACE
+   DEFINE_TORQUE_GENERATED_FEEDBACK_VECTOR_FLAGS()
+-  STATIC_ASSERT(OptimizationMarker::kLastOptimizationMarker <
++  STATIC_ASSERT(static_cast<uint32_t>(OptimizationMarker::kLastOptimizationMarker) <
+                 OptimizationMarkerBits::kMax);
+-  STATIC_ASSERT(OptimizationTier::kLastOptimizationTier <
++  STATIC_ASSERT(static_cast<uint32_t>(OptimizationTier::kLastOptimizationTier) <
+                 OptimizationTierBits::kMax);
+ 
+   static const bool kFeedbackVectorMaybeOptimizedCodeIsStoreRelease = true;
+--- a/deps/v8/src/objects/js-date-time-format.h
++++ b/deps/v8/src/objects/js-date-time-format.h
+@@ -106,23 +106,23 @@
+   // Bit positions in |flags|.
+   DEFINE_TORQUE_GENERATED_JS_DATE_TIME_FORMAT_FLAGS()
+ 
+-  STATIC_ASSERT(HourCycle::kUndefined <= HourCycleBits::kMax);
+-  STATIC_ASSERT(HourCycle::kH11 <= HourCycleBits::kMax);
+-  STATIC_ASSERT(HourCycle::kH12 <= HourCycleBits::kMax);
+-  STATIC_ASSERT(HourCycle::kH23 <= HourCycleBits::kMax);
+-  STATIC_ASSERT(HourCycle::kH24 <= HourCycleBits::kMax);
++  STATIC_ASSERT(static_cast<uint32_t>(HourCycle::kUndefined) <= HourCycleBits::kMax);
++  STATIC_ASSERT(static_cast<uint32_t>(HourCycle::kH11) <= HourCycleBits::kMax);
++  STATIC_ASSERT(static_cast<uint32_t>(HourCycle::kH12) <= HourCycleBits::kMax);
++  STATIC_ASSERT(static_cast<uint32_t>(HourCycle::kH23) <= HourCycleBits::kMax);
++  STATIC_ASSERT(static_cast<uint32_t>(HourCycle::kH24) <= HourCycleBits::kMax);
+ 
+-  STATIC_ASSERT(DateTimeStyle::kUndefined <= DateStyleBits::kMax);
+-  STATIC_ASSERT(DateTimeStyle::kFull <= DateStyleBits::kMax);
+-  STATIC_ASSERT(DateTimeStyle::kLong <= DateStyleBits::kMax);
+-  STATIC_ASSERT(DateTimeStyle::kMedium <= DateStyleBits::kMax);
+-  STATIC_ASSERT(DateTimeStyle::kShort <= DateStyleBits::kMax);
++  STATIC_ASSERT(static_cast<uint32_t>(DateTimeStyle::kUndefined) <= DateStyleBits::kMax);
++  STATIC_ASSERT(static_cast<uint32_t>(DateTimeStyle::kFull) <= DateStyleBits::kMax);
++  STATIC_ASSERT(static_cast<uint32_t>(DateTimeStyle::kLong) <= DateStyleBits::kMax);
++  STATIC_ASSERT(static_cast<uint32_t>(DateTimeStyle::kMedium) <= DateStyleBits::kMax);
++  STATIC_ASSERT(static_cast<uint32_t>(DateTimeStyle::kShort) <= DateStyleBits::kMax);
+ 
+-  STATIC_ASSERT(DateTimeStyle::kUndefined <= TimeStyleBits::kMax);
+-  STATIC_ASSERT(DateTimeStyle::kFull <= TimeStyleBits::kMax);
+-  STATIC_ASSERT(DateTimeStyle::kLong <= TimeStyleBits::kMax);
+-  STATIC_ASSERT(DateTimeStyle::kMedium <= TimeStyleBits::kMax);
+-  STATIC_ASSERT(DateTimeStyle::kShort <= TimeStyleBits::kMax);
++  STATIC_ASSERT(static_cast<uint32_t>(DateTimeStyle::kUndefined) <= TimeStyleBits::kMax);
++  STATIC_ASSERT(static_cast<uint32_t>(DateTimeStyle::kFull) <= TimeStyleBits::kMax);
++  STATIC_ASSERT(static_cast<uint32_t>(DateTimeStyle::kLong) <= TimeStyleBits::kMax);
++  STATIC_ASSERT(static_cast<uint32_t>(DateTimeStyle::kMedium) <= TimeStyleBits::kMax);
++  STATIC_ASSERT(static_cast<uint32_t>(DateTimeStyle::kShort) <= TimeStyleBits::kMax);
+ 
+   DECL_ACCESSORS(icu_locale, Managed<icu::Locale>)
+   DECL_ACCESSORS(icu_simple_date_format, Managed<icu::SimpleDateFormat>)
+--- a/deps/v8/src/objects/js-display-names.h
++++ b/deps/v8/src/objects/js-display-names.h
+@@ -79,13 +79,13 @@
+   // Bit positions in |flags|.
+   DEFINE_TORQUE_GENERATED_JS_DISPLAY_NAMES_FLAGS()
+ 
+-  STATIC_ASSERT(Style::kLong <= StyleBits::kMax);
+-  STATIC_ASSERT(Style::kShort <= StyleBits::kMax);
+-  STATIC_ASSERT(Style::kNarrow <= StyleBits::kMax);
+-  STATIC_ASSERT(Fallback::kCode <= FallbackBit::kMax);
+-  STATIC_ASSERT(Fallback::kNone <= FallbackBit::kMax);
+-  STATIC_ASSERT(LanguageDisplay::kDialect <= LanguageDisplayBit::kMax);
+-  STATIC_ASSERT(LanguageDisplay::kStandard <= LanguageDisplayBit::kMax);
++  STATIC_ASSERT(static_cast<uint32_t>(Style::kLong) <= StyleBits::kMax);
++  STATIC_ASSERT(static_cast<uint32_t>(Style::kShort) <= StyleBits::kMax);
++  STATIC_ASSERT(static_cast<uint32_t>(Style::kNarrow) <= StyleBits::kMax);
++  STATIC_ASSERT(static_cast<uint32_t>(Fallback::kCode) <= FallbackBit::kMax);
++  STATIC_ASSERT(static_cast<uint32_t>(Fallback::kNone) <= FallbackBit::kMax);
++  STATIC_ASSERT(static_cast<uint32_t>(LanguageDisplay::kDialect) <= LanguageDisplayBit::kMax);
++  STATIC_ASSERT(static_cast<uint32_t>(LanguageDisplay::kStandard) <= LanguageDisplayBit::kMax);
+ 
+   DECL_ACCESSORS(internal, Managed<DisplayNamesInternal>)
+ 
+--- a/deps/v8/src/objects/js-list-format.h
++++ b/deps/v8/src/objects/js-list-format.h
+@@ -86,12 +86,12 @@
+   // Bit positions in |flags|.
+   DEFINE_TORQUE_GENERATED_JS_LIST_FORMAT_FLAGS()
+ 
+-  STATIC_ASSERT(Style::LONG <= StyleBits::kMax);
+-  STATIC_ASSERT(Style::SHORT <= StyleBits::kMax);
+-  STATIC_ASSERT(Style::NARROW <= StyleBits::kMax);
+-  STATIC_ASSERT(Type::CONJUNCTION <= TypeBits::kMax);
+-  STATIC_ASSERT(Type::DISJUNCTION <= TypeBits::kMax);
+-  STATIC_ASSERT(Type::UNIT <= TypeBits::kMax);
++  STATIC_ASSERT(static_cast<uint32_t>(Style::LONG) <= StyleBits::kMax);
++  STATIC_ASSERT(static_cast<uint32_t>(Style::SHORT) <= StyleBits::kMax);
++  STATIC_ASSERT(static_cast<uint32_t>(Style::NARROW) <= StyleBits::kMax);
++  STATIC_ASSERT(static_cast<uint32_t>(Type::CONJUNCTION) <= TypeBits::kMax);
++  STATIC_ASSERT(static_cast<uint32_t>(Type::DISJUNCTION) <= TypeBits::kMax);
++  STATIC_ASSERT(static_cast<uint32_t>(Type::UNIT) <= TypeBits::kMax);
+ 
+   DECL_PRINTER(JSListFormat)
+ 
+--- a/deps/v8/src/objects/js-plural-rules.h
++++ b/deps/v8/src/objects/js-plural-rules.h
+@@ -62,8 +62,8 @@
+   // Bit positions in |flags|.
+   DEFINE_TORQUE_GENERATED_JS_PLURAL_RULES_FLAGS()
+ 
+-  STATIC_ASSERT(Type::CARDINAL <= TypeBit::kMax);
+-  STATIC_ASSERT(Type::ORDINAL <= TypeBit::kMax);
++  STATIC_ASSERT(static_cast<uint32_t>(Type::CARDINAL) <= TypeBit::kMax);
++  STATIC_ASSERT(static_cast<uint32_t>(Type::ORDINAL) <= TypeBit::kMax);
+ 
+   DECL_ACCESSORS(icu_plural_rules, Managed<icu::PluralRules>)
+   DECL_ACCESSORS(icu_number_formatter,
+--- a/deps/v8/src/objects/js-relative-time-format.h
++++ b/deps/v8/src/objects/js-relative-time-format.h
+@@ -77,8 +77,8 @@
+   // Bit positions in |flags|.
+   DEFINE_TORQUE_GENERATED_JS_RELATIVE_TIME_FORMAT_FLAGS()
+ 
+-  STATIC_ASSERT(Numeric::AUTO <= NumericBit::kMax);
+-  STATIC_ASSERT(Numeric::ALWAYS <= NumericBit::kMax);
++  STATIC_ASSERT(static_cast<uint32_t>(Numeric::AUTO) <= NumericBit::kMax);
++  STATIC_ASSERT(static_cast<uint32_t>(Numeric::ALWAYS) <= NumericBit::kMax);
+ 
+   DECL_PRINTER(JSRelativeTimeFormat)
+ 
+--- a/deps/v8/src/objects/js-segment-iterator.h
++++ b/deps/v8/src/objects/js-segment-iterator.h
+@@ -55,9 +55,9 @@
+   // Bit positions in |flags|.
+   DEFINE_TORQUE_GENERATED_JS_SEGMENT_ITERATOR_FLAGS()
+ 
+-  STATIC_ASSERT(JSSegmenter::Granularity::GRAPHEME <= GranularityBits::kMax);
+-  STATIC_ASSERT(JSSegmenter::Granularity::WORD <= GranularityBits::kMax);
+-  STATIC_ASSERT(JSSegmenter::Granularity::SENTENCE <= GranularityBits::kMax);
++  STATIC_ASSERT(static_cast<uint32_t>(JSSegmenter::Granularity::GRAPHEME) <= GranularityBits::kMax);
++  STATIC_ASSERT(static_cast<uint32_t>(JSSegmenter::Granularity::WORD) <= GranularityBits::kMax);
++  STATIC_ASSERT(static_cast<uint32_t>(JSSegmenter::Granularity::SENTENCE) <= GranularityBits::kMax);
+ 
+   TQ_OBJECT_CONSTRUCTORS(JSSegmentIterator)
+ };
+--- a/deps/v8/src/objects/js-segmenter.h
++++ b/deps/v8/src/objects/js-segmenter.h
+@@ -65,9 +65,9 @@
+   // Bit positions in |flags|.
+   DEFINE_TORQUE_GENERATED_JS_SEGMENTER_FLAGS()
+ 
+-  STATIC_ASSERT(Granularity::GRAPHEME <= GranularityBits::kMax);
+-  STATIC_ASSERT(Granularity::WORD <= GranularityBits::kMax);
+-  STATIC_ASSERT(Granularity::SENTENCE <= GranularityBits::kMax);
++  STATIC_ASSERT(static_cast<uint32_t>(Granularity::GRAPHEME) <= GranularityBits::kMax);
++  STATIC_ASSERT(static_cast<uint32_t>(Granularity::WORD) <= GranularityBits::kMax);
++  STATIC_ASSERT(static_cast<uint32_t>(Granularity::SENTENCE) <= GranularityBits::kMax);
+ 
+   DECL_PRINTER(JSSegmenter)
+ 
+--- a/deps/v8/src/objects/js-segments.h
++++ b/deps/v8/src/objects/js-segments.h
+@@ -59,9 +59,9 @@
+   // Bit positions in |flags|.
+   DEFINE_TORQUE_GENERATED_JS_SEGMENT_ITERATOR_FLAGS()
+ 
+-  STATIC_ASSERT(JSSegmenter::Granularity::GRAPHEME <= GranularityBits::kMax);
+-  STATIC_ASSERT(JSSegmenter::Granularity::WORD <= GranularityBits::kMax);
+-  STATIC_ASSERT(JSSegmenter::Granularity::SENTENCE <= GranularityBits::kMax);
++  STATIC_ASSERT(static_cast<uint32_t>(JSSegmenter::Granularity::GRAPHEME) <= GranularityBits::kMax);
++  STATIC_ASSERT(static_cast<uint32_t>(JSSegmenter::Granularity::WORD) <= GranularityBits::kMax);
++  STATIC_ASSERT(static_cast<uint32_t>(JSSegmenter::Granularity::SENTENCE) <= GranularityBits::kMax);
+ 
+   TQ_OBJECT_CONSTRUCTORS(JSSegments)
+ };
+--- a/deps/v8/src/objects/shared-function-info.h
++++ b/deps/v8/src/objects/shared-function-info.h
+@@ -628,11 +628,11 @@
+   class BodyDescriptor;
+ 
+   // Bailout reasons must fit in the DisabledOptimizationReason bitfield.
+-  STATIC_ASSERT(BailoutReason::kLastErrorMessage <=
++  STATIC_ASSERT(static_cast<uint32_t>(BailoutReason::kLastErrorMessage) <=
+                 DisabledOptimizationReasonBits::kMax);
+ 
+   STATIC_ASSERT(kLastFunctionKind <= FunctionKindBits::kMax);
+-  STATIC_ASSERT(FunctionSyntaxKind::kLastFunctionSyntaxKind <=
++  STATIC_ASSERT(static_cast<uint32_t>(FunctionSyntaxKind::kLastFunctionSyntaxKind) <=
+                 FunctionSyntaxKindBits::kMax);
+ 
+   // Sets the bytecode in {shared}'s DebugInfo as the bytecode to

@@ -1,0 +1,49 @@
+--- a/Cargo.lock
++++ b/Cargo.lock
+@@ -204,9 +204,9 @@
+ 
+ [[package]]
+ name = "bindgen"
+-version = "0.59.2"
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "2bd2a9a458e8f4304c52c43ebb0cfbd520289f8379a52e329a38afda99bf8eb8"
++version = "0.64.0"
++source = "registry+https://github.com/rust-lang/crates.io-index"
++checksum = "c4243e6031260db77ede97ad86c27e501d646a27ab57b59a574f725d98ab1fb4"
+ dependencies = [
+  "bitflags",
+  "cexpr",
+@@ -219,6 +219,7 @@
+  "regex",
+  "rustc-hash",
+  "shlex",
++ "syn",
+ ]
+ 
+ [[package]]
+@@ -521,9 +522,9 @@
+ 
+ [[package]]
+ name = "coreaudio-sys"
+-version = "0.2.10"
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "3dff444d80630d7073077d38d40b4501fd518bd2b922c2a55edcc8b0f7be57e6"
++version = "0.2.12"
++source = "registry+https://github.com/rust-lang/crates.io-index"
++checksum = "f034b2258e6c4ade2f73bf87b21047567fb913ee9550837c2316d139b0262b24"
+ dependencies = [
+  "bindgen",
+ ]
+@@ -1277,9 +1278,9 @@
+ 
+ [[package]]
+ name = "keyring"
+-version = "0.10.4"
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "a49a8b156a663b0b6898a845f056dd2502d8f0b3bde9686b59cfb4fdbc1d4777"
++version = "1.2.1"
++source = "registry+https://github.com/rust-lang/crates.io-index"
++checksum = "ba264b266563c1363dcce004776cbf198d7422a4262f77f4ca285bf26ae30955"
+ dependencies = [
+  "byteorder",
+  "secret-service",

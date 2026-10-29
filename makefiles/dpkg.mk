@@ -1,0 +1,116 @@
+ifneq ($(PROCURSUS),1)
+$(error Use the main Makefile)
+endif
+
+STRAPPROJECTS  += dpkg
+DPKG_VERSION   := 1.22.6
+DEB_DPKG_V     ?= $(DPKG_VERSION)-1
+
+dpkg-setup: setup
+	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),https://snapshot.debian.org/archive/debian/20240311T214105Z/pool/main/d/dpkg/dpkg_$(DPKG_VERSION).tar.xz)
+	$(call EXTRACT_TAR,dpkg_$(DPKG_VERSION).tar.xz,dpkg-$(DPKG_VERSION),dpkg)
+
+	$(call DO_PATCH,dpkg,dpkg,-p1)
+ifeq (,$(findstring darwin,$(MEMO_TARGET)))
+	$(call DO_PATCH,dpkg-ios,dpkg,-p1)
+else
+	$(call DO_PATCH,dpkg-macos,dpkg,-p1)
+endif
+	sed -i 's|along with this program|*/\n#define LIBDPKG_VOLATILE_API 1\n#include "$(TARGET_SYSROOT)/usr/include/string.h"\n/*|g' $(BUILD_WORK)/dpkg/lib/dpkg/*.c
+
+ifneq ($(wildcard $(BUILD_WORK)/dpkg/.build_complete),)
+dpkg:
+	@echo "Using previously built dpkg."
+else
+dpkg: dpkg-setup gettext xz zstd libmd zlib-ng
+ifeq (,$(findstring darwin,$(MEMO_TARGET)))
+	sed -e '\|base-bsd-darwin|a base-bsd-darwin-arm64\t\t$(DEB_ARCH)' -i $(BUILD_WORK)/dpkg/data/tupletable
+endif
+	cd $(BUILD_WORK)/dpkg && ./autogen
+	cd $(BUILD_WORK)/dpkg && PKG_CONFIG="$(BUILD_TOOLS)/cross-pkg-config" ./configure -C \
+		$(DEFAULT_CONFIGURE_FLAGS) \
+		--with-libz-ng \
+		--with-admindir="$(MEMO_PREFIX)/Library/dpkg" \
+		--with-logdir="$(MEMO_PREFIX)/var/log" \
+		--disable-start-stop-daemon \
+		--disable-dselect \
+		--without-libselinux \
+		--disable-shared \
+		LDFLAGS="$(CFLAGS) $(LDFLAGS)" \
+		PERL_LIBDIR='$$(prefix)/share/perl5' \
+		PERL="$(shell command -v perl)" \
+		TAR=$(GNU_PREFIX)tar \
+		LZMA_LIBS="$(BUILD_BASE)$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)$(MEMO_ALT_PREFIX)/lib/liblzma.dylib"
+	sed -i 's|dpkg_deb_LDADD) \$$(|dpkg_deb_LDADD) $$(LZMA_LIBS) $$(|' $(BUILD_WORK)/dpkg/src/Makefile
+	+$(MAKE) -C $(BUILD_WORK)/dpkg \
+		PERL="$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/perl"
+	+$(MAKE) -C $(BUILD_WORK)/dpkg install \
+		DESTDIR="$(BUILD_STAGE)/dpkg"
+ifneq ($(filter -flto%,$(CFLAGS)),)
+	# Programs retain their installed LTO code. Include all convenience members
+	# when rebuilding the public libdpkg archive with native objects.
+	find $(BUILD_WORK)/dpkg/lib/{compat,dpkg} -maxdepth 1 -name '*.lo' -type f -delete
+	rm -f $(BUILD_WORK)/dpkg/lib/compat/libcompat.la $(BUILD_WORK)/dpkg/lib/dpkg/libdpkg.la
+	+$(MAKE) -C $(BUILD_WORK)/dpkg/lib/compat libcompat.la \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/dpkg/lib/compat/Makefile) -fno-lto"
+	+$(MAKE) -C $(BUILD_WORK)/dpkg/lib/dpkg libdpkg.la \
+		CFLAGS="$$(sed -n 's/^CFLAGS = //p' $(BUILD_WORK)/dpkg/lib/dpkg/Makefile) -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS = //p' $(BUILD_WORK)/dpkg/lib/dpkg/Makefile) -fno-lto -static"
+	cp -a $(BUILD_WORK)/dpkg/lib/dpkg/.libs/libdpkg.a $(BUILD_STAGE)/dpkg/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
+	# The explicit host-build dylib is only a build input; pc already has -llzma.
+	sed -i 's|$(BUILD_BASE)$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)$(MEMO_ALT_PREFIX)/lib/liblzma.dylib ||g' $(BUILD_STAGE)/dpkg/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/pkgconfig/libdpkg.pc
+	mkdir -p $(BUILD_STAGE)/dpkg/$(MEMO_PREFIX)/var/lib
+	$(LN_S) $(MEMO_PREFIX)/Library/dpkg $(BUILD_STAGE)/dpkg/$(MEMO_PREFIX)/var/lib/dpkg
+	$(call AFTER_BUILD)
+endif
+
+dpkg-package: dpkg-stage
+	# dpkg.mk Package Structure
+	rm -rf $(BUILD_DIST)/dpkg{,-dev} $(BUILD_DIST)/libdpkg-perl
+	mkdir -p $(BUILD_DIST)/dpkg{,-dev}/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/{bin,share/dpkg} \
+		$(BUILD_DIST)/libdpkg-perl/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share/man \
+		$(BUILD_DIST)/libdpkg-dev/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)
+
+	# dpkg.mk Prep dpkg
+	cp -a $(BUILD_STAGE)/dpkg/$(MEMO_PREFIX)/{etc,Library,var} $(BUILD_DIST)/dpkg/$(MEMO_PREFIX)
+	cp -a $(BUILD_STAGE)/dpkg/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/{dpkg{,-deb,-divert,-maintscript-helper,-query,-realpath,-split,-statoverride,-trigger},update-alternatives} $(BUILD_DIST)/dpkg/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin
+	cp -a $(BUILD_STAGE)/dpkg/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share/{man,polkit-1,locale} $(BUILD_DIST)/dpkg/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share
+	rm -f $(BUILD_DIST)/dpkg/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share/man/{,??}/man1/!(dpkg|dpkg-deb|dpkg-divert|dpkg-maintscript-helper|dpkg-query|dpkg-realpath|dpkg-split|dpkg-statoverride|dpkg-trigger|update-alternatives).1$(MEMO_MANPAGE_SUFFIX)
+	rm -rf $(BUILD_DIST)/dpkg/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share/man/{,??}/man{2..8}
+	rm -f $(BUILD_DIST)/dpkg/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share/locale/*/LC_MESSAGES/!(dpkg.mo)
+	cp -a $(BUILD_STAGE)/dpkg/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share/dpkg/{{abi,cpu,os,tuple}table,sh} $(BUILD_DIST)/dpkg/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share/dpkg
+	mkdir -p $(BUILD_DIST)/dpkg/$(MEMO_PREFIX)/etc/dpkg/origins/
+	echo -e "Vendor: Procursus\nVendor-URL: https://github.com/ProcursusTeam/Procursus/\nBugs: mailto://support@procurs.us" > $(BUILD_DIST)/dpkg/$(MEMO_PREFIX)/etc/dpkg/origins/procursus
+	$(LN_S) procursus $(BUILD_DIST)/dpkg/$(MEMO_PREFIX)/etc/dpkg/origins/default
+
+	# dpkg.mk Prep dpkg-dev
+	cp -a $(BUILD_STAGE)/dpkg/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/dpkg-{architecture,buildflags,buildpackage,checkbuilddeps,distaddfile,genbuildinfo,genchanges,gencontrol,gensymbols,mergechangelogs,name,parsechangelog,scanpackages,scansources,shlibdeps,source,vendor} $(BUILD_DIST)/dpkg-dev/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin
+	cp -a $(BUILD_STAGE)/dpkg/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share/dpkg/*.mk $(BUILD_DIST)/dpkg-dev/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share/dpkg
+	cp -a $(BUILD_STAGE)/dpkg/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share/man $(BUILD_DIST)/dpkg-dev/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share
+	rm -f $(BUILD_DIST)/dpkg-dev/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share/man/{,??}/man1/!(dpkg-architecture|dpkg-buildflags|dpkg-buildpackage|dpkg-checkbuilddeps|dpkg-distaddfile|dpkg-genbuildinfo|dpkg-genchanges|dpkg-gencontrol|dpkg-gensymbols|dpkg-mergechangelogs|dpkg-name|dpkg-parsechangelog|dpkg-scanpackages|dpkg-scansources|dpkg-shlibdeps|dpkg-source|dpkg-vendor).1$(MEMO_MANPAGE_SUFFIX)
+	rm -rf $(BUILD_DIST)/dpkg-dev/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share/man/{,??}/man{3,8}
+
+	# dpkg.mk Prep libdpkg-perl
+	cp -a $(BUILD_STAGE)/dpkg/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share/{locale,perl5} $(BUILD_DIST)/libdpkg-perl/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share
+	rm -f $(BUILD_DIST)/libdpkg-perl/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share/locale/*/LC_MESSAGES/!(dpkg-dev.mo)
+	cp -a $(BUILD_STAGE)/dpkg/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share/man/man3 $(BUILD_DIST)/libdpkg-perl/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share/man
+
+	# dpkg.mk Prep libdpkg-dev
+	cp -a $(BUILD_STAGE)/dpkg/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include $(BUILD_DIST)/libdpkg-dev/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)
+	cp -a $(BUILD_STAGE)/dpkg/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib $(BUILD_DIST)/libdpkg-dev/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)
+
+	# dpkg.mk Sign
+	$(call SIGN,dpkg,general.xml)
+
+	# dpkg.mk Make .debs
+	$(call PACK,dpkg,DEB_DPKG_V)
+	$(call PACK,dpkg-dev,DEB_DPKG_V)
+	$(call PACK,libdpkg-perl,DEB_DPKG_V)
+	$(call PACK,libdpkg-dev,DEB_DPKG_V)
+
+	# dpkg.mk Build cleanup
+	rm -rf $(BUILD_DIST)/dpkg{,-dev} $(BUILD_DIST)/libdpkg-{dev,perl}
+
+.PHONY: dpkg dpkg-package
+

@@ -1,0 +1,110 @@
+--- a/main.mm
++++ b/main.mm
+@@ -6,6 +6,14 @@
+ #include <sys/time.h>
+ #include "ActivityStreamAPI.h"
+ 
++// Let LoggingSupport interpret its own private event layout.
++@interface OSActivityLogMessageEvent : NSObject
++- (instancetype)initWithEntry:(os_activity_stream_entry_t)entry;
++@property (readonly, copy) NSString *eventMessage;
++@property (readonly) unsigned char messageType;
++@end
++
++static Class s_log_message_class;
+ static BOOL canPrint=NO;
+ static int filterPid=-1;
+ static BOOL levelInfo=YES;
+@@ -14,8 +22,6 @@
+ static os_activity_stream_resume_t s_os_activity_stream_resume;
+ static os_activity_stream_cancel_t s_os_activity_stream_cancel;
+ static os_activity_stream_set_event_handler_t s_os_activity_stream_set_event_handler;
+-static os_log_copy_formatted_message_t s_os_log_copy_formatted_message;
+-static uint8_t (*m_os_log_get_type)(void *log);
+ static int (*m_proc_listpids)(uint32_t type, uint32_t typeinfo, void *buffer, int buffersize);
+ 
+ 
+@@ -43,18 +49,18 @@
+ 	s_os_activity_stream_for_pid = (os_activity_stream_for_pid_t)dlsym(RTLD_DEFAULT, "os_activity_stream_for_pid");
+ 	s_os_activity_stream_resume = (os_activity_stream_resume_t)dlsym(RTLD_DEFAULT, "os_activity_stream_resume");
+ 	s_os_activity_stream_cancel = (os_activity_stream_cancel_t)dlsym(RTLD_DEFAULT, "os_activity_stream_cancel");
+-	s_os_log_copy_formatted_message = (os_log_copy_formatted_message_t)dlsym(RTLD_DEFAULT, "os_log_copy_formatted_message");
++	s_log_message_class = NSClassFromString(@"OSActivityLogMessageEvent");
+ 	s_os_activity_stream_set_event_handler = (os_activity_stream_set_event_handler_t)dlsym(RTLD_DEFAULT, "os_activity_stream_set_event_handler");
+ 	m_proc_name=(int(*)(int,char *, unsigned int))dlsym(RTLD_DEFAULT, "proc_name");
+ 	m_proc_listpids=(int(*)(uint32_t,uint32_t,void*,int))dlsym(RTLD_DEFAULT,"proc_listpids");
+-	m_os_log_get_type=(uint8_t(*)(void *))dlsym(RTLD_DEFAULT, "os_log_get_type");
+ 
+ 	s_has_spi = (s_os_activity_stream_for_pid != NULL) &&
+ 				(s_os_activity_stream_resume != NULL) &&
+ 				(s_os_activity_stream_cancel != NULL) &&
+-				(s_os_log_copy_formatted_message != NULL) &&
++				[s_log_message_class instancesRespondToSelector:@selector(initWithEntry:)] &&
++				[s_log_message_class instancesRespondToSelector:@selector(eventMessage)] &&
++				[s_log_message_class instancesRespondToSelector:@selector(messageType)] &&
+ 				(s_os_activity_stream_set_event_handler != NULL) && 
+-				(m_os_log_get_type != NULL) &&
+ 				(m_proc_name != NULL);
+ 
+   	return s_has_spi;
+@@ -65,7 +71,7 @@
+ 
+ BOOL handleStreamEntry(os_activity_stream_entry_t entry, int error){
+ 	
+-	if ((filterPid!=-1 && entry->pid!=filterPid) || !canPrint){
++	if (error != 0 || entry == NULL || (filterPid!=-1 && entry->pid!=filterPid) || !canPrint){
+ 		
+ 		return YES;
+ 	}
+@@ -79,7 +85,7 @@
+     
+ 		if (entry->type==OS_ACTIVITY_STREAM_TYPE_LOG_MESSAGE) {
+ 
+-			os_log_message_t log_message = &entry->log_message;
++			OSActivityLogMessageEvent *event = [[s_log_message_class alloc] initWithEntry:entry];
+ 			
+ 		 
+ 			// Get date/time
+@@ -99,9 +105,9 @@
+ 			m_proc_name(entry->pid,procname,sizeof(procname));
+ 			
+ 			// get log message text
+-			char *messageText=s_os_log_copy_formatted_message(log_message);
+-			
+-			uint8_t logLevel=m_os_log_get_type(log_message);
++			NSString *messageText=event.eventMessage;
++			
++			uint8_t logLevel=event.messageType;
+ 			const char * level=NULL;
+ 			switch (logLevel){
+ 				case 0x00:
+@@ -117,8 +123,8 @@
+ 					level="\033[1;33m<Error>\033[0m  ";
+ 					break;
+ 				case 0x11:
+-					break;
+ 					level="\033[1;31m<Fault>\033[0m  ";
++					break;
+ 				default:
+ 					level="<Unknown>";
+ 					break;
+@@ -126,7 +132,7 @@
+ 
+ 			 
+ 			if (messageText){
+-				printf("%s%s ""\033[1;36m""%s""\033[1;37m""[%d]\033[0m: %s\n", levelInfo ? level : "", timebuffer, (char *)procname, entry->pid, messageText);
++				printf("%s%s ""\033[1;36m""%s""\033[1;37m""[%d]\033[0m: %s\n", levelInfo ? level : "", timebuffer, (char *)procname, entry->pid, messageText.UTF8String);
+ 			}
+ 		
+ 		  }
+@@ -152,7 +158,9 @@
+ 	}
+ 
+ 	os_activity_stream_block_t block =^bool(os_activity_stream_entry_t entry, int error) {
+-       return handleStreamEntry(entry,error);
++       @autoreleasepool {
++           return handleStreamEntry(entry,error);
++       }
+       };
+ 
+ 	os_activity_stream_event_block_t stream_event_block = ^void(os_activity_stream_t stream, os_activity_stream_event_t event) {

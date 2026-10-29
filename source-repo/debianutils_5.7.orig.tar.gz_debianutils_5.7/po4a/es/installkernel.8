@@ -1,0 +1,25 @@
+.\"*******************************************************************
+.\"
+.\" This file was generated with po4a. Translate the source file.
+.\"
+.\"*******************************************************************
+.TH INSTALLKERNEL 8 "7 de enero de 2001" "Debian Linux" 
+.SH NOMBRE
+installkernel \- Instala una imagen del núcleo nueva
+.SH SINOPSIS
+\fBinstallkernel \fP\fIversión zImage System.map [directorio]\fP
+.SH DESCRIPCIÓN
+\fBinstallkernel\fP instala una nueva imagen del núcleo en el sistema, obtenida
+del árbol de fuentes de Linux. Los ficheros «Makefile» del núcleo Linux
+inician el proceso cuando se invoca \fBmake install\fP desde el árbol de
+fuentes.
+.P
+El núcleo nuevo se instala en \fI{directorio}/vmlinuz\-{versión}\fP. Si ya
+existe un enlace simbólico \fI{directorio}/vmlinuz\fP, este se actualiza,
+creando un enlace desde el \fI{directory}/vmlinuz\fP al núcleo nuevo. El núcleo
+anteriormente instalado seguirá disponible como
+\fI{directorio}/vmlinuz.old\fP.
+.SH FALLOS
+\fBinstallkernel\fP resides in /sbin only because the Linux kernel makefiles
+call it from there.  It should really be in /usr/sbin.  It isn't needed to
+boot a system.

@@ -1,0 +1,18 @@
+--- a/src/hb.hh
++++ b/src/hb.hh
+@@ -65,5 +65,14 @@
+ #pragma GCC diagnostic error   "-Wcast-align"
+-#pragma GCC diagnostic error   "-Wcast-function-type"
++#ifdef __clang__
++#if __has_warning("-Wcast-function-type-strict")
++/* GLib's generic cleanup callback casts intentionally support typed destructors. */
++#pragma GCC diagnostic warning "-Wcast-function-type"
++#else
++#pragma GCC diagnostic error   "-Wcast-function-type"
++#endif
++#else
++#pragma GCC diagnostic error   "-Wcast-function-type"
++#endif
+ #pragma GCC diagnostic error   "-Wdelete-non-virtual-dtor"
+ #pragma GCC diagnostic error   "-Wembedded-directive"
+ #pragma GCC diagnostic error   "-Wextra-semi-stmt"

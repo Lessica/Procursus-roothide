@@ -1,0 +1,15 @@
+--- a/Cargo.toml
++++ b/Cargo.toml
+@@ -12,0 +13 @@
++mio = { path = "../gping-mio" }
+--- a/Cargo.lock
++++ b/Cargo.lock
+@@ -240,2 +239,0 @@
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "8c2bdb6314ec10835cd3293dd268473a835c02b7b352e788be788b3c6ca6bb16"
+@@ -445 +443 @@
+-version = "0.4.1"
++version = "0.4.10"
+@@ -447 +445 @@
+-checksum = "765f090f0e423d2b55843402a07915add955e7d60657db13707a159727326cad"
++checksum = "9f7916fc008ca5542385b89a3d3ce689953c143e9304a9bf8beec1de48994c0d"

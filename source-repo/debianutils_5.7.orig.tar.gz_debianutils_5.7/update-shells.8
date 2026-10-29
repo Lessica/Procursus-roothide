@@ -1,0 +1,35 @@
+.TH UPDATE-SHELLS 8 "28 Jun 2021"
+.SH NAME
+update-shells \- update the list of valid login shells
+.SH SYNOPSIS
+.B  update-shells
+.RI  [ options ]
+.SH DESCRIPTION
+.B update-shells
+locates the shells provided by packages from
+.I /usr/share/debianutils/shells.d
+and updates
+.I /etc/shells
+with newly added or removed shells.
+To track changes made by the administrator, it consults a state file in
+.I /var/lib/shells.state .
+.SH OPTIONS
+.TP
+.B \-\-no\-act
+Do not actually perform the changes to
+.I /etc/shells .
+.TP
+.B \-\-root
+.I ROOT
+
+Operate on a chroot at
+.I ROOT .
+.TP
+.B \-\-verbose
+Print the shells that are being added or removed.
+.SH FILES
+.I /etc/shells
+.I /var/lib/shells.state
+.I /usr/share/debianutils/shells.d
+.SH SEE ALSO
+.BR shells (5)

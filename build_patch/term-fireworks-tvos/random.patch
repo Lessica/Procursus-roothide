@@ -1,0 +1,11 @@
+--- a/Cargo.toml
++++ b/Cargo.toml
+@@ -16,0 +17,3 @@
++
++[patch.crates-io]
++getrandom = { path = "../term-fireworks-getrandom" }
+--- a/Cargo.lock
++++ b/Cargo.lock
+@@ -71,2 +70,0 @@
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "7abc8dd8451921606d809ba32e95b6111925cd2906060d2dcc29c070220503eb"

@@ -1,0 +1,59 @@
+--- a/common/CMakeLists.txt
++++ b/common/CMakeLists.txt
+@@ -1,2 +1,8 @@
+ add_library(common abstractfile.c base64.c)
+ 
++
++# Keep original LTO targets for programs and dependent shared-library links.
++get_target_property(native_sources common SOURCES)
++add_library(common-native STATIC EXCLUDE_FROM_ALL ${native_sources})
++set_target_properties(common-native PROPERTIES INTERPROCEDURAL_OPTIMIZATION FALSE)
++target_compile_options(common-native PRIVATE -fno-lto)
+--- a/minizip/CMakeLists.txt
++++ b/minizip/CMakeLists.txt
+@@ -12,3 +12,9 @@
+ add_library(minizip ioapi.c unzip.c zip.c)
+ 
+ target_link_libraries(minizip z)
++
++# Keep original LTO targets for programs and dependent shared-library links.
++get_target_property(native_sources minizip SOURCES)
++add_library(minizip-native STATIC EXCLUDE_FROM_ALL ${native_sources})
++set_target_properties(minizip-native PROPERTIES INTERPROCEDURAL_OPTIMIZATION FALSE)
++target_compile_options(minizip-native PRIVATE -fno-lto)
+--- a/hfs/CMakeLists.txt
++++ b/hfs/CMakeLists.txt
+@@ -17,3 +17,9 @@
+ 
+ install(TARGETS hfsplus DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)
+ 
++
++# Keep original LTO targets for programs and dependent shared-library links.
++get_target_property(native_sources hfs SOURCES)
++add_library(hfs-native STATIC EXCLUDE_FROM_ALL ${native_sources})
++set_target_properties(hfs-native PROPERTIES INTERPROCEDURAL_OPTIMIZATION FALSE)
++target_compile_options(hfs-native PRIVATE -fno-lto)
+--- a/dmg/CMakeLists.txt
++++ b/dmg/CMakeLists.txt
+@@ -37,3 +37,9 @@
+ 
+ install(TARGETS dmg-bin DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)
+ 
++
++# Keep original LTO targets for programs and dependent shared-library links.
++get_target_property(native_sources dmg SOURCES)
++add_library(dmg-native STATIC EXCLUDE_FROM_ALL ${native_sources})
++set_target_properties(dmg-native PROPERTIES INTERPROCEDURAL_OPTIMIZATION FALSE)
++target_compile_options(dmg-native PRIVATE -fno-lto)
+--- a/ipsw-patch/CMakeLists.txt
++++ b/ipsw-patch/CMakeLists.txt
+@@ -122,3 +122,9 @@
+ install(DIRECTORY FirmwareBundles/ DESTINATION ${CMAKE_INSTALL_PREFIX}/share/xpwn/FirmwareBundles)
+ install(DIRECTORY bundles/ DESTINATION ${CMAKE_INSTALL_PREFIX}/share/xpwn/bundles)
+ 
++
++# Keep original LTO targets for programs and dependent shared-library links.
++get_target_property(native_sources xpwn SOURCES)
++add_library(xpwn-native STATIC EXCLUDE_FROM_ALL ${native_sources})
++set_target_properties(xpwn-native PROPERTIES INTERPROCEDURAL_OPTIMIZATION FALSE)
++target_compile_options(xpwn-native PRIVATE -fno-lto)

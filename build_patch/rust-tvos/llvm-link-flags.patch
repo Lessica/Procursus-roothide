@@ -1,0 +1,16 @@
+--- a/src/bootstrap/native.rs
++++ b/src/bootstrap/native.rs
+@@ -543,6 +543,13 @@
+         cfg.define("CMAKE_EXE_LINKER_FLAGS", s);
+     }
+ 
++    if target.contains("apple-tvos") {
++        if let Ok(flags) = env::var("PROCURSUS_TARGET_LDFLAGS") {
++            cfg.define("CMAKE_SHARED_LINKER_FLAGS", &flags);
++            cfg.define("CMAKE_MODULE_LINKER_FLAGS", &flags);
++            cfg.define("CMAKE_EXE_LINKER_FLAGS", &flags);
++        }
++    }
+     if env::var_os("SCCACHE_ERROR_LOG").is_some() {
+         cfg.env("RUSTC_LOG", "sccache=warn");
+     }

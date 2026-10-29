@@ -1,0 +1,13 @@
+--- a/make/autoconf/flags-other.m4
++++ b/make/autoconf/flags-other.m4
+@@ -89,8 +89,8 @@
+ 
+     # Fix linker warning.
+     # Code taken from make/autoconf/flags-cflags.m4 and adapted.
+-    JVM_BASIC_ASFLAGS+=" -DMAC_OS_X_VERSION_MIN_REQUIRED=$MACOSX_VERSION_MIN_NODOTS \
+-        -mmacosx-version-min=$MACOSX_VERSION_MIN"
++    # The iOS port gets its platform minimum from the selected target flags.
++    JVM_BASIC_ASFLAGS+=" -DMAC_OS_X_VERSION_MIN_REQUIRED=$MACOSX_VERSION_MIN_NODOTS"
+ 
+     if test -n "$MACOSX_VERSION_MAX"; then
+         JVM_BASIC_ASFLAGS+=" $OS_CFLAGS \

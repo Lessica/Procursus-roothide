@@ -1,0 +1,34 @@
+--- a/cmake/mysql_version.cmake
++++ b/cmake/mysql_version.cmake
+@@ -23,7 +23,7 @@
+ 
+ # Generate "something" to trigger cmake rerun when VERSION changes
+ CONFIGURE_FILE(
+-  ${CMAKE_SOURCE_DIR}/VERSION
++  ${CMAKE_SOURCE_DIR}/MARIADB_VERSION
+   ${CMAKE_BINARY_DIR}/VERSION.dep
+ )
+ 
+@@ -31,7 +31,7 @@
+ 
+ MACRO(MYSQL_GET_CONFIG_VALUE keyword var)
+  IF(NOT ${var})
+-   FILE (STRINGS ${CMAKE_SOURCE_DIR}/VERSION str REGEX "^[ ]*${keyword}=")
++   FILE (STRINGS ${CMAKE_SOURCE_DIR}/MARIADB_VERSION str REGEX "^[ ]*${keyword}=")
+    IF(str)
+      STRING(REPLACE "${keyword}=" "" str ${str})
+      STRING(REGEX REPLACE  "[ ].*" ""  str "${str}")
+--- a/VERSION
++++ /dev/null
+@@ -1,4 +0,0 @@
+-MYSQL_VERSION_MAJOR=10
+-MYSQL_VERSION_MINOR=5
+-MYSQL_VERSION_PATCH=9
+-SERVER_MATURITY=stable
+--- /dev/null
++++ b/MARIADB_VERSION
+@@ -0,0 +1,4 @@
++MYSQL_VERSION_MAJOR=10
++MYSQL_VERSION_MINOR=5
++MYSQL_VERSION_PATCH=9
++SERVER_MATURITY=stable

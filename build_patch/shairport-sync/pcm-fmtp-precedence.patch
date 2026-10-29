@@ -1,0 +1,11 @@
+--- a/rtsp.c
++++ b/rtsp.c
+@@ -2157,7 +2157,7 @@
+       free(aeskey);
+     }
+ 
+-    if (pfmtp) {
++    if ((pfmtp) && (pUncompressedCDAudio == NULL)) {
+       conn->stream.type = ast_apple_lossless;
+       debug(3, "An ALAC stream has been detected.");
+ 

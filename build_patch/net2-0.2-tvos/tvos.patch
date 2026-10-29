@@ -1,0 +1,16 @@
+--- a/src/ext.rs
++++ b/src/ext.rs
+@@ -27 +27 @@
+-                 target_os = "ios",
++                 any(target_os = "ios", target_os = "tvos"),
+@@ -669 +669 @@
+-    if #[cfg(any(target_os = "macos", target_os = "ios"))] {
++    if #[cfg(any(target_os = "macos", any(target_os = "ios", target_os = "tvos")))] {
+--- a/src/socket.rs
++++ b/src/socket.rs
+@@ -128 +128 @@
+-                target_os = "ios",
++                any(target_os = "ios", target_os = "tvos"),
+@@ -177 +177 @@
+-                target_os = "ios",
++                any(target_os = "ios", target_os = "tvos"),

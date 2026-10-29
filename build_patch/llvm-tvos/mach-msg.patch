@@ -1,0 +1,42 @@
+--- a/lldb/tools/debugserver/source/MacOSX/MachException.cpp
++++ b/lldb/tools/debugserver/source/MacOSX/MachException.cpp
+@@ -20,6 +20,15 @@
+ #include <cerrno>
+ #include <sys/ptrace.h>
+ #include <sys/types.h>
++#include <TargetConditionals.h>
++
++#if TARGET_OS_TV
++// The tvOS runtime exports mach_msg despite its SDK availability annotation.
++extern "C" mach_msg_return_t tvos_mach_msg(mach_msg_header_t *, mach_msg_option_t,
++    mach_msg_size_t, mach_msg_size_t, mach_port_name_t, mach_msg_timeout_t,
++    mach_port_name_t) __asm("_mach_msg");
++#define mach_msg tvos_mach_msg
++#endif
+ 
+ // Routine mach_exception_raise
+ extern "C" kern_return_t
+--- a/lldb/tools/debugserver/source/CMakeLists.txt
++++ b/lldb/tools/debugserver/source/CMakeLists.txt
+@@ -150,6 +150,11 @@
+   ${CMAKE_CURRENT_BINARY_DIR}/mach_excUser.c
+   )
+ 
++if(CMAKE_OSX_SYSROOT MATCHES "AppleTVOS")
++  set_source_files_properties(${CMAKE_CURRENT_BINARY_DIR}/mach_excUser.c PROPERTIES
++    COMPILE_FLAGS "-include ${CMAKE_CURRENT_SOURCE_DIR}/MacOSX/tvos_mach_msg.h")
++endif()
++
+ set(MIG_ARCH_FLAGS "")
+ if (DEFINED MIG_ARCHS)
+   foreach(ARCH ${MIG_ARCHS})
+--- /dev/null
++++ b/lldb/tools/debugserver/source/MacOSX/tvos_mach_msg.h
+@@ -0,0 +1,7 @@
++#include <mach/message.h>
++
++// The tvOS runtime exports mach_msg despite its SDK availability annotation.
++extern mach_msg_return_t tvos_mach_msg(mach_msg_header_t *, mach_msg_option_t,
++    mach_msg_size_t, mach_msg_size_t, mach_port_name_t, mach_msg_timeout_t,
++    mach_port_name_t) __asm("_mach_msg");
++#define mach_msg tvos_mach_msg

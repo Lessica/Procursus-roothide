@@ -1,0 +1,18 @@
+--- a/src/vde_cryptcab/vde_cryptcab_server.c
++++ b/src/vde_cryptcab/vde_cryptcab_server.c
+@@ -253,13 +253,12 @@
+ {
+ 	int fd;
+ 	char filename[128];
++	const char *keypath = pre_shared ? pre_shared : filename;
+ 	if(!pre_shared)
+ 		snprintf(filename,127,"/tmp/.%s.key",pkt->data+1);
+-	else
+-		snprintf(filename,127,"%s",pre_shared);
+ 	sync();
+ 	usleep(10000);	
+-	if (((fd = open (filename, O_RDONLY)) == -1)||
++	if (((fd = open (keypath, O_RDONLY)) == -1)||
+  			((read (fd, pkt->orig->key, 16)) == -1) ||
+ 			((read (fd, pkt->orig->iv, 8)) == -1) ){
+ 		perror ("blowfish.key open error");

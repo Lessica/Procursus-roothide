@@ -1,0 +1,34 @@
+changelog-seen = 2
+profile = "user"
+
+[llvm]
+optimize = true
+ccache = false
+targets = "AArch64;ARM;X86"
+
+[build]
+build = "PROCURSUS_BUILD_HOST"
+host = ["PROCURSUS_TARGET"]
+target = ["PROCURSUS_TARGET"]
+build-dir = "PROCURSUS_BUILD_DIR"
+build-stage = 2
+install-stage = 2
+extended = true
+tools = ["cargo", "clippy", "src"]
+
+[install]
+prefix = "PROCURSUS_INSTALL_PREFIX"
+sysconfdir = "etc"
+
+[rust]
+optimize = true
+incremental = true
+default-linker = "clang"
+channel = "stable"
+
+[target."PROCURSUS_TARGET"]
+cc = "PROCURSUS_HOST_CC"
+cxx = "PROCURSUS_HOST_CXX"
+ar = "PROCURSUS_TARGET_AR"
+ranlib = "PROCURSUS_TARGET_RANLIB"
+linker = "PROCURSUS_HOST_LINKER"

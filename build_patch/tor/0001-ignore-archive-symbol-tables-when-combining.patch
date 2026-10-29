@@ -1,0 +1,12 @@
+--- a/scripts/build/combine_libs
++++ b/scripts/build/combine_libs
+@@ -21,6 +21,9 @@ for input in "$@"; do
+     "${AR:-ar}" x "$abs"
+ done
+ 
++# Darwin ar extracts archive symbol tables as members too; don't merge them.
++find "$TMPDIR" -name '__.SYMDEF*' -delete
++
+ cd "$TMPDIR" >/dev/null
+ "${AR:-ar}" "${ARFLAGS:-cru}" library.tmp.a ./*/**
+ "${RANLIB:-ranlib}" library.tmp.a

@@ -1,0 +1,36 @@
+--- a/src/sys/unix/kqueue.rs
++++ b/src/sys/unix/kqueue.rs
+@@ -300 +300 @@
+-    target_os = "freebsd", target_os = "ios", target_os = "macos"))]
++    target_os = "freebsd", any(target_os = "ios", target_os = "tvos"), target_os = "macos"))]
+@@ -352 +352 @@
+-    target_os = "freebsd", target_os = "ios", target_os = "macos"))]
++    target_os = "freebsd", any(target_os = "ios", target_os = "tvos"), target_os = "macos"))]
+--- a/src/sys/unix/mod.rs
++++ b/src/sys/unix/mod.rs
+@@ -23 +23 @@
+-          target_os = "freebsd", target_os = "ios", target_os = "macos",
++          target_os = "freebsd", any(target_os = "ios", target_os = "tvos"), target_os = "macos",
+@@ -28 +28 @@
+-          target_os = "freebsd", target_os = "ios", target_os = "macos",
++          target_os = "freebsd", any(target_os = "ios", target_os = "tvos"), target_os = "macos",
+--- a/src/sys/unix/ready.rs
++++ b/src/sys/unix/ready.rs
+@@ -99 +99 @@
+-    target_os = "freebsd", target_os = "ios", target_os = "macos"))]
++    target_os = "freebsd", any(target_os = "ios", target_os = "tvos"), target_os = "macos"))]
+@@ -103 +103 @@
+-    target_os = "freebsd", target_os = "ios", target_os = "macos")))]
++    target_os = "freebsd", any(target_os = "ios", target_os = "tvos"), target_os = "macos")))]
+@@ -169 +169 @@
+-        target_os = "freebsd", target_os = "ios", target_os = "macos"))]
++        target_os = "freebsd", any(target_os = "ios", target_os = "tvos"), target_os = "macos"))]
+@@ -175 +175 @@
+-        target_os = "freebsd", target_os = "ios", target_os = "macos")))]
++        target_os = "freebsd", any(target_os = "ios", target_os = "tvos"), target_os = "macos")))]
+@@ -303 +303 @@
+-        target_os = "freebsd", target_os = "ios", target_os = "macos"))]
++        target_os = "freebsd", any(target_os = "ios", target_os = "tvos"), target_os = "macos"))]
+@@ -311 +311 @@
+-        target_os = "freebsd", target_os = "ios", target_os = "macos")))]
++        target_os = "freebsd", any(target_os = "ios", target_os = "tvos"), target_os = "macos")))]

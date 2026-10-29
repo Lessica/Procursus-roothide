@@ -1,0 +1,87 @@
+--- a/src/vde_cryptcab/cryptcab.c
++++ b/src/vde_cryptcab/cryptcab.c
+@@ -11,6 +11,9 @@
+  */
+ 
+ #include "cryptcab.h"
++#if OPENSSL_VERSION_NUMBER >= 0x30000000L
++#include <openssl/provider.h>
++#endif
+ 
+ /*
+  * Usage implies exit.
+@@ -33,6 +36,30 @@
+ #if OPENSSL_VERSION_NUMBER < 0x10100000
+ #define EVP_CIPHER_CTX_reset(x)	EVP_CIPHER_CTX_cleanup(x)
+ #endif
++
++/* OpenSSL 3 keeps the existing wire protocol cipher in its legacy provider. */
++static int init_cipher(void)
++{
++#if OPENSSL_VERSION_NUMBER >= 0x30000000L
++	static OSSL_PROVIDER *default_provider;
++	static OSSL_PROVIDER *legacy_provider;
++#endif
++	if (ctx_initialized)
++		return 1;
++#if OPENSSL_VERSION_NUMBER >= 0x30000000L
++	if (!default_provider)
++		default_provider = OSSL_PROVIDER_load(NULL, "default");
++	if (!legacy_provider)
++		legacy_provider = OSSL_PROVIDER_load(NULL, "legacy");
++	if (!default_provider || !legacy_provider)
++		return 0;
++#endif
++	ctx = EVP_CIPHER_CTX_new();
++	if (!ctx)
++		return 0;
++	ctx_initialized = 1;
++	return 1;
++}
+ 
+ void vc_printlog(int priority, const char *format, ...)
+ {
+@@ -106,14 +133,13 @@
+ 		return len;
+ 	}
+ 
+-	if (!ctx_initialized) {
+-		ctx = EVP_CIPHER_CTX_new ();
+-		if (!ctx)
+-			return -1;
+-		ctx_initialized = 1;
+-	}
+-	
+-	EVP_EncryptInit (ctx, EVP_bf_cbc (), p->key, p->iv);
++	if (!init_cipher())
++		return -1;
++	
++	if (EVP_EncryptInit (ctx, EVP_bf_cbc (), p->key, p->iv) != 1) {
++		olen = -1;
++		goto cleanup;
++	}
+ 	if (EVP_EncryptUpdate (ctx, dst, &olen, src, len) != 1)
+ 	{
+ 		fprintf (stderr,"error in encrypt update\n");
+@@ -143,14 +169,13 @@
+ 		return len;
+ 	}
+ 	
+-	if (!ctx_initialized) {
+-		ctx = EVP_CIPHER_CTX_new ();
+-		if (!ctx)
+-			return -1;
+-		ctx_initialized = 1;
+-	}
+-
+-	EVP_DecryptInit (ctx, EVP_bf_cbc (), p->key, p->iv);
++	if (!init_cipher())
++		return -1;
++
++	if (EVP_DecryptInit (ctx, EVP_bf_cbc (), p->key, p->iv) != 1) {
++		olen = -1;
++		goto cleanup;
++	}
+ 	if (EVP_DecryptUpdate (ctx, dst, &olen, src, len) != 1)
+ 	{
+ 		fprintf (stderr,"error in decrypt update\n");

@@ -1,0 +1,53 @@
+Apple kext_tools-745 passes POSIX paths directly to CoreFoundation.
+Resolve only explicit search URLs through the existing RootHide API.
+
+--- a/kextfind_main.c
++++ b/kextfind_main.c
+@@ -21,6 +21,7 @@
+  * @APPLE_LICENSE_HEADER_END@
+  */
+ #include <CoreFoundation/CoreFoundation.h>
++#include <roothide.h>
+ #include <CoreFoundation/CFBundlePriv.h>
+ 
+ #include <IOKit/kext/OSKext.h>
+@@ -38,6 +39,17 @@
+ *******************************************************************************/
+ 
+ #define kKextSuffix            ".kext"
++
++static CFURLRef createSearchURL(const char *path)
++{
++    const char *physicalPath = jbroot_alloc(path);
++    if (!physicalPath) return NULL;
++    CFURLRef url = CFURLCreateFromFileSystemRepresentation(
++        kCFAllocatorDefault, (const UInt8 *)physicalPath,
++        strlen(physicalPath), true);
++    free((void *)physicalPath);
++    return url;
++}
+ 
+ /*******************************************************************************
+ * Global variables (non-static referenced by utility.c).
+@@ -468,9 +480,7 @@
+                 }
+ 
+                 SAFE_RELEASE_NULL(scratchURL);
+-                scratchURL = CFURLCreateFromFileSystemRepresentation(
+-                    kCFAllocatorDefault,
+-                    (const UInt8 *)optarg, strlen(optarg), true);
++                scratchURL = createSearchURL(optarg);
+                 if (!scratchURL) {
+                     result = EX_OSERR;
+                     OSKextLogMemError();
+@@ -578,9 +588,7 @@
+         if (!checkSearchItem(argv[i], /* log? */ false)) {
+             break;
+         }
+-        scratchURL = CFURLCreateFromFileSystemRepresentation(
+-            kCFAllocatorDefault,
+-            (const UInt8 *)argv[i], strlen(argv[i]), true);
++        scratchURL = createSearchURL(argv[i]);
+         if (!scratchURL) {
+             result = EX_OSERR;
+             OSKextLogMemError();

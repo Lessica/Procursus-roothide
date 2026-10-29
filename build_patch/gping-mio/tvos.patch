@@ -1,0 +1,264 @@
+--- a/src/interest.rs
++++ b/src/interest.rs
+@@ -27 +27 @@
+-        target_os = "ios",
++        any(target_os = "ios", target_os = "tvos"),
+@@ -47 +47 @@
+-        target_os = "ios",
++        any(target_os = "ios", target_os = "tvos"),
+@@ -154 +154 @@
+-            target_os = "ios",
++            any(target_os = "ios", target_os = "tvos"),
+--- a/src/net/tcp/socket.rs
++++ b/src/net/tcp/socket.rs
+@@ -32 +32 @@
+-        target_os = "ios",
++        any(target_os = "ios", target_os = "tvos"),
+@@ -41 +41 @@
+-        target_os = "ios",
++        any(target_os = "ios", target_os = "tvos"),
+@@ -279 +279 @@
+-            target_os = "ios",
++            any(target_os = "ios", target_os = "tvos"),
+@@ -287 +287 @@
+-        target_os = "ios",
++        any(target_os = "ios", target_os = "tvos"),
+@@ -308 +308 @@
+-            target_os = "ios",
++            any(target_os = "ios", target_os = "tvos"),
+@@ -316 +316 @@
+-        target_os = "ios",
++        any(target_os = "ios", target_os = "tvos"),
+@@ -436 +436 @@
+-            target_os = "ios",
++            any(target_os = "ios", target_os = "tvos"),
+@@ -445 +445 @@
+-        target_os = "ios",
++        any(target_os = "ios", target_os = "tvos"),
+@@ -467 +467 @@
+-            target_os = "ios",
++            any(target_os = "ios", target_os = "tvos"),
+@@ -475 +475 @@
+-        target_os = "ios",
++        any(target_os = "ios", target_os = "tvos"),
+--- a/src/sys/shell/tcp.rs
++++ b/src/sys/shell/tcp.rs
+@@ -90 +90 @@
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+@@ -102 +102 @@
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+@@ -113 +113 @@
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+--- a/src/sys/unix/net.rs
++++ b/src/sys/unix/net.rs
+@@ -46 +46 @@
+-    #[cfg(any(target_os = "ios", target_os = "macos", target_os = "solaris"))]
++    #[cfg(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos", target_os = "solaris"))]
+@@ -97 +97 @@
+-                    target_os = "ios",
++                    any(target_os = "ios", target_os = "tvos"),
+@@ -121 +121 @@
+-                    target_os = "ios",
++                    any(target_os = "ios", target_os = "tvos"),
+--- a/src/sys/unix/pipe.rs
++++ b/src/sys/unix/pipe.rs
+@@ -165 +165 @@
+-    #[cfg(any(target_os = "ios", target_os = "macos", target_os = "solaris"))]
++    #[cfg(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos", target_os = "solaris"))]
+@@ -193 +193 @@
+-        target_os = "ios",
++        any(target_os = "ios", target_os = "tvos"),
+--- a/src/sys/unix/selector/kqueue.rs
++++ b/src/sys/unix/selector/kqueue.rs
+@@ -24 +24 @@
+-#[cfg(any(target_os = "macos", target_os = "ios"))]
++#[cfg(any(target_os = "macos", any(target_os = "ios", target_os = "tvos")))]
+@@ -32 +32 @@
+-#[cfg(any(target_os = "macos", target_os = "ios"))]
++#[cfg(any(target_os = "macos", any(target_os = "ios", target_os = "tvos")))]
+@@ -41 +41 @@
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+@@ -223 +223 @@
+-    #[cfg(any(target_os = "freebsd", target_os = "ios", target_os = "macos"))]
++    #[cfg(any(target_os = "freebsd", any(target_os = "ios", target_os = "tvos"), target_os = "macos"))]
+@@ -243 +243 @@
+-    #[cfg(any(target_os = "freebsd", target_os = "ios", target_os = "macos"))]
++    #[cfg(any(target_os = "freebsd", any(target_os = "ios", target_os = "tvos"), target_os = "macos"))]
+@@ -374 +374 @@
+-            #[cfg(any(target_os = "freebsd", target_os = "ios", target_os = "macos"))]
++            #[cfg(any(target_os = "freebsd", any(target_os = "ios", target_os = "tvos"), target_os = "macos"))]
+@@ -381 +381 @@
+-            #[cfg(not(any(target_os = "freebsd", target_os = "ios", target_os = "macos")))]
++            #[cfg(not(any(target_os = "freebsd", any(target_os = "ios", target_os = "tvos"), target_os = "macos")))]
+@@ -417 +417 @@
+-            target_os = "ios",
++            any(target_os = "ios", target_os = "tvos"),
+@@ -426 +426 @@
+-            target_os = "ios",
++            any(target_os = "ios", target_os = "tvos"),
+@@ -462 +462 @@
+-                target_os = "ios",
++                any(target_os = "ios", target_os = "tvos"),
+@@ -471 +471 @@
+-                target_os = "ios",
++                any(target_os = "ios", target_os = "tvos"),
+@@ -481 +481 @@
+-            #[cfg(any(target_os = "ios", target_os = "macos"))]
++            #[cfg(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos"))]
+@@ -483 +483 @@
+-            #[cfg(any(target_os = "ios", target_os = "macos"))]
++            #[cfg(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos"))]
+@@ -508 +508 @@
+-            #[cfg(any(target_os = "ios", target_os = "macos"))]
++            #[cfg(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos"))]
+@@ -510 +510 @@
+-            #[cfg(any(target_os = "ios", target_os = "macos"))]
++            #[cfg(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos"))]
+@@ -512 +512 @@
+-            #[cfg(any(target_os = "ios", target_os = "macos"))]
++            #[cfg(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos"))]
+@@ -528 +528 @@
+-                target_os = "ios",
++                any(target_os = "ios", target_os = "tvos"),
+@@ -535 +535 @@
+-                target_os = "ios",
++                any(target_os = "ios", target_os = "tvos"),
+@@ -542 +542 @@
+-                target_os = "ios",
++                any(target_os = "ios", target_os = "tvos"),
+@@ -549 +549 @@
+-                target_os = "ios",
++                any(target_os = "ios", target_os = "tvos"),
+@@ -556 +556 @@
+-                target_os = "ios",
++                any(target_os = "ios", target_os = "tvos"),
+@@ -563 +563 @@
+-                target_os = "ios",
++                any(target_os = "ios", target_os = "tvos"),
+@@ -570 +570 @@
+-                target_os = "ios",
++                any(target_os = "ios", target_os = "tvos"),
+@@ -581 +581 @@
+-            #[cfg(any(target_os = "ios", target_os = "macos"))]
++            #[cfg(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos"))]
+@@ -587 +587 @@
+-            #[cfg(any(target_os = "ios", target_os = "macos"))]
++            #[cfg(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos"))]
+@@ -594 +594 @@
+-            #[cfg(any(target_os = "ios", target_os = "macos"))]
++            #[cfg(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos"))]
+@@ -596 +596 @@
+-            #[cfg(any(target_os = "ios", target_os = "macos"))]
++            #[cfg(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos"))]
+@@ -598 +598 @@
+-            #[cfg(any(target_os = "ios", target_os = "macos"))]
++            #[cfg(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos"))]
+@@ -623 +623 @@
+-            #[cfg(any(target_os = "ios", target_os = "macos"))]
++            #[cfg(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos"))]
+@@ -625 +625 @@
+-            #[cfg(any(target_os = "ios", target_os = "macos"))]
++            #[cfg(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos"))]
+@@ -627 +627 @@
+-            #[cfg(any(target_os = "ios", target_os = "macos"))]
++            #[cfg(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos"))]
+@@ -629 +629 @@
+-            #[cfg(any(target_os = "ios", target_os = "macos"))]
++            #[cfg(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos"))]
+@@ -631 +631 @@
+-            #[cfg(any(target_os = "ios", target_os = "macos"))]
++            #[cfg(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos"))]
+@@ -633 +633 @@
+-            #[cfg(any(target_os = "ios", target_os = "macos"))]
++            #[cfg(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos"))]
+@@ -635 +635 @@
+-            #[cfg(any(target_os = "ios", target_os = "macos"))]
++            #[cfg(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos"))]
+@@ -637 +637 @@
+-            #[cfg(any(target_os = "ios", target_os = "macos"))]
++            #[cfg(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos"))]
+@@ -639 +639 @@
+-            #[cfg(any(target_os = "freebsd", target_os = "ios", target_os = "macos"))]
++            #[cfg(any(target_os = "freebsd", any(target_os = "ios", target_os = "tvos"), target_os = "macos"))]
+@@ -643 +643 @@
+-            #[cfg(any(target_os = "freebsd", target_os = "ios", target_os = "macos"))]
++            #[cfg(any(target_os = "freebsd", any(target_os = "ios", target_os = "tvos"), target_os = "macos"))]
+@@ -645 +645 @@
+-            #[cfg(any(target_os = "freebsd", target_os = "ios", target_os = "macos"))]
++            #[cfg(any(target_os = "freebsd", any(target_os = "ios", target_os = "tvos"), target_os = "macos"))]
+@@ -647,2 +647,2 @@
+-            #[cfg(any(target_os = "ios", target_os = "macos"))]
+-            #[cfg(any(target_os = "freebsd", target_os = "ios", target_os = "macos"))]
++            #[cfg(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos"))]
++            #[cfg(any(target_os = "freebsd", any(target_os = "ios", target_os = "tvos"), target_os = "macos"))]
+@@ -650 +650 @@
+-            #[cfg(any(target_os = "ios", target_os = "macos"))]
++            #[cfg(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos"))]
+@@ -652 +652 @@
+-            #[cfg(any(target_os = "ios", target_os = "macos"))]
++            #[cfg(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos"))]
+@@ -654 +654 @@
+-            #[cfg(any(target_os = "ios", target_os = "macos"))]
++            #[cfg(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos"))]
+--- a/src/sys/unix/selector/mod.rs
++++ b/src/sys/unix/selector/mod.rs
+@@ -20 +20 @@
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+@@ -30 +30 @@
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+--- a/src/sys/unix/tcp.rs
++++ b/src/sys/unix/tcp.rs
+@@ -14 +14 @@
+-#[cfg(any(target_os = "macos", target_os = "ios"))]
++#[cfg(any(target_os = "macos", any(target_os = "ios", target_os = "tvos")))]
+@@ -18 +18 @@
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+@@ -263 +263 @@
+-        target_os = "ios",
++        any(target_os = "ios", target_os = "tvos"),
+@@ -327 +327 @@
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+@@ -350 +350 @@
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+@@ -384 +384 @@
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+@@ -403 +403 @@
+-    target_os = "ios",
++    any(target_os = "ios", target_os = "tvos"),
+@@ -463 +463 @@
+-        target_os = "ios", 
++        any(target_os = "ios", target_os = "tvos"), 
+--- a/src/sys/unix/uds/listener.rs
++++ b/src/sys/unix/uds/listener.rs
+@@ -42 +42 @@
+-        target_os = "ios",
++        any(target_os = "ios", target_os = "tvos"),
+@@ -65 +65 @@
+-        target_os = "ios",
++        any(target_os = "ios", target_os = "tvos"),
+--- a/src/sys/unix/uds/mod.rs
++++ b/src/sys/unix/uds/mod.rs
+@@ -80 +80 @@
+-        #[cfg(not(any(target_os = "ios", target_os = "macos", target_os = "solaris")))]
++        #[cfg(not(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos", target_os = "solaris")))]
+@@ -93 +93 @@
+-        #[cfg(any(target_os = "ios", target_os = "macos", target_os = "solaris"))]
++        #[cfg(any(any(target_os = "ios", target_os = "tvos"), target_os = "macos", target_os = "solaris"))]
+--- a/src/sys/unix/waker.rs
++++ b/src/sys/unix/waker.rs
+@@ -64 +64 @@
+-#[cfg(any(target_os = "freebsd", target_os = "ios", target_os = "macos"))]
++#[cfg(any(target_os = "freebsd", any(target_os = "ios", target_os = "tvos"), target_os = "macos"))]
+@@ -98 +98 @@
+-#[cfg(any(target_os = "freebsd", target_os = "ios", target_os = "macos"))]
++#[cfg(any(target_os = "freebsd", any(target_os = "ios", target_os = "tvos"), target_os = "macos"))]

@@ -1,0 +1,26 @@
+diff --color -urN pacman-6.0.0/lib/libalpm/util.c pacman/lib/libalpm/util.c
+--- pacman-6.0.0/lib/libalpm/util.c	2021-05-19 20:35:27.000000000 -0700
++++ pacman/lib/libalpm/util.c	2021-07-10 10:42:12.714192851 -0700
+@@ -35,6 +35,10 @@
+ #include <poll.h>
+ #include <signal.h>
+ 
++#ifndef MSG_NOSIGNAL
++#define MSG_NOSIGNAL 0x2000
++#endif
++
+ /* libarchive */
+ #include <archive.h>
+ #include <archive_entry.h>
+@@ -558,7 +562,11 @@
+ 	int *i, signals[] = {
+ 		SIGABRT, SIGALRM, SIGBUS, SIGCHLD, SIGCONT, SIGFPE, SIGHUP, SIGILL,
+ 		SIGINT, SIGKILL, SIGPIPE, SIGQUIT, SIGSEGV, SIGSTOP, SIGTERM, SIGTSTP,
++#ifndef __APPLE__		
+ 		SIGTTIN, SIGTTOU, SIGUSR1, SIGUSR2, SIGPROF, SIGSYS, SIGTRAP, SIGURG,
++#else
++		SIGTTIN, SIGTTOU, SIGUSR1, SIGUSR2, SIGIOT, SIGEMT, SIGPROF, SIGSYS, SIGTRAP,
++#endif		
+ 		SIGVTALRM, SIGXCPU, SIGXFSZ,
+ #if defined(SIGPOLL)
+ 		/* Not available on FreeBSD et al. */

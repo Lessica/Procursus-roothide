@@ -1,0 +1,9 @@
+--- a/docs/users_guide/rtd-theme/layout.html
++++ b/docs/users_guide/rtd-theme/layout.html
+@@ -66,4 +66,6 @@
+   {# CSS #}
++  {%- if style is defined %}
+   <link rel="stylesheet" href="{{ pathto('_static/' + style, 1) }}" type="text/css" />
++  {%- endif %}
+   <link rel="stylesheet" href="{{ pathto('_static/pygments.css', 1) }}" type="text/css" />
+   {%- for css in css_files %}

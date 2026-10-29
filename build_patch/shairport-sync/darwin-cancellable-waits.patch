@@ -1,0 +1,62 @@
+From 655493752968f294a92946ea1e7d00580dd8044e Mon Sep 17 00:00:00 2001
+From: Filipe <18123246+filipef101@users.noreply.github.com>
+Date: Fri, 25 Sep 2026 12:18:41 +0100
+Subject: [PATCH] Make condition waits cancellable on macOS
+
+On Darwin, pthread_cond_timedwait_relative_np() is not a cancellation point, so
+pthread_cancel() on a thread waiting in it is never acted on. In the activity
+monitor this means that, after a play session, SIGTERM leaves exit_function()
+waiting forever in pthread_join() while the monitor loops on the wait -- which
+returns immediately once a cancel is pending -- at 100% CPU. Under launchd the
+stuck process keeps port 7000, so the restarted instance can't start.
+
+Add a pthread_testcancel() after each of the three macOS-only relative waits.
+Each is inside a cleanup handler that releases its mutex.
+---
+ activity_monitor.c | 3 +++
+ dacp.c             | 3 +++
+ player.c           | 3 +++
+ 3 files changed, 9 insertions(+)
+
+diff --git a/activity_monitor.c b/activity_monitor.c
+index 1af3f2702..fb8473e81 100644
+--- a/activity_monitor.c
++++ b/activity_monitor.c
+@@ -205,6 +205,9 @@ void *activity_monitor_thread_code(void *arg) {
+ #ifdef COMPILE_FOR_OSX
+         rc = pthread_cond_timedwait_relative_np(&activity_monitor_cv, &activity_monitor_mutex,
+                                                 &time_for_wait);
++        // pthread_cond_timedwait_relative_np() is not a cancellation point on macOS, so
++        // check here -- otherwise a pending pthread_cancel() is never acted on
++        pthread_testcancel();
+ #endif
+       }
+       if (player_state == ps_active)
+diff --git a/dacp.c b/dacp.c
+index 03fe521b6..d633b7030 100644
+--- a/dacp.c
++++ b/dacp.c
+@@ -551,6 +551,9 @@ void *dacp_monitor_thread_code(__attribute__((unused)) void *na) {
+ #ifdef COMPILE_FOR_OSX
+         result = pthread_cond_timedwait_relative_np(&dacp_server_information_cv,
+                                                     &dacp_server_information_lock, &time_to_wait);
++        // pthread_cond_timedwait_relative_np() is not a cancellation point on macOS, so
++        // check here -- otherwise a pending pthread_cancel() is never acted on
++        pthread_testcancel();
+ #endif
+       }
+       if (dacp_server.scan_enable == 1) {
+diff --git a/player.c b/player.c
+index db4e427d6..ce991bcfa 100644
+--- a/player.c
++++ b/player.c
+@@ -2764,6 +2764,9 @@ static abuf_t *buffer_get_frame(rtsp_conn_info *conn, int resync_requested) {
+       time_to_wait.tv_sec = sec;
+       time_to_wait.tv_nsec = nsec;
+       pthread_cond_timedwait_relative_np(&conn->flowcontrol, &conn->ab_mutex, &time_to_wait);
++      // pthread_cond_timedwait_relative_np() is not a cancellation point on macOS, so
++      // check here -- otherwise a pending pthread_cancel() is never acted on
++      pthread_testcancel();
+ #endif
+     }
+   } while (wait);

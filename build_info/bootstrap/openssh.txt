@@ -1,0 +1,4 @@
+# Additional members for SSH_STRAP=1.
+openssh-server==9.7p1-1
+openssh-sftp-server==9.7p1-1
+openssh-client==9.7p1-1

@@ -1,0 +1,15 @@
+--- a/Makefile
++++ b/Makefile
+@@ -58,7 +58,11 @@
+  ifdef CONFIG_OSX
+   NATIVE_TARGET = $(ARCH)-osx
+   ifneq ($(CC_NAME),tcc)
+-    LDFLAGS += -flat_namespace -undefined warning
++    ifneq (,$(findstring roothide,$(MEMO_TARGET)))
++      LDFLAGS += -twolevel_namespace
++    else
++      LDFLAGS += -flat_namespace -undefined warning
++    endif
+   endif
+   export MACOSX_DEPLOYMENT_TARGET := 10.6
+  endif

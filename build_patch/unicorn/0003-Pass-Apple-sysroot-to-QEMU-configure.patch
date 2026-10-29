@@ -1,0 +1,13 @@
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -274,6 +274,10 @@
+     endif()
+     if(UNICORN_TRACER)
+         set (EXTRA_CFLAGS "${EXTRA_CFLAGS} -DUNICORN_TRACER")
+     endif()
++    if (CMAKE_OSX_SYSROOT)
++        # https://github.com/unicorn-engine/unicorn/issues/1917
++        set (EXTRA_CFLAGS "${EXTRA_CFLAGS} -isysroot ${CMAKE_OSX_SYSROOT} ")
++    endif()
+ 
+     set(TARGET_LIST "--target-list=")

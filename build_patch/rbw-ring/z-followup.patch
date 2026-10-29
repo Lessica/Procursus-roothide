@@ -1,0 +1,12 @@
+--- a/src/lib.rs
++++ b/src/lib.rs
+@@ -72,0 +73 @@
++#![cfg_attr(target_os = "tvos", allow(unused_qualifications))]
+--- a/src/rand.rs
++++ b/src/rand.rs
+@@ -192 +192 @@
+-#[cfg(any(target_os = "macos", target_os = "ios"))]
++#[cfg(any(target_os = "macos", target_os = "ios", target_os = "tvos"))]
+@@ -385 +385 @@
+-#[cfg(any(target_os = "macos", target_os = "ios"))]
++#[cfg(any(target_os = "macos", target_os = "ios", target_os = "tvos"))]

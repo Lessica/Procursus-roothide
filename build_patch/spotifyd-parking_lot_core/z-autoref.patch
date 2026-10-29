@@ -1,0 +1,44 @@
+--- a/src/parking_lot.rs
++++ b/src/parking_lot.rs
+@@ -252,12 +252,12 @@
+         old_table = HASHTABLE.load(Ordering::Acquire);
+ 
+         // Check if we need to resize the existing table
+-        if (*old_table).entries.len() >= LOAD_FACTOR * num_threads {
++        if (&(*old_table).entries).len() >= LOAD_FACTOR * num_threads {
+             return;
+         }
+ 
+         // Lock all buckets in the old table
+-        for b in &(*old_table).entries[..] {
++        for b in &(&(*old_table).entries)[..] {
+             b.mutex.lock();
+         }
+ 
+@@ -269,7 +269,7 @@
+         }
+ 
+         // Unlock buckets and try again
+-        for b in &(*old_table).entries[..] {
++        for b in &(&(*old_table).entries)[..] {
+             b.mutex.unlock();
+         }
+     }
+@@ -278,7 +278,7 @@
+     let new_table = HashTable::new(num_threads, old_table);
+ 
+     // Move the entries from the old table to the new one
+-    for b in &(*old_table).entries[..] {
++    for b in &(&(*old_table).entries)[..] {
+         let mut current = b.queue_head.get();
+         while !current.is_null() {
+             let next = (*current).next_in_queue.get();
+@@ -302,7 +302,7 @@
+     HASHTABLE.store(Box::into_raw(new_table), Ordering::Release);
+ 
+     // Unlock all buckets in the old table
+-    for b in &(*old_table).entries[..] {
++    for b in &(&(*old_table).entries)[..] {
+         b.mutex.unlock();
+     }
+ }

@@ -1,0 +1,24 @@
+--- a/extra/mariabackup/xtrabackup.cc
++++ b/extra/mariabackup/xtrabackup.cc
+@@ -6710,7 +6710,20 @@
+     return 0;
+ #endif
+ 
+-  return my_realpath(buf, argv0, 0);
++  /* This helper runs before MY_INIT.  my_realpath writes my_errno on
++     failure, but its pthread key has not been created yet. */
++  char *resolved = realpath(argv0, NULL);
++  if (!resolved)
++    return 1;
++  size_t length = strlen(resolved);
++  if (length >= size)
++  {
++    free(resolved);
++    return 1;
++  }
++  memcpy(buf, resolved, length + 1);
++  free(resolved);
++  return 0;
+ }
+ 
+ 

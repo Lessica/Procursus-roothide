@@ -1,0 +1,31 @@
+--- a/vroot.h
++++ b/vroot.h
+@@ -186,7 +186,7 @@
+ VROOTAT_API_WRAP(int, fchmodat, (int fd, const char *path, mode_t mode, int flag), (fd,newpath,mode,flag), fd, path, flag)
+ VROOTAT_API_DEF(int, fstatat, (int fd, const char *path, struct stat *sb, int flag) )
+ VROOTAT_API_WRAP(int, mkdirat, (int fd, const char * path, mode_t mode), (fd,newpath,mode), fd, path, 0)
+-#if defined(VROOT_API_ALL) || __IPHONE_OS_VERSION_MIN_REQUIRED >= __IPHONE_16_0
++#if defined(VROOT_API_ALL) || (defined(__IPHONE_OS_VERSION_MIN_REQUIRED) && __IPHONE_OS_VERSION_MIN_REQUIRED >= __IPHONE_16_0) || (defined(__TV_OS_VERSION_MIN_REQUIRED) && __TV_OS_VERSION_MIN_REQUIRED >= __TVOS_16_0)
+ VROOTAT_API_WRAP(int, mkfifoat, (int fd, const char * path, mode_t mode), (fd,newpath,mode), fd, path, 0)
+ VROOTAT_API_WRAP(int, mknodat, (int fd, const char *path, mode_t mode, dev_t dev), (fd,newpath,mode,dev), fd, path, 0)
+ #endif
+@@ -220,7 +220,7 @@
+ 
+ VROOTAT_API_WRAP(int,setattrlistat,(int fd,const char* path, struct attrlist * attrList, void * attrBuf,
+                                   size_t attrBufSize, unsigned int options), (fd,newpath,attrList,attrBuf,attrBufSize,options), fd,path,0)
+-#if defined(VROOT_API_ALL) || __IPHONE_OS_VERSION_MIN_REQUIRED >= __IPHONE_16_0
++#if defined(VROOT_API_ALL) || (defined(__IPHONE_OS_VERSION_MIN_REQUIRED) && __IPHONE_OS_VERSION_MIN_REQUIRED >= __IPHONE_16_0) || (defined(__TV_OS_VERSION_MIN_REQUIRED) && __TV_OS_VERSION_MIN_REQUIRED >= __TVOS_16_0)
+ VROOT_API_DEF(ssize_t, freadlink, (int fd, char* buf, size_t bufsize))
+ #endif
+ 
+--- a/vroot_rootfs.c
++++ b/vroot_rootfs.c
+@@ -347,7 +347,7 @@
+     return VROOT_API_NAME(readlinkat)(AT_FDCWD, path, buf, bufsiz);
+ }
+ 
+-#if __IPHONE_OS_VERSION_MIN_REQUIRED >= __IPHONE_16_0
++#if (defined(__IPHONE_OS_VERSION_MIN_REQUIRED) && __IPHONE_OS_VERSION_MIN_REQUIRED >= __IPHONE_16_0) || (defined(__TV_OS_VERSION_MIN_REQUIRED) && __TV_OS_VERSION_MIN_REQUIRED >= __TVOS_16_0)
+ EXPORT
+ ssize_t VROOT_API_NAME(freadlink)(int fd, char* buf, size_t bufsize)
+ {

@@ -1,0 +1,13 @@
+--- a/libr/debug/p/native/xnu/xnu_excthreads.c
++++ b/libr/debug/p/native/xnu/xnu_excthreads.c
+@@ -3,1 +3,10 @@
+ #include "xnu_threads.h"
++#include <TargetConditionals.h>
++
++#if TARGET_OS_TV
++/* The jailbroken tvOS runtime exports mach_msg despite SDK availability. */
++extern mach_msg_return_t tvos_mach_msg(mach_msg_header_t *, mach_msg_option_t,
++    mach_msg_size_t, mach_msg_size_t, mach_port_name_t, mach_msg_timeout_t,
++    mach_port_name_t) __asm("_mach_msg");
++#define mach_msg tvos_mach_msg
++#endif

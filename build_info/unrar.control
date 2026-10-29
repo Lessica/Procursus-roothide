@@ -1,0 +1,11 @@
+Package: unrar
+Version: @DEB_UNRAR_V@
+Architecture: @DEB_ARCH@
+Maintainer: @DEB_MAINTAINER@
+Section: Archiving
+Priority: optional
+Multi-Arch: foreign
+Homepage: http://www.rarlab.com/rar_add.htm
+Description: Unarchiver for .rar files (non-free version)
+ Unrar can extract files from .rar archives. If you want to create .rar
+ archives, install package rar.

@@ -1,0 +1,78 @@
+ifneq ($(PROCURSUS),1)
+$(error Use the main Makefile)
+endif
+
+STRAPPROJECTS += uuid
+UUID_VERSION  := 1.6.2
+DEB_UUID_V    ?= $(UUID_VERSION)-4
+
+uuid-setup: setup file-setup
+	$(call DOWNLOAD_FILES,$(BUILD_SOURCE),http://deb.debian.org/debian/pool/main/o/ossp-uuid/ossp-uuid_$(UUID_VERSION).orig.tar.gz)
+	$(call EXTRACT_TAR,ossp-uuid_$(UUID_VERSION).orig.tar.gz,uuid-$(UUID_VERSION),uuid)
+	cp -a $(BUILD_WORK)/file/config.sub $(BUILD_WORK)/uuid
+	sed -i 's/-c -s -m/-c -m/g' $(BUILD_WORK)/uuid/Makefile.in
+	sed -i 's|--mode=link $$(CC) -o $$(LIB_NAME)|--mode=link $$(CC) $$(LDFLAGS) -o $$(LIB_NAME)|' $(BUILD_WORK)/uuid/Makefile.in
+
+ifneq ($(wildcard $(BUILD_WORK)/uuid/.build_complete),)
+uuid:
+	@echo "Using previously built uuid."
+else
+uuid: uuid-setup
+	sed -i ':a;N;$$!ba;s|\n\t10\.\*)\n\(\s*_lt_dar_allow_undefined\)|\n\t*)\n\1|g' $(BUILD_WORK)/uuid/configure
+	cd $(BUILD_WORK)/uuid && ./configure -C \
+		$(DEFAULT_CONFIGURE_FLAGS) \
+		ac_cv_va_copy=yes \
+		CC="$(CC) $(CFLAGS)" \
+		CXX="$(CXX) $(CXXFLAGS)"
+	+$(MAKE) -C $(BUILD_WORK)/uuid
+	+$(MAKE) -C $(BUILD_WORK)/uuid install \
+		DESTDIR=$(BUILD_STAGE)/uuid
+ifneq ($(filter -flto%,$(CFLAGS) $(CXXFLAGS)),)
+	# Keep configured CC/CXX intact for old libtool tag matching; trailing flags disable LTO.
+	+$(MAKE) -C $(BUILD_WORK)/uuid clean
+	+$(MAKE) -C $(BUILD_WORK)/uuid libuuid.la \
+		CFLAGS="$$(sed -n 's/^CFLAGS[[:space:]]*= //p' $(BUILD_WORK)/uuid/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -fno-lto" \
+		CXXFLAGS="$$(sed -n 's/^CXXFLAGS[[:space:]]*= //p' $(BUILD_WORK)/uuid/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -fno-lto" \
+		LDFLAGS="$$(sed -n 's/^LDFLAGS[[:space:]]*= //p' $(BUILD_WORK)/uuid/Makefile | sed -E 's/(^|[[:space:]])-flto(=[^[:space:]]*)?//g') -static"
+	cp -a $(BUILD_WORK)/uuid/.libs/libuuid.a $(BUILD_STAGE)/uuid/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/
+endif
+	$(call AFTER_BUILD,copy)
+endif
+
+uuid-package: uuid-stage
+	# uuid.mk Package Structure
+	rm -rf $(BUILD_DIST)/uuid $(BUILD_DIST)/libuuid{16,-dev}
+	mkdir -p $(BUILD_DIST)/uuid/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/{bin,share/man/man1} \
+		$(BUILD_DIST)/libuuid-dev/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/{bin,share/man/man1,lib} \
+		$(BUILD_DIST)/libuuid16/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib
+
+	# uuid.mk Prep uuid
+	cp -a $(BUILD_STAGE)/uuid/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/uuid $(BUILD_DIST)/uuid/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin
+	cp -a $(BUILD_STAGE)/uuid/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share/man/man1/uuid.1$(MEMO_MANPAGE_SUFFIX) $(BUILD_DIST)/uuid/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share/man/man1
+
+	# uuid.mk Prep libuuid16
+	cp -a $(BUILD_STAGE)/uuid/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/libuuid.16.dylib $(BUILD_DIST)/libuuid16/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib
+
+	# uuid.mk Prep libuuid-dev
+	# Public consumer flags come from the script paths/libs, not private build inputs.
+	sed -i 's/^uuid_cflags=.*/uuid_cflags=""/; s/^uuid_ldflags=.*/uuid_ldflags=""/' \
+		$(BUILD_STAGE)/uuid/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/uuid-config
+	cp -a $(BUILD_STAGE)/uuid/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/!(libuuid.16.dylib) $(BUILD_DIST)/libuuid-dev/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib
+	cp -a $(BUILD_STAGE)/uuid/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share/man/man1/uuid-config.1$(MEMO_MANPAGE_SUFFIX) $(BUILD_DIST)/libuuid-dev/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share/man/man1
+	cp -a $(BUILD_STAGE)/uuid/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/uuid-config $(BUILD_DIST)/libuuid-dev/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin
+	cp -a $(BUILD_STAGE)/uuid/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share/man/man3 $(BUILD_DIST)/libuuid-dev/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/share/man
+	cp -a $(BUILD_STAGE)/uuid/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include $(BUILD_DIST)/libuuid-dev/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)
+
+	# uuid.mk Sign
+	$(call SIGN,uuid,general.xml)
+	$(call SIGN,libuuid16,general.xml)
+
+	# uuid.mk Make .debs
+	$(call PACK,uuid,DEB_UUID_V)
+	$(call PACK,libuuid16,DEB_UUID_V)
+	$(call PACK,libuuid-dev,DEB_UUID_V)
+
+	# uuid.mk Build cleanup
+	rm -rf $(BUILD_DIST)/uuid $(BUILD_DIST)/libuuid{16,-dev}
+
+.PHONY: uuid uuid-package

@@ -1,0 +1,11 @@
+--- a/src/util-inl.h
++++ b/src/util-inl.h
+@@ -533,7 +533,7 @@
+   if (std::isnan(v_d)) return false;
+   if (std::isinf(v_d)) return false;
+   if (std::trunc(v_d) != v_d) return false;  // not int
+-  if (std::abs(v_d) <= static_cast<double>(kMaxSafeJsInteger)) return true;
++  if (std::fabs(v_d) <= static_cast<double>(kMaxSafeJsInteger)) return true;
+   return false;
+ }
+ 

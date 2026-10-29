@@ -1,0 +1,15 @@
+--- a/configure
++++ b/configure
+@@ -6996,10 +6996,12 @@
+ echo "[built-in options]" >> $cross
+ echo "c_args = [${CFLAGS:+$(meson_quote $CFLAGS)}]" >> $cross
+ echo "cpp_args = [${CXXFLAGS:+$(meson_quote $CXXFLAGS)}]" >> $cross
++echo "objc_args = [${CFLAGS:+$(meson_quote $CFLAGS)}]" >> $cross
+ echo "c_link_args = [${LDFLAGS:+$(meson_quote $LDFLAGS)}]" >> $cross
+ echo "cpp_link_args = [${LDFLAGS:+$(meson_quote $LDFLAGS)}]" >> $cross
++echo "objc_link_args = [${LDFLAGS:+$(meson_quote $LDFLAGS)}]" >> $cross
+ echo "[binaries]" >> $cross
+ echo "c = [$(meson_quote $cc)]" >> $cross
+ test -n "$cxx" && echo "cpp = [$(meson_quote $cxx)]" >> $cross
+ test -n "$objcc" && echo "objc = [$(meson_quote $objcc)]" >> $cross
+ echo "ar = [$(meson_quote $ar)]" >> $cross

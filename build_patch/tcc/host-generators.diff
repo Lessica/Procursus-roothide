@@ -1,0 +1,22 @@
+--- a/Makefile
++++ b/Makefile
+@@ -241,7 +241,7 @@
+ $(X)tccpp.o : $(TCCDEFS_H)
+ endif
+ 
+-FROM_GIT := $(shell git rev-parse >/dev/null 2>&1 && echo yes || echo no)
++FROM_GIT := $(shell test -e "$(TOPSRC)/.git" && git -C "$(TOPSRC)" rev-parse >/dev/null 2>&1 && echo yes || echo no)
+ 
+ ifeq ($(FROM_GIT),yes)
+ GITHASH:=$(shell git rev-parse --abbrev-ref HEAD):$(shell git rev-parse --short HEAD) $(shell git log -1 --pretty='format:%cI')
+@@ -259,8 +259,9 @@
+ endif
+ 
+ # convert "include/tccdefs.h" to "tccdefs_.h"
++CC_FOR_BUILD ?= $(CC)
+ %_.h : include/%.h conftest.c
+-	$S$(CC) -DC2STR $(filter %.c,$^) -o c2str.exe && ./c2str.exe $< $@
++	$S$(CC_FOR_BUILD) -DC2STR $(filter %.c,$^) -o c2str.exe && ./c2str.exe $< $@
+ 
+ # target specific object rule
+ $(X)%.o : %.c $(LIBTCC_INC)
