@@ -39,7 +39,7 @@ COMPONENT_DEFAULT = "main"
 ARCH_DEFAULT = "iphoneos-arm64e"
 POOL_TARGET_DEFAULT = "iphoneos-arm64-roothide"
 URI_DEFAULT = "https://stripe.owngoal.dev"
-DESCRIPTION = "Distribution of essential tools for iPhoneOS"
+DESCRIPTION = "A modern, versatile Unix environment built for iOS and tvOS"
 REPO_ICON = Path(__file__).resolve().parent.parent / "build_misc" / "repository" / "CydiaIcon.png"
 
 
